@@ -8,14 +8,27 @@
         "layouts": [],
         "containers": [
           {
-            "title": "Driver Camera",
+            "title": "Left Camera",
             "x": 0.0,
             "y": 0.0,
-            "width": 384.0,
+            "width": 192.0,
             "height": 320.0,
             "type": "Camera Stream",
             "properties": {
-              "topic": "CameraPublisher/limelight/",
+              "topic": "/CameraPublisher/limelightLeft/",
+              "period": 0.06,
+              "rotation_turns": 0
+            }
+          },
+          {
+            "title": "Right Camera",
+            "x": 192.0,
+            "y": 0.0,
+            "width": 192.0,
+            "height": 320.0,
+            "type": "Camera Stream",
+            "properties": {
+              "topic": "/CameraPublisher/limelightRight/",
               "period": 0.06,
               "rotation_turns": 0
             }

@@ -4,9 +4,8 @@
 
 package frc.robot;
 
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.cscore.HttpCamera;
-import edu.wpi.first.cscore.HttpCamera.HttpCameraKind;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringArrayPublisher;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -31,19 +30,15 @@ public class Robot extends TimedRobot {
 
     // ==================== LIMELIGHT CAMERA STREAMS FOR ELASTIC DASHBOARD
     // ====================
-    // Add both Limelight camera streams to CameraServer so they appear in Elastic
-    // dashboard
+    var nt = NetworkTableInstance.getDefault();
     for (String llName : VisionConstants.LIMELIGHT_NAMES) {
-      try {
-        HttpCamera limelightCamera = new HttpCamera(
-            llName,
-            "http://" + llName + ".local:5800/stream.mjpg",
-            HttpCameraKind.kMJPGStreamer);
-        CameraServer.startAutomaticCapture(limelightCamera);
-        System.out.println(llName + " camera stream added to CameraServer");
-      } catch (Exception e) {
-        System.err.println("Failed to add " + llName + " camera stream: " + e.getMessage());
-      }
+      StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
+          .getStringArrayTopic("streams")
+          .publish();
+      pub.set(new String[] {
+          "mjpg:http://" + llName + ".local:5800/stream.mjpg"
+      });
+      System.out.println(llName + " stream URL published to NetworkTables");
     }
   }
 

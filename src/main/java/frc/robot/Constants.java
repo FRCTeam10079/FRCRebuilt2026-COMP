@@ -154,7 +154,7 @@ public final class Constants {
 
     // Target RPM values
     public static final double SHOOTER_IDLE_RPM = 0;
-    public static final double SHOOTER_SPINUP_RPM = 2100; // Default spin-up target
+    public static final double SHOOTER_SPINUP_RPM = 1000; // Default spin-up target
     public static final double SHOOTER_MAX_RPM = 5500; // Kraken X60 free speed ~6000 RPM
 
     // RPM tolerance for "at setpoint" check

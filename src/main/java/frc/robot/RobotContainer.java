@@ -304,13 +304,13 @@ public class RobotContainer {
     // TODO: Add intake controls
     // Intake In
     m_operatorController
-        .x()
+        .a()
         .toggleOnTrue(new StartEndCommand(() -> intake.intakeIn(), () -> intake.stop(), intake));
     // Intake Out
-    m_operatorController
-        .a()
-        .toggleOnTrue(new StartEndCommand(() -> intake.intakeOut(), () -> intake.stop(), intake));
-    // Deploy Pivot Controls
+    // m_operatorController
+    //     .a()
+    //     .toggleOnTrue(new StartEndCommand(() -> intake.intakeOut(), () -> intake.stop(), intake));
+    // // Deploy Pivot Controls
     m_operatorController
         .rightBumper()
         .toggleOnTrue(new StartEndCommand(

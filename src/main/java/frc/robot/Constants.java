@@ -312,22 +312,11 @@ public final class Constants {
     public static final double MAX_VISION_ODO_DIVERGENCE_SINGLE_TAG = 2.0; // 1 tag seen
     public static final double MAX_VISION_ODO_DIVERGENCE_MULTI_TAG = 4.0; // 2+ tags seen
 
-    // ==================== LIMELIGHT 4 IMU MODES ====================
-    // Mode 0: EXTERNAL_ONLY - Uses external gyro via SetRobotOrientation
-    // Mode 1: EXTERNAL_SEED - Seeds internal IMU with external, uses external for
-    // botpose
-    // Mode 2: INTERNAL_ONLY - Uses LL4's internal IMU only
-    // Mode 3: INTERNAL_MT1_ASSIST - Internal IMU + MT1 vision yaw correction
-    // Mode 4: INTERNAL_EXTERNAL_ASSIST - Internal 1kHz IMU + external gyro drift
-    // correction
-    public static final int IMU_MODE_EXTERNAL_ONLY = 0;
-    public static final int IMU_MODE_SEED_EXTERNAL = 1;
-    public static final int IMU_MODE_INTERNAL_ONLY = 2;
-    public static final int IMU_MODE_INTERNAL_MT1_ASSIST = 3;
-    public static final int IMU_MODE_INTERNAL_EXTERNAL_ASSIST = 4;
-
-    // IMU assist alpha for complementary filter (modes 3 and 4)
-    public static final double IMU_ASSIST_ALPHA = 0.001;
+    // NOTE: LL4 internal IMU modes (SetIMUMode) are NOT used.
+    // We use SetRobotOrientation with the fused pose estimator heading (mode 0
+    // behavior) to avoid heading calibration issues.
+    // See CommandSwerveDrivetrain.updateVision() for the two-phase MT1→MT2
+    // approach.
 
     /**
      * Linearly interpolates the XY standard deviation from the STD_DEV_TABLE based on average tag

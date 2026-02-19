@@ -99,7 +99,7 @@ public final class Constants {
       public static final int MOTOR_ID = 24;
 
       public static final double INTAKE_POSITION = 0;
-      public static final double STOWED_POSITION = -6.5;
+      public static final double STOWED_POSITION = -5.5;
 
       public static final int SUPPLY_CURRENT_LIMIT = 40;
       public static final int STATOR_CURRENT_LIMIT = 80;
@@ -152,7 +152,7 @@ public final class Constants {
 
     // Target RPM values
     public static final double SHOOTER_IDLE_RPM = 0;
-    public static final double SHOOTER_SPINUP_RPM = 1000; // Default spin-up target
+    public static final double SHOOTER_SPINUP_RPM = 2200; // Default spin-up target
     public static final double SHOOTER_MAX_RPM = 5500; // Kraken X60 free speed ~6000 RPM
 
     // RPM tolerance for "at setpoint" check

@@ -98,8 +98,8 @@ public final class Constants {
     public static final class Pivot {
       public static final int MOTOR_ID = 24;
 
-      public static final double INTAKE_POSITION = 6;
-      public static final double STOWED_POSITION = 0;
+      public static final double INTAKE_POSITION = 0;
+      public static final double STOWED_POSITION = -6.5;
 
       public static final int SUPPLY_CURRENT_LIMIT = 40;
       public static final int STATOR_CURRENT_LIMIT = 80;
@@ -125,8 +125,8 @@ public final class Constants {
       public static final int STATOR_CURRENT_LIMIT = 80;
 
       // extremely slow for testing, ramp up for actual
-      public static final double INTAKE_IN_RPM = 4000;
-      public static final double INTAKE_OUT_RPM = -4000;
+      public static final double INTAKE_IN_RPM = 2000;
+      public static final double INTAKE_OUT_RPM = -2000;
 
       // TUNE ALL: (SysId could work well here, though it's not that important to be
       // super accurate)

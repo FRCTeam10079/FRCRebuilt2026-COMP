@@ -29,10 +29,10 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.IndexerSubsystem;
-import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.PivotIntake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.PivotIntake.PivotSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 
 /**
  * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
@@ -351,9 +351,7 @@ public class RobotContainer {
 
     // ==================== VISION ALIGNMENT ====================
     // A button - Align to AprilTag (CENTER position)
-    m_driverController
-        .a()
-        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
+    m_driverController.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
 
     // Left Bumper - Align to AprilTag (LEFT position)
     m_driverController

@@ -79,9 +79,7 @@ public class AlignToAprilTag extends Command {
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public AlignToAprilTag(
-      CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision,
-      AlignPosition alignPosition) {
+      CommandSwerveDrivetrain drivetrain, VisionSubsystem vision, AlignPosition alignPosition) {
     this.drivetrain = drivetrain;
     this.vision = vision;
     this.stateMachine = RobotStateMachine.getInstance();

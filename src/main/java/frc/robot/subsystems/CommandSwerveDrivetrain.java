@@ -134,7 +134,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    *
    * <p>Inspired by Team 6328 (Mechanical Advantage) approach: adjust gyro offset to map old
    * rotation to new rotation, preserving XY.
-   *
    */
   public void resetFieldHeading() {
     Pose2d currentPose = getState().Pose;

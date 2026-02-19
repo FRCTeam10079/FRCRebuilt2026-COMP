@@ -55,10 +55,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // Continuously seed the LL4 IMU with the robot's current heading.
-    // Mode 1 (Seed) overwrites the LL4 internal IMU heading so it is
-    // correct by the time the match starts.
-    m_robotContainer.vision.seedIMU();
+    // Send heading to Limelights (Mode 0 = EXTERNAL_ONLY, no LL4 internal IMU).
+    // Also checks MT1 multi-tag heading for auto-correction of pose estimator.
+    m_robotContainer.vision.updateWhileDisabled();
   }
 
   @Override
@@ -72,8 +71,8 @@ public class Robot extends TimedRobot {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_INIT);
 
-    // Switch LL4 IMU to external-assist mode for 1kHz heading during match
-    m_robotContainer.vision.enableIMU();
+    // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
+    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -101,8 +100,8 @@ public class Robot extends TimedRobot {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
 
-    // Switch LL4 IMU to external-assist mode for 1kHz heading during match
-    m_robotContainer.vision.enableIMU();
+    // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
+    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

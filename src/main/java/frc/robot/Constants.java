@@ -247,6 +247,39 @@ public final class Constants {
     public static final double FIELD_BORDER_MARGIN = 0.5;
     public static final double FIELD_LENGTH_METERS = 16.54;
     public static final double FIELD_WIDTH_METERS = 8.07;
+
+    // ==================== MT2 STANDARD DEVIATIONS ====================
+    // Base std devs for MegaTag2 - multiplied by avgTagDist at runtime.
+    // Heading (theta) is always 99999 because MT2 heading comes from the gyro.
+    public static final double MT2_BASE_XY_STDDEV = 0.3;
+    public static final double MT2_THETA_STDDEV = 99999.0;
+
+    // ==================== MT1 FALLBACK STANDARD DEVIATIONS ====================
+    // MT1 multi-tag (2+ tags) - geometric heading is accurate, lower std devs
+    public static final double MT1_MULTI_TAG_XY_STDDEV = 0.7;
+    public static final double MT1_MULTI_TAG_THETA_STDDEV = 0.5;
+
+    // MT1 single-tag - heading is ambiguous, high std devs for safety
+    public static final double MT1_SINGLE_TAG_XY_STDDEV = 1.5;
+    public static final double MT1_SINGLE_TAG_THETA_STDDEV = 99999.0;
+
+    // ==================== HEADING VALIDATION ====================
+    // Max heading divergence between MT2 pose heading and pose estimator heading
+    // before we reject the measurement. Catches cases where MT2 received wrong
+    // heading.
+    public static final double HEADING_DIVERGENCE_THRESHOLD_DEG = 30.0;
+
+    // Max heading divergence between MT1 multi-tag heading and pose estimator
+    // heading
+    // before auto-correcting the pose estimator (during disabled)
+    public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
+
+    // Whether to auto-correct heading from MT1 multi-tag while disabled
+    public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;
+
+    // ==================== POSE ESTIMATOR DIVERGENCE ====================
+    // If odometry and MT2 diverge by more than this, log a warning
+    public static final double POSE_DIVERGENCE_WARNING_METERS = 2.0;
   }
 
   public static final class IndexerConstants {

@@ -127,13 +127,28 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       new SysIdRoutine.Mechanism(
           volts -> setControl(m_steerCharacterization.withVolts(volts)), null, this));
 
-  // ==================== VISION LOCALIZATION BOOTSTRAP ====================
-  // Tracks whether vision has ever successfully updated the pose estimator.
-  // Until this is true, the odometry-divergence check is skipped so that the
-  // very first valid vision measurement can seed the pose estimator.
-  // Without this, a robot starting at odometry (0,0) can never accept a
-  // vision pose 10+ meters away, creating a permanent rejection loop.
+  // ==================== VISION LOCALIZATION STATE ====================
+  // Two-phase vision pipeline:
+  // Phase 1 (m_visionLocalized == false): Use MegaTag1 to bootstrap
+  // heading+position.
+  // MT1 computes heading from visual SLAM - no external heading needed.
+  // Once a valid MT1 measurement is found, resetPose() calibrates both heading
+  // and XY. This solves the problem where MT2 needs correct
+  // heading but the heading was never calibrated to field coordinates.
+  // Phase 2 (m_visionLocalized == true): Use MegaTag2 with the now-correct fused
+  // heading. MT2 provides better XY accuracy (especially single-tag) because it
+  // uses gyro-stabilized heading to eliminate pose ambiguity.
   private boolean m_visionLocalized = false;
+
+  /**
+   * Allows external code (e.g. Robot.autonomousInit) to force re-localization. This is needed when
+   * auto paths call resetPose() which changes the fused heading, or when transitioning between
+   * auto/teleop.
+   */
+  public void resetVisionLocalization() {
+    m_visionLocalized = false;
+    System.out.println("[Vision] Localization reset - will re-bootstrap with MegaTag1");
+  }
 
   // ==================== VISION DEBUG STATE (per-camera) ====================
   // Per-camera tracking for throttled console logging and change detection.
@@ -143,78 +158,173 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private final Map<String, Double> m_lastAcceptedVisionX = new HashMap<>();
   private final Map<String, Double> m_lastAcceptedVisionY = new HashMap<>();
 
-  // ==================== VISION LOCALIZATION WITH MEGATAG2 (DUAL CAMERA)
-  // ====================
+  // ==================== TWO-PHASE VISION PIPELINE ====================
   /**
-   * Updates robot pose estimation using ALL Limelight MegaTag2 vision measurements. Each camera is
-   * processed independently through the same validation chain, and each valid measurement is fed to
-   * the WPILib pose estimator separately. The Kalman filter handles optimal fusion of multiple
-   * measurements internally.
+   * Main vision update entry point, called every periodic() cycle.
+   *
+   * <p>Phase 1 (not localized): Tries MegaTag1 on each camera. MT1 computes heading visually so no
+   * prior heading calibration is needed. First valid MT1 pose resets odometry (heading + XY).
+   *
+   * <p>Phase 2 (localized): Runs MegaTag2 pipeline with the now-correct fused heading for superior
+   * single-tag accuracy.
    */
   private void updateVision() {
     var driveState = getState();
     Pose2d odoPose = driveState.Pose;
-
-    // ==================== FUSED HEADING FOR MEGATAG2 ====================
-    // Use the fused pose estimator heading (WPILib blue-origin field coords).
-    // MegaTag2 requires yaw in field coordinates: 0 deg = facing red wall, CCW+.
-    // Since thetaStdDev = POSITIVE_INFINITY, vision measurements have ZERO
-    // influence on the pose estimator's heading - it is purely gyro-driven.
-    // Therefore there is NO feedback loop risk.
-    // Thanks CTRE Phoenix6 examples and Limelight docs.
-    double fusedHeadingDeg = odoPose.getRotation().getDegrees();
-    double rawPigeonYaw = getPigeon2().getYaw().getValueAsDouble();
     double rawPigeonAngularVel = getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
 
-    // Log both headings for diagnostic comparison
-    SmartDashboard.putNumber("Vision/RawPigeonYaw", rawPigeonYaw);
-    SmartDashboard.putNumber("Vision/FusedHeadingDeg", fusedHeadingDeg);
-    SmartDashboard.putNumber("Vision/HeadingDelta", rawPigeonYaw - fusedHeadingDeg);
+    // Log state
     SmartDashboard.putBoolean("Vision/Localized", m_visionLocalized);
+    SmartDashboard.putNumber("Vision/FusedHeadingDeg", odoPose.getRotation().getDegrees());
+    SmartDashboard.putNumber("Vision/RawPigeonYaw", getPigeon2().getYaw().getValueAsDouble());
 
-    // Process each Limelight independently
+    // ==================== ALLIANCE-BASED TAG ID FILTERING ====================
+    // Apply once per frame (same for both cameras and both MT1/MT2)
+    var alliance = DriverStation.getAlliance();
     for (String cameraName : frc.robot.Constants.VisionConstants.LIMELIGHT_NAMES) {
-      updateVisionForCamera(cameraName, odoPose, fusedHeadingDeg, rawPigeonAngularVel);
+      if (alliance.isPresent()) {
+        int[] validTags = alliance.get() == Alliance.Red
+            ? frc.robot.Constants.AprilTagMaps.RED_SIDE_TAGS
+            : frc.robot.Constants.AprilTagMaps.BLUE_SIDE_TAGS;
+        LimelightHelpers.SetFiducialIDFiltersOverride(cameraName, validTags);
+      }
+    }
+
+    if (!m_visionLocalized) {
+      // ==================== PHASE 1: MT1 HEADING BOOTSTRAP ====================
+      // MegaTag1 computes heading from multi-tag or single-tag SLAM.
+      // No external heading needed - it's purely visual.
+      // Once we get a valid MT1 pose, hard-reset odometry to calibrate
+      // both heading AND XY position.
+      for (String cameraName : frc.robot.Constants.VisionConstants.LIMELIGHT_NAMES) {
+        if (tryMT1Bootstrap(cameraName, odoPose)) {
+          // Bootstrap succeeded for this camera - done for this frame.
+          // Next frame will enter Phase 2.
+          return;
+        }
+      }
+      // No camera produced a valid MT1 bootstrap this frame.
+      // Also still send SetRobotOrientation with best-guess heading
+      // so that MT2 data in the LL web UI is at least somewhat useful for debugging.
+      double bestGuessHeading = odoPose.getRotation().getDegrees();
+      for (String cameraName : frc.robot.Constants.VisionConstants.LIMELIGHT_NAMES) {
+        LimelightHelpers.SetRobotOrientation(cameraName, bestGuessHeading, 0, 0, 0, 0, 0);
+      }
+    } else {
+      // ==================== PHASE 2: MT2 STEADY-STATE ====================
+      // Heading is now calibrated. Use MegaTag2 for superior XY accuracy.
+      // Matches the official CTRE Phoenix6-Examples pattern:
+      // SetRobotOrientation(heading) -> getBotPoseEstimate_wpiBlue_MegaTag2()
+      double fusedHeadingDeg = odoPose.getRotation().getDegrees();
+      for (String cameraName : frc.robot.Constants.VisionConstants.LIMELIGHT_NAMES) {
+        updateVisionMT2(cameraName, odoPose, fusedHeadingDeg, rawPigeonAngularVel);
+      }
     }
   }
 
+  // ==================== PHASE 1: MEGATAG1 BOOTSTRAP ====================
   /**
-   * Processes a single Limelight camera's MegaTag2 estimate through the full validation chain.
-   * Validation gates (ordered cheapest-first): 1. Null / stale timestamp / no tags 2. Single-tag
-   * ambiguity gate 3. Angular velocity rejection 4. Max tag distance rejection 5. Min tag area
-   * rejection 6. Field boundary check 7. Odometry divergence check (with first-time bootstrap)
+   * Attempts to bootstrap the robot's pose from a single MegaTag1 measurement. MT1 computes heading
+   * visually (no external heading needed), which makes it ideal for initial localization.
    *
-   * <p>Standard deviations are computed via a distance-based interpolating lookup table (see
-   * {@link frc.robot.Constants.VisionConstants#interpolateStdDev}).
+   * <p>Validation gates: null/stale, tagCount > 0, single-tag ambiguity, field bounds, angular
+   * velocity.
+   *
+   * @return true if bootstrap succeeded and odometry was reset
+   */
+  private boolean tryMT1Bootstrap(String cameraName, Pose2d odoPose) {
+    LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
+
+    // --- Basic null/stale checks ---
+    if (mt1 == null || mt1.timestampSeconds == 0 || mt1.tagCount == 0) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_NO_DATA");
+      instrumentVision(cameraName, "MT1_NO_DATA", mt1, odoPose);
+      return false;
+    }
+
+    // --- Single-tag ambiguity ---
+    if (mt1.tagCount == 1
+        && mt1.rawFiducials != null
+        && mt1.rawFiducials.length > 0
+        && mt1.rawFiducials[0].ambiguity > frc.robot.Constants.VisionConstants.MAX_AMBIGUITY) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_AMBIGUITY");
+      instrumentVision(cameraName, "MT1_AMBIGUITY", mt1, odoPose);
+      return false;
+    }
+
+    // --- Angular velocity (don't bootstrap while spinning) ---
+    double angVel = getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+    if (Math.abs(angVel) > frc.robot.Constants.VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_ANG_VEL");
+      instrumentVision(cameraName, "MT1_ANG_VEL", mt1, odoPose);
+      return false;
+    }
+
+    // --- Field boundary check ---
+    double x = mt1.pose.getX();
+    double y = mt1.pose.getY();
+    double margin = frc.robot.Constants.VisionConstants.FIELD_BORDER_MARGIN;
+    if (x < -margin
+        || x > frc.robot.Constants.VisionConstants.FIELD_LENGTH_METERS + margin
+        || y < -margin
+        || y > frc.robot.Constants.VisionConstants.FIELD_WIDTH_METERS + margin) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_OOB");
+      instrumentVision(cameraName, "MT1_OOB", mt1, odoPose);
+      return false;
+    }
+
+    // --- Multi-tag preferred for bootstrap (more reliable heading) ---
+    // Accept single tag only if ambiguity is very low (< 0.15)
+    if (mt1.tagCount == 1
+        && mt1.rawFiducials != null
+        && mt1.rawFiducials.length > 0
+        && mt1.rawFiducials[0].ambiguity > 0.15) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_SINGLE_TAG_LOW_CONF");
+      instrumentVision(cameraName, "MT1_SINGLE_LOW", mt1, odoPose);
+      return false;
+    }
+
+    // ==================== BOOTSTRAP: Reset odometry to MT1 pose
+    // ====================
+    // This calibrates BOTH heading (from MT1's visual-SLAM rotation) AND XY.
+    // After this, the fused heading is correct for MegaTag2 usage.
+    resetPose(mt1.pose);
+    m_visionLocalized = true;
+
+    SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_BOOTSTRAP");
+    instrumentVision(cameraName, "MT1_BOOTSTRAP", mt1, odoPose);
+    System.out.println("[Vision][" + cameraName + "] MT1 Bootstrap: reset pose to " + mt1.pose
+        + " (heading=" + mt1.pose.getRotation().getDegrees() + "°, tags=" + mt1.tagCount + ")");
+    return true;
+  }
+
+  // ==================== PHASE 2: MEGATAG2 STEADY-STATE ====================
+  /**
+   * Processes a single Limelight camera's MegaTag2 estimate through the full validation chain. This
+   * is the standard MegaTag2 pipeline matching the official CTRE Phoenix6-Examples pattern.
+   *
+   * <p>Validation gates (ordered cheapest-first): 1. Null / stale timestamp / no tags 2. Single-tag
+   * ambiguity 3. Angular velocity rejection 4. Max tag distance 5. Min tag area 6. Field boundary
+   * check 7. Odometry divergence check
    *
    * @param cameraName The Limelight name (e.g. "limelight-left" or "limelight-right")
    * @param odoPose Current odometry pose
    * @param fusedHeadingDeg Fused pose estimator heading in field coords (degrees)
    * @param rawPigeonAngularVel Raw Pigeon2 angular velocity in deg/s
    */
-  private void updateVisionForCamera(
+  private void updateVisionMT2(
       String cameraName, Pose2d odoPose, double fusedHeadingDeg, double rawPigeonAngularVel) {
 
     // Set robot orientation BEFORE reading MegaTag2 pose.
-    // Use fused heading (WPILib blue-origin, 0 deg=facing red wall, CCW+).
-    // Pass 0 for yaw rate - matching official CTRE/Limelight examples.
-    // The LL4 internal IMU handles frame-to-frame motion at 1kHz.
+    // Uses fused heading (WPILib blue-origin, 0 deg=facing red wall, CCW+).
+    // Like the official CTRE Phoenix6-Examples: heading from getState().Pose.
     LimelightHelpers.SetRobotOrientation(cameraName, fusedHeadingDeg, 0, 0, 0, 0, 0);
-
-    // ==================== ALLIANCE-BASED TAG ID FILTERING ====================
-    var alliance = DriverStation.getAlliance();
-    if (alliance.isPresent()) {
-      int[] validTags = alliance.get() == Alliance.Red
-          ? frc.robot.Constants.AprilTagMaps.RED_SIDE_TAGS
-          : frc.robot.Constants.AprilTagMaps.BLUE_SIDE_TAGS;
-      LimelightHelpers.SetFiducialIDFiltersOverride(cameraName, validTags);
-    }
 
     // ==================== GET MEGATAG2 ESTIMATE ====================
     LimelightHelpers.PoseEstimate mt2Estimate =
         LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
 
-    // --- Gate 1: Null / stale / no tags (cheapest checks first) ---
+    // --- Gate 1: Null / stale / no tags ---
     if (mt2Estimate == null) {
       SmartDashboard.putString("Vision/" + cameraName + "/Status", "NULL_ESTIMATE");
       instrumentVision(cameraName, "NULL", null, odoPose);
@@ -240,7 +350,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       return;
     }
 
-    // --- Gate 2: Single-tag ambiguity (uses rawFiducials - cheap array access) ---
+    // --- Gate 2: Single-tag ambiguity ---
     if (tagCount == 1
         && mt2Estimate.rawFiducials != null
         && mt2Estimate.rawFiducials.length > 0
@@ -259,14 +369,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       return;
     }
 
-    // --- Gate 4: Max tag distance (far tags have too much pixel error) ---
+    // --- Gate 4: Max tag distance ---
     if (avgTagDist > frc.robot.Constants.VisionConstants.MAX_TAG_DISTANCE) {
       SmartDashboard.putString("Vision/" + cameraName + "/Status", "TOO_FAR");
       instrumentVision(cameraName, "TOO_FAR", mt2Estimate, odoPose);
       return;
     }
 
-    // --- Gate 5: Min tag area (tiny detections are noise) ---
+    // --- Gate 5: Min tag area ---
     if (mt2Estimate.avgTagArea < frc.robot.Constants.VisionConstants.MIN_TAG_AREA) {
       SmartDashboard.putString("Vision/" + cameraName + "/Status", "TAG_TOO_SMALL");
       instrumentVision(cameraName, "TAG_SMALL", mt2Estimate, odoPose);
@@ -294,39 +404,20 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     SmartDashboard.putNumber("Vision/" + cameraName + "/OdoDivergence", visionOdoDist);
 
-    // If we have never been localized, skip divergence check so the first valid
-    // vision measurement can bootstrap the pose estimator.
-    if (m_visionLocalized && visionOdoDist > maxDivergence) {
+    if (visionOdoDist > maxDivergence) {
       SmartDashboard.putString("Vision/" + cameraName + "/Status", "ODO_DIVERGE_REJECTED");
       instrumentVision(cameraName, "ODO_DIVERGE", mt2Estimate, odoPose);
       return;
     }
 
-    // First-time localization: hard-reset odometry to vision pose
-    if (!m_visionLocalized) {
-      resetPose(mt2Estimate.pose);
-      m_visionLocalized = true;
-      SmartDashboard.putString("Vision/" + cameraName + "/Status", "BOOTSTRAP_RESET");
-      instrumentVision(cameraName, "BOOTSTRAP", mt2Estimate, odoPose);
-      System.out.println(
-          "[Vision][" + cameraName + "] Bootstrap localization: reset pose to " + mt2Estimate.pose);
-      return;
-    }
-
     // ==================== DISTANCE-BASED STD DEVS ====================
-    // Interpolate from the lookup table, scaled by 1/tagCount
     double xyStdDev = frc.robot.Constants.VisionConstants.interpolateStdDev(avgTagDist, tagCount);
-
     // MegaTag2 doesn't provide reliable heading - infinite theta std dev
     double thetaStdDev = Double.POSITIVE_INFINITY;
-
     Matrix<N3, N1> visionStdDevs =
         edu.wpi.first.math.VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev);
 
-    // ==================== TIMESTAMP ====================
-    // mt2Estimate.timestampSeconds is already an FPGA-based timestamp with latency
-    // subtracted (NT server time - pipeline latency). Use it directly.
-    // The addVisionMeasurement override applies Utils.fpgaToCurrentTime().
+    // ==================== APPLY VISION MEASUREMENT ====================
     double visionTimestamp = mt2Estimate.timestampSeconds;
 
     SmartDashboard.putNumber("Vision/" + cameraName + "/XYStdDev", xyStdDev);

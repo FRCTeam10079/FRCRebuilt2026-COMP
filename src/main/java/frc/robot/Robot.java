@@ -9,7 +9,6 @@ import edu.wpi.first.networktables.StringArrayPublisher;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.Constants.VisionConstants;
 
 /**
  * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
@@ -30,7 +29,7 @@ public class Robot extends TimedRobot {
     // ==================== LIMELIGHT CAMERA STREAMS FOR ELASTIC DASHBOARD
     // ====================
     var nt = NetworkTableInstance.getDefault();
-    for (String llName : VisionConstants.LIMELIGHT_NAMES) {
+    for (String llName : Constants.VisionConstants.LIMELIGHT_NAMES) {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
@@ -57,23 +56,8 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledPeriodic() {
     // Stay in disabled state - state machine handles alliance color updates
-
-    // ==================== LIMELIGHT 4 IMU SEEDING ====================
-    // While disabled, continuously seed both Limelights' internal IMUs with the
-    // fused pose estimator heading (field coords: 0 deg=facing red wall, CCW+).
-    // This ensures the LL4 IMUs are synchronized before the match starts.
-    double fusedYaw = m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
-    for (String llName : VisionConstants.LIMELIGHT_NAMES) {
-      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
-      LimelightHelpers.SetRobotOrientation(llName, fusedYaw, 0, 0, 0, 0, 0);
-    }
-
-    // ==================== IMU SEEDING TELEMETRY ====================
-    // Publish the yaw being seeded so you can verify it matches reality
-    // before the match starts. Very important for MegaTag2 accuracy.
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Vision/SeedYaw", fusedYaw);
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
-        "Vision/IMUMode", "SEEDING (Mode 1)");
+    // Vision heading calibration is handled by the MT1 bootstrap in
+    // CommandSwerveDrivetrain.updateVision() - no IMU seeding needed here.
   }
 
   @Override
@@ -87,21 +71,9 @@ public class Robot extends TimedRobot {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_INIT);
 
-    // ==================== LIMELIGHT 4 IMU RE-SEED + MODE SWITCH
-    // ====================
-    // Auto paths may call resetPose() which changes the fused heading instantly.
-    // Re-seed the LL4 IMU to the new heading first (mode 1), then switch to
-    // mode 4 (internal + external assist) for best MegaTag2 performance.
-    double autoHeading =
-        m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
-    for (String llName : VisionConstants.LIMELIGHT_NAMES) {
-      // Brief re-seed to snap internal IMU to current fused heading
-      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
-      LimelightHelpers.SetRobotOrientation(llName, autoHeading, 0, 0, 0, 0, 0);
-      // Now switch to internal IMU with external drift correction
-      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_INTERNAL_EXTERNAL_ASSIST);
-      LimelightHelpers.SetIMUAssistAlpha(llName, VisionConstants.IMU_ASSIST_ALPHA);
-    }
+    // Re-localize vision on mode switch so MT1 bootstrap can re-calibrate
+    // heading after any resetPose() call by auto paths.
+    m_robotContainer.drivetrain.resetVisionLocalization();
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -129,17 +101,9 @@ public class Robot extends TimedRobot {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
 
-    // ==================== LIMELIGHT 4 IMU RE-SEED + MODE SWITCH
-    // ====================
-    // Re-seed the LL4 IMU to current fused heading, then switch to mode 4.
-    double teleopHeading =
-        m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
-    for (String llName : VisionConstants.LIMELIGHT_NAMES) {
-      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
-      LimelightHelpers.SetRobotOrientation(llName, teleopHeading, 0, 0, 0, 0, 0);
-      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_INTERNAL_EXTERNAL_ASSIST);
-      LimelightHelpers.SetIMUAssistAlpha(llName, VisionConstants.IMU_ASSIST_ALPHA);
-    }
+    // Re-localize vision on mode switch so MT1 bootstrap can re-calibrate
+    // heading if coming from auto (which may have called resetPose).
+    m_robotContainer.drivetrain.resetVisionLocalization();
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

@@ -17,7 +17,7 @@ import frc.robot.Constants;
 import frc.robot.Constants.*;
 import frc.robot.RobotStateMachine;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 
 /**
  * Command to align the robot to an AprilTag using vision
@@ -32,7 +32,7 @@ public class AlignToAprilTag extends Command {
 
   // Subsystems
   private final CommandSwerveDrivetrain drivetrain;
-  private final LimelightSubsystem limelight;
+  private final VisionSubsystem vision;
   private final RobotStateMachine stateMachine;
 
   // Timer for logging/timeout
@@ -75,15 +75,15 @@ public class AlignToAprilTag extends Command {
    * Creates a new AlignToAprilTag command
    *
    * @param drivetrain The swerve drivetrain subsystem
-   * @param limelight The limelight vision subsystem
+   * @param vision The vision subsystem
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public AlignToAprilTag(
       CommandSwerveDrivetrain drivetrain,
-      LimelightSubsystem limelight,
+      VisionSubsystem vision,
       AlignPosition alignPosition) {
     this.drivetrain = drivetrain;
-    this.limelight = limelight;
+    this.vision = vision;
     this.stateMachine = RobotStateMachine.getInstance();
     this.alignPosition = alignPosition;
 
@@ -118,8 +118,8 @@ public class AlignToAprilTag extends Command {
   }
 
   /** Convenience constructor for CENTER alignment */
-  public AlignToAprilTag(CommandSwerveDrivetrain drivetrain, LimelightSubsystem limelight) {
-    this(drivetrain, limelight, AlignPosition.CENTER);
+  public AlignToAprilTag(CommandSwerveDrivetrain drivetrain, VisionSubsystem vision) {
+    this(drivetrain, vision, AlignPosition.CENTER);
   }
 
   @Override
@@ -170,7 +170,7 @@ public class AlignToAprilTag extends Command {
     System.out.println("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
 
     // Check if Limelight sees a valid tag - prefer it over odometry
-    int limelightTagID = limelight.getTid();
+    int limelightTagID = vision.getTid();
     if (limelightTagID != 0 && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)) {
       targetTagID = limelightTagID;
       System.out.println("[AlignToAprilTag] Using Limelight tag: " + targetTagID);

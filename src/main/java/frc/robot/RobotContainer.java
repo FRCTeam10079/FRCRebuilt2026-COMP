@@ -29,7 +29,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.IndexerSubsystem;
-import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.PivotIntake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.PivotIntake.PivotSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
@@ -52,7 +52,7 @@ public class RobotContainer {
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
   // Vision
-  public final LimelightSubsystem limelight = new LimelightSubsystem();
+  public final VisionSubsystem vision;
   // Indexer
   private final IndexerSubsystem indexer = new IndexerSubsystem();
 
@@ -72,8 +72,8 @@ public class RobotContainer {
   private final AutoFactory choreoAutoFactory;
 
   public RobotContainer() {
-    // Link limelight to drivetrain for vision-based odometry
-    limelight.setDrivetrain(drivetrain);
+    // Create vision subsystem (needs drivetrain reference for pose injection)
+    vision = new VisionSubsystem(drivetrain);
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 
@@ -202,11 +202,11 @@ public class RobotContainer {
     // ===== VISION ALIGNMENT =====
     // Align to AprilTag in various positions (run while held)
     NamedCommands.registerCommand(
-        "alignCenter", new AlignToAprilTag(drivetrain, limelight, AlignPosition.CENTER));
+        "alignCenter", new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
     NamedCommands.registerCommand(
-        "alignLeft", new AlignToAprilTag(drivetrain, limelight, AlignPosition.LEFT));
+        "alignLeft", new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT));
     NamedCommands.registerCommand(
-        "alignRight", new AlignToAprilTag(drivetrain, limelight, AlignPosition.RIGHT));
+        "alignRight", new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT));
 
     // ===== STOP ALL =====
     // Stop all mechanisms at once
@@ -294,9 +294,9 @@ public class RobotContainer {
                             Constants.IndexerConstants.kSpindexerTargetRPM)
                         .withTimeout(1.0))))
         // Vision alignment
-        .bind("alignCenter", new AlignToAprilTag(drivetrain, limelight, AlignPosition.CENTER))
-        .bind("alignLeft", new AlignToAprilTag(drivetrain, limelight, AlignPosition.LEFT))
-        .bind("alignRight", new AlignToAprilTag(drivetrain, limelight, AlignPosition.RIGHT))
+        .bind("alignCenter", new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER))
+        .bind("alignLeft", new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT))
+        .bind("alignRight", new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT))
         // Stop all
         .bind(
             "stopAll",
@@ -353,22 +353,22 @@ public class RobotContainer {
     // A button - Align to AprilTag (CENTER position)
     m_driverController
         .a()
-        .whileTrue(new AlignToAprilTag(drivetrain, limelight, AlignPosition.CENTER));
+        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
 
     // Left Bumper - Align to AprilTag (LEFT position)
     m_driverController
         .leftBumper()
-        .whileTrue(new AlignToAprilTag(drivetrain, limelight, AlignPosition.LEFT));
+        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT));
 
     // Right Bumper - Align to AprilTag (RIGHT position)
     m_driverController
         .rightBumper()
-        .whileTrue(new AlignToAprilTag(drivetrain, limelight, AlignPosition.RIGHT));
+        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT));
 
     // Y button - Reset Field Heading
     // Resets the robot's heading to the alliance-correct forward direction
     // (0 deg for Blue, 180 deg for Red) while preserving XY position.
-    // This does NOT reset vision localization — MT2 immediately adapts
+    // This does NOT reset vision localization - MT2 immediately adapts
     // to the new heading, so vision pose estimation stays accurate.
     m_driverController.y().onTrue(drivetrain.runOnce(() -> drivetrain.resetFieldHeading()));
     // ==================== INDEXER CONTROLS ====================
@@ -544,10 +544,10 @@ public class RobotContainer {
    * <p>This is used by the heading lock test to dynamically track AprilTags.
    */
   private double computeAprilTagHeading() {
-    if (limelight.hasTarget()) {
+    if (vision.hasTarget()) {
       // Target heading = current heading - TX (TX positive means target to the right)
       double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-      double tx = limelight.getTx();
+      double tx = vision.getTx();
       double targetHeading = currentHeading - tx;
       return MathUtil.inputModulus(targetHeading, -180.0, 180.0);
     } else {

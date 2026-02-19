@@ -55,9 +55,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // Stay in disabled state - state machine handles alliance color updates
-    // Vision heading calibration is handled by the MT1 bootstrap in
-    // CommandSwerveDrivetrain.updateVision() - no IMU seeding needed here.
+    // Continuously seed the LL4 IMU with the robot's current heading.
+    // Mode 1 (Seed) overwrites the LL4 internal IMU heading so it is
+    // correct by the time the match starts.
+    m_robotContainer.vision.seedIMU();
   }
 
   @Override
@@ -71,9 +72,8 @@ public class Robot extends TimedRobot {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_INIT);
 
-    // Re-localize vision on mode switch so MT1 bootstrap can re-calibrate
-    // heading after any resetPose() call by auto paths.
-    m_robotContainer.drivetrain.resetVisionLocalization();
+    // Switch LL4 IMU to external-assist mode for 1kHz heading during match
+    m_robotContainer.vision.enableIMU();
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -101,14 +101,8 @@ public class Robot extends TimedRobot {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
 
-    // Only re-localize vision if we never got a good vision lock.
-    // If vision was already localized (from auto), preserve it — the heading
-    // from auto is correct and MT2 should keep running with it.
-    // Re-bootstrapping via MT1 here is risky: single-tag heading can be
-    // unreliable and would undo the good heading from auto/driver reset.
-    if (!m_robotContainer.drivetrain.isVisionLocalized()) {
-      m_robotContainer.drivetrain.resetVisionLocalization();
-    }
+    // Switch LL4 IMU to external-assist mode for 1kHz heading during match
+    m_robotContainer.vision.enableIMU();
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

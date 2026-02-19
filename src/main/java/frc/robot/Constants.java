@@ -236,28 +236,7 @@ public final class Constants {
     public static final String[] LIMELIGHT_NAMES = {LIMELIGHT_LEFT_NAME, LIMELIGHT_RIGHT_NAME};
 
     // Pipeline IDs
-    public static final int PIPELINE_HUB_TRACKING = 0;
-    public static final int PIPELINE_FUEL_DETECTION = 0;
     public static final int PIPELINE_APRILTAG = 0;
-
-    // Target height for hub (inches from floor)
-    public static final double HUB_TARGET_HEIGHT_INCHES = 104.0; // Placeholder
-
-    // Camera mounting (inches)
-    public static final double CAMERA_HEIGHT_INCHES = 24.0; // Placeholder
-    public static final double CAMERA_MOUNT_ANGLE_DEGREES = 30.0; // Placeholder
-
-    // ==================== MEGATAG2 VISION ESTIMATION CONSTANTS
-    //
-    // ====================
-    // Standard deviation coefficients for vision measurements
-    // These scale with distance and inversely with tag count
-    // Formula: stdDev = coefficient * (distance^1.2) / (tagCount^2.0)
-    public static final double XY_STD_DEV_COEFFICIENT = 0.01; // Base XY standard deviation
-    public static final double THETA_STD_DEV_COEFFICIENT =
-        0.03; // Base theta standard deviation (not used with
-    //
-    // MegaTag2)
 
     // Maximum angular velocity for valid vision measurements (degrees/sec)
     // MegaTag2 results degrade significantly when spinning fast
@@ -268,87 +247,6 @@ public final class Constants {
     public static final double FIELD_BORDER_MARGIN = 0.5;
     public static final double FIELD_LENGTH_METERS = 16.54;
     public static final double FIELD_WIDTH_METERS = 8.07;
-
-    // Maximum Z error for valid poses (meters) - robot should be near the ground
-    public static final double MAX_Z_ERROR = 0.75;
-
-    // ==================== SINGLE-TAG QUALITY GATES ====================
-    // Ambiguity threshold for single-tag detections.
-    // Higher ambiguity means the solver found two nearly-equal solutions.
-    // Team 6328 uses 0.4; we use 0.3 for extra safety.
-    public static final double MAX_AMBIGUITY = 0.3;
-
-    // Maximum average tag distance to accept (meters).
-    // Beyond this, pixel error dominates and the pose is unreliable.
-    public static final double MAX_TAG_DISTANCE = 5.0;
-
-    // Minimum tag area (fraction of image, 0-1) to accept.
-    // Tiny detections are mostly noise. Typical close tag is 0.05-0.20.
-    public static final double MIN_TAG_AREA = 0.005;
-
-    // ==================== DISTANCE-BASED STD DEV TABLE ====================
-    // Piecewise-linear interpolation table mapping average tag distance (meters)
-    // to XY standard deviation (meters). Modeled after Team 3663's approach.
-    // For multi-tag, the result is divided by tagCount.
-    // {distance, stdDev} breakpoints:
-    // 0.5m → 0.1 (very close, high confidence)
-    // 1.0m → 0.2
-    // 2.0m → 0.5
-    // 3.5m → 1.5
-    // 5.0m → 3.0 (far away, low confidence)
-    public static final double[][] STD_DEV_TABLE = {
-      {0.5, 0.1},
-      {1.0, 0.2},
-      {2.0, 0.5},
-      {3.5, 1.5},
-      {5.0, 3.0},
-    };
-
-    // ==================== ODOMETRY DIVERGENCE LIMITS ====================
-    // Maximum allowable distance (meters) between vision pose and odometry pose.
-    // If the vision pose diverges further than this from odometry, it is rejected.
-    // This catches the "MegaTag2 flip" bug where the pose jumps to the opposite
-    // side of the field due to IMU heading errors or multi-tag ambiguity.
-    public static final double MAX_VISION_ODO_DIVERGENCE_SINGLE_TAG = 2.0; // 1 tag seen
-    public static final double MAX_VISION_ODO_DIVERGENCE_MULTI_TAG = 4.0; // 2+ tags seen
-
-    // NOTE: LL4 internal IMU modes (SetIMUMode) are NOT used.
-    // We use SetRobotOrientation with the fused pose estimator heading (mode 0
-    // behavior) to avoid heading calibration issues.
-    // See CommandSwerveDrivetrain.updateVision() for the two-phase MT1→MT2
-    // approach.
-
-    /**
-     * Linearly interpolates the XY standard deviation from the STD_DEV_TABLE based on average tag
-     * distance, then scales inversely by tag count.
-     *
-     * @param avgTagDist Average distance to visible tags (meters)
-     * @param tagCount Number of tags visible
-     * @return XY standard deviation to use for the vision measurement
-     */
-    public static double interpolateStdDev(double avgTagDist, int tagCount) {
-      double[][] table = STD_DEV_TABLE;
-
-      // Clamp to table bounds
-      if (avgTagDist <= table[0][0]) {
-        return table[0][1] / Math.max(tagCount, 1);
-      }
-      if (avgTagDist >= table[table.length - 1][0]) {
-        return table[table.length - 1][1] / Math.max(tagCount, 1);
-      }
-
-      // Find surrounding breakpoints and interpolate
-      for (int i = 0; i < table.length - 1; i++) {
-        if (avgTagDist <= table[i + 1][0]) {
-          double t = (avgTagDist - table[i][0]) / (table[i + 1][0] - table[i][0]);
-          double stdDev = table[i][1] + t * (table[i + 1][1] - table[i][1]);
-          return stdDev / Math.max(tagCount, 1);
-        }
-      }
-
-      // Fallback (shouldn't reach here)
-      return table[table.length - 1][1] / Math.max(tagCount, 1);
-    }
   }
 
   public static final class IndexerConstants {

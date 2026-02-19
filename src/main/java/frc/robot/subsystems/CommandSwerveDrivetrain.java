@@ -150,6 +150,57 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     System.out.println("[Vision] Localization reset - will re-bootstrap with MegaTag1");
   }
 
+  /** Returns whether the vision system has completed its initial MT1 bootstrap localization. */
+  public boolean isVisionLocalized() {
+    return m_visionLocalized;
+  }
+
+  /**
+   * Resets the robot's field-relative heading to the alliance-correct forward direction while
+   * preserving the current XY position from the pose estimator.
+   *
+   * <p>This is the correct "reset heading" for drivers: it tells the pose estimator "I am facing
+   * the field" (0 deg for Blue alliance, 180 deg for Red alliance) without destroying vision
+   * localization. MegaTag2 immediately adapts because it reads the fused heading from
+   * getState().Pose each frame via SetRobotOrientation().
+   *
+   * <p>Inspired by Team 6328 (Mechanical Advantage) approach: adjust gyro offset to map old
+   * rotation to new rotation, preserving XY.
+   *
+   * <p><b>DO NOT</b> call resetVisionLocalization() after this — the heading the driver set is
+   * intentional and MT2 should use it immediately without re-bootstrapping through unreliable MT1
+   * single-tag heading.
+   */
+  public void resetFieldHeading() {
+    Pose2d currentPose = getState().Pose;
+
+    // Determine the correct "forward" heading based on alliance
+    // Blue alliance: 0 deg means facing the red alliance wall
+    // Red alliance: 180 deg means facing the blue alliance wall
+    Rotation2d allianceForwardHeading =
+        DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+            ? Rotation2d.k180deg
+            : Rotation2d.kZero;
+
+    // Build a new pose that keeps the current XY but sets the heading
+    // to the alliance-correct forward direction
+    Pose2d correctedPose = new Pose2d(currentPose.getTranslation(), allianceForwardHeading);
+
+    // resetPose() recalibrates the Pigeon2 fused heading offset so the
+    // pose estimator's heading matches our desired heading. XY is preserved.
+    // DO NOT reset m_visionLocalized — we want MT2 to keep running with
+    // the new (correct) heading immediately.
+    resetPose(correctedPose);
+
+    System.out.println("[Heading] Reset field heading: "
+        + currentPose.getRotation().getDegrees() + "° -> "
+        + allianceForwardHeading.getDegrees() + "° (XY preserved: "
+        + String.format("%.2f, %.2f", currentPose.getX(), currentPose.getY()) + ")");
+    SmartDashboard.putNumber(
+        "Vision/HeadingResetOldDeg", currentPose.getRotation().getDegrees());
+    SmartDashboard.putNumber("Vision/HeadingResetNewDeg", allianceForwardHeading.getDegrees());
+  }
+
   // ==================== VISION DEBUG STATE (per-camera) ====================
   // Per-camera tracking for throttled console logging and change detection.
   private final Map<String, Long> m_lastVisionLogMs = new HashMap<>();
@@ -281,6 +332,26 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         && mt1.rawFiducials[0].ambiguity > 0.15) {
       SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_SINGLE_TAG_LOW_CONF");
       instrumentVision(cameraName, "MT1_SINGLE_LOW", mt1, odoPose);
+      return false;
+    }
+
+    // --- Heading continuity safeguard ---
+    // If the Pigeon2 already has a reasonable heading (e.g. from a previous
+    // bootstrap or a driver heading reset), reject single-tag MT1 measurements
+    // whose heading differs wildly from the current gyro heading.
+    // This prevents a noisy single-tag solve from poisoning the pose estimator.
+    // Multi-tag MT1 is much more reliable for heading, so we trust it regardless.
+    double currentGyroHeading = getPigeon2().getYaw().getValueAsDouble();
+    double mt1Heading = mt1.pose.getRotation().getDegrees();
+    double headingDifference =
+        Math.abs(MathUtil.inputModulus(mt1Heading - currentGyroHeading, -180, 180));
+    if (mt1.tagCount == 1 && headingDifference > 45.0) {
+      SmartDashboard.putString("Vision/" + cameraName + "/Status", "MT1_HEADING_MISMATCH");
+      instrumentVision(cameraName, "MT1_HEADING_MISMATCH", mt1, odoPose);
+      System.out.println("[Vision][" + cameraName + "] MT1 rejected: single-tag heading ("
+          + String.format("%.1f", mt1Heading) + "°) differs from gyro ("
+          + String.format("%.1f", currentGyroHeading) + "°) by "
+          + String.format("%.1f", headingDifference) + "°");
       return false;
     }
 

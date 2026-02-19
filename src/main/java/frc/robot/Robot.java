@@ -101,9 +101,14 @@ public class Robot extends TimedRobot {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
 
-    // Re-localize vision on mode switch so MT1 bootstrap can re-calibrate
-    // heading if coming from auto (which may have called resetPose).
-    m_robotContainer.drivetrain.resetVisionLocalization();
+    // Only re-localize vision if we never got a good vision lock.
+    // If vision was already localized (from auto), preserve it — the heading
+    // from auto is correct and MT2 should keep running with it.
+    // Re-bootstrapping via MT1 here is risky: single-tag heading can be
+    // unreliable and would undo the good heading from auto/driver reset.
+    if (!m_robotContainer.drivetrain.isVisionLocalized()) {
+      m_robotContainer.drivetrain.resetVisionLocalization();
+    }
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

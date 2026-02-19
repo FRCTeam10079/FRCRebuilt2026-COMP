@@ -15,13 +15,10 @@ import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
 
 /**
- * Subsystem for dual Limelight vision cameras. Handles AprilTag detection and
- * robot pose
- * estimation from both "limelightLeft" and "limelightRight".
+ * Subsystem for dual Limelight vision cameras. Handles AprilTag detection and robot pose estimation
+ * from both "limelightLeft" and "limelightRight".
  *
- * <p>
- * Getter methods automatically return data from the camera that currently has
- * the best target
+ * <p>Getter methods automatically return data from the camera that currently has the best target
  * (closest / largest area). For REBUILT 2026 season - used for hub alignment.
  */
 public class LimelightSubsystem extends SubsystemBase {
@@ -142,17 +139,14 @@ public class LimelightSubsystem extends SubsystemBase {
   // ==================== GETTER METHODS (auto-select best camera)
   // ====================
 
-  /**
-   * @return The robot pose relative to the target [tx, ty, tz, pitch, yaw, roll]
-   */
+  /** @return The robot pose relative to the target [tx, ty, tz, pitch, yaw, roll] */
   public double[] getBotPose() {
     return (isLeftActive() ? leftBotPose : rightBotPose).getDoubleArray(new double[6]);
   }
 
   /**
-   * @return The robot pose on field from Blue alliance origin [X, Y, Z, Roll,
-   *         Pitch, Yaw, Latency,
-   *         Tag Count, Tag Span, Avg Tag Distance, Avg Tag Area]
+   * @return The robot pose on field from Blue alliance origin [X, Y, Z, Roll, Pitch, Yaw, Latency,
+   *     Tag Count, Tag Span, Avg Tag Distance, Avg Tag Area]
    */
   public double[] getBotPoseFieldBlue() {
     return (isLeftActive() ? leftBotPoseFieldBlue : rightBotPoseFieldBlue)

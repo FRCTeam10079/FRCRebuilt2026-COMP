@@ -12,8 +12,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Constants.VisionConstants;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State
- * Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
  * comprehensive robot control
  */
 public class Robot extends TimedRobot {
@@ -35,9 +34,7 @@ public class Robot extends TimedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] {
-          "mjpg:http://" + llName + ".local:5800/stream.mjpg"
-      });
+      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
       System.out.println(llName + " stream URL published to NetworkTables");
     }
   }
@@ -62,18 +59,19 @@ public class Robot extends TimedRobot {
     // Stay in disabled state - state machine handles alliance color updates
 
     // ==================== LIMELIGHT 4 IMU SEEDING ====================
-    // While disabled, continuously seed both Limelights' internal IMUs with robot's
-    // gyro. This ensures the IMUs are synchronized before the match starts.
-    double robotYaw = m_robotContainer.drivetrain.getPigeon2().getYaw().getValueAsDouble();
+    // While disabled, continuously seed both Limelights' internal IMUs with the
+    // fused pose estimator heading (field coords: 0 deg=facing red wall, CCW+).
+    // This ensures the LL4 IMUs are synchronized before the match starts.
+    double fusedYaw = m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
     for (String llName : VisionConstants.LIMELIGHT_NAMES) {
       LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
-      LimelightHelpers.SetRobotOrientation(llName, robotYaw, 0, 0, 0, 0, 0);
+      LimelightHelpers.SetRobotOrientation(llName, fusedYaw, 0, 0, 0, 0, 0);
     }
 
     // ==================== IMU SEEDING TELEMETRY ====================
     // Publish the yaw being seeded so you can verify it matches reality
     // before the match starts. Very important for MegaTag2 accuracy.
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Vision/SeedYaw", robotYaw);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Vision/SeedYaw", fusedYaw);
     edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
         "Vision/IMUMode", "SEEDING (Mode 1)");
   }
@@ -89,10 +87,18 @@ public class Robot extends TimedRobot {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_INIT);
 
-    // ==================== LIMELIGHT 4 IMU MODE ====================
-    // Switch both Limelights to internal IMU with external gyro drift correction
-    // for best MegaTag2 performance
+    // ==================== LIMELIGHT 4 IMU RE-SEED + MODE SWITCH
+    // ====================
+    // Auto paths may call resetPose() which changes the fused heading instantly.
+    // Re-seed the LL4 IMU to the new heading first (mode 1), then switch to
+    // mode 4 (internal + external assist) for best MegaTag2 performance.
+    double autoHeading =
+        m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
     for (String llName : VisionConstants.LIMELIGHT_NAMES) {
+      // Brief re-seed to snap internal IMU to current fused heading
+      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
+      LimelightHelpers.SetRobotOrientation(llName, autoHeading, 0, 0, 0, 0, 0);
+      // Now switch to internal IMU with external drift correction
       LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_INTERNAL_EXTERNAL_ASSIST);
       LimelightHelpers.SetIMUAssistAlpha(llName, VisionConstants.IMU_ASSIST_ALPHA);
     }
@@ -123,10 +129,14 @@ public class Robot extends TimedRobot {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
 
-    // ==================== LIMELIGHT 4 IMU MODE ====================
-    // Ensure both Limelights have internal IMU with external assist active for
-    // teleop
+    // ==================== LIMELIGHT 4 IMU RE-SEED + MODE SWITCH
+    // ====================
+    // Re-seed the LL4 IMU to current fused heading, then switch to mode 4.
+    double teleopHeading =
+        m_robotContainer.drivetrain.getState().Pose.getRotation().getDegrees();
     for (String llName : VisionConstants.LIMELIGHT_NAMES) {
+      LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_SEED_EXTERNAL);
+      LimelightHelpers.SetRobotOrientation(llName, teleopHeading, 0, 0, 0, 0, 0);
       LimelightHelpers.SetIMUMode(llName, VisionConstants.IMU_MODE_INTERNAL_EXTERNAL_ASSIST);
       LimelightHelpers.SetIMUAssistAlpha(llName, VisionConstants.IMU_ASSIST_ALPHA);
     }

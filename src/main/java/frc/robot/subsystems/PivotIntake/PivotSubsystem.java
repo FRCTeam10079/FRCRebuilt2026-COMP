@@ -23,7 +23,7 @@ public class PivotSubsystem extends SubsystemBase {
   public PivotSubsystem() {
     configurePivotMotor();
 
-    //pivotMotor.setPosition(IntakeConstants.Pivot.STOWED_POSITION);
+    // pivotMotor.setPosition(IntakeConstants.Pivot.STOWED_POSITION);
 
     // this stops pivot from trying to move immediately (set to pivot position)
     pivotSetpoint = getPivotPosition();

@@ -6,6 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
 
+/** Application entry point — do not modify except to change the Robot class if needed. */
 public final class Main {
   private Main() {}
 

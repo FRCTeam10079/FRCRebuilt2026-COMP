@@ -1,8 +1,13 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.IndexerSubsystem;
+import frc.robot.subsystems.indexer.IndexerSubsystem;
 
+/** Command that runs the indexer (feeder + spindexer) at specified RPMs while held. */
 public class RunIndexer extends Command {
 
   private final IndexerSubsystem m_indexer;
@@ -25,11 +30,6 @@ public class RunIndexer extends Command {
 
   @Override
   public void initialize() {
-    m_indexer.setSpeeds(m_feederRPM, m_spindexerRPM);
-  }
-
-  @Override
-  public void execute() {
     m_indexer.setSpeeds(m_feederRPM, m_spindexerRPM);
   }
 

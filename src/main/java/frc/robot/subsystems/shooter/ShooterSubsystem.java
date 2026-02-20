@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -52,7 +52,6 @@ public class ShooterSubsystem extends SubsystemBase {
   // loops before we report "ready". This prevents false positives from RPM
   // flickering.
   private int m_stabilityCounter = 0;
-  private static final int STABILITY_CYCLES_REQUIRED = 5; // ~100ms at 50Hz
 
   /** Creates a new ShooterSubsystem */
   public ShooterSubsystem() {
@@ -131,7 +130,8 @@ public class ShooterSubsystem extends SubsystemBase {
       double error = Math.abs(m_targetRPM - currentRPM);
       if (error <= ShooterConstants.SHOOTER_RPM_TOLERANCE) {
         // Within tolerance - increment counter (capped at required cycles)
-        m_stabilityCounter = Math.min(m_stabilityCounter + 1, STABILITY_CYCLES_REQUIRED);
+        m_stabilityCounter =
+            Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
       } else {
         // Outside tolerance - reset counter
         m_stabilityCounter = 0;
@@ -178,18 +178,20 @@ public class ShooterSubsystem extends SubsystemBase {
    *
    * @param rpm Target velocity in rotations per minute
    */
-  public void setTargetRPM(double rpm) {
-    m_targetRPM = Math.max(0, Math.min(rpm, ShooterConstants.SHOOTER_MAX_RPM));
-    m_isEnabled = rpm > 0;
+  private void setTargetRPM(double rpm) {
+    double clampedRPM = Math.max(0, Math.min(rpm, ShooterConstants.SHOOTER_MAX_RPM));
 
     // Reset stability counter when setpoint changes significantly
-    if (Math.abs(rpm - m_targetRPM) > ShooterConstants.SHOOTER_RPM_TOLERANCE) {
+    if (Math.abs(clampedRPM - m_targetRPM) > ShooterConstants.SHOOTER_RPM_TOLERANCE) {
       m_stabilityCounter = 0;
     }
+
+    m_targetRPM = clampedRPM;
+    m_isEnabled = clampedRPM > 0;
   }
 
   /** Enable the shooter at the pre-configured spin-up RPM */
-  public void spinUp() {
+  private void spinUp() {
     setTargetRPM(ShooterConstants.SHOOTER_SPINUP_RPM);
   }
 
@@ -212,7 +214,9 @@ public class ShooterSubsystem extends SubsystemBase {
    * @return true if shooter is spun up AND has been stable for sufficient time
    */
   public boolean isReady() {
-    return m_isEnabled && m_targetRPM > 0 && m_stabilityCounter >= STABILITY_CYCLES_REQUIRED;
+    return m_isEnabled
+        && m_targetRPM > 0
+        && m_stabilityCounter >= ShooterConstants.STABILITY_CYCLES_REQUIRED;
   }
 
   /**

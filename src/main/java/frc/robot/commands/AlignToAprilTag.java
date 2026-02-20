@@ -10,14 +10,16 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.*;
-import frc.robot.RobotStateMachine;
-import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.statemachine.DrivetrainMode;
+import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.vision.VisionSubsystem;
 
 /**
  * Command to align the robot to an AprilTag using vision
@@ -55,7 +57,6 @@ public class AlignToAprilTag extends Command {
 
   // Configuration from Constants
   private final double speed;
-  private final double rotationSpeed;
   private final double positionTolerance;
   private final double yawTolerance;
 
@@ -67,9 +68,6 @@ public class AlignToAprilTag extends Command {
   // Target AprilTag info
   private int targetTagID;
   private boolean tagDetected = false;
-
-  // Store initial tag to prevent switching during alignment
-  private Integer storedTagID = null;
 
   /**
    * Creates a new AlignToAprilTag command
@@ -87,7 +85,6 @@ public class AlignToAprilTag extends Command {
 
     // Get constants
     this.speed = DrivetrainConstants.ALIGN_SPEED_MPS;
-    this.rotationSpeed = DrivetrainConstants.ALIGN_ROTATION_SPEED;
     this.positionTolerance = DrivetrainConstants.POSITION_TOLERANCE_METERS;
     this.yawTolerance = DrivetrainConstants.YAW_TOLERANCE_RADIANS;
 
@@ -112,7 +109,7 @@ public class AlignToAprilTag extends Command {
     // This command requires the drivetrain
     addRequirements(drivetrain);
 
-    System.out.println("[AlignToAprilTag] Created for " + alignPosition + " position");
+    DataLogManager.log("[AlignToAprilTag] Created for " + alignPosition + " position");
   }
 
   /** Convenience constructor for CENTER alignment */
@@ -126,16 +123,13 @@ public class AlignToAprilTag extends Command {
     timer.restart();
 
     // Set state machine to vision tracking mode
-    stateMachine.setDrivetrainMode(RobotStateMachine.DrivetrainMode.VISION_TRACKING);
+    stateMachine.setDrivetrainMode(DrivetrainMode.VISION_TRACKING);
     stateMachine.setAlignedToTarget(false);
-
-    // Reset stored tag
-    storedTagID = null;
 
     // Get current robot pose
     Pose2d robotPose = drivetrain.getState().Pose;
     if (robotPose == null) {
-      System.out.println("[AlignToAprilTag] ERROR: Robot pose is null!");
+      DataLogManager.log("[AlignToAprilTag] ERROR: Robot pose is null!");
       tagDetected = false;
       return;
     }
@@ -160,35 +154,32 @@ public class AlignToAprilTag extends Command {
 
     // Check if a tag was found
     if (targetTagID == -1) {
-      System.out.println("[AlignToAprilTag] ERROR: No AprilTag found in map!");
+      DataLogManager.log("[AlignToAprilTag] ERROR: No AprilTag found in map!");
       tagDetected = false;
       return;
     }
 
-    System.out.println("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
+    DataLogManager.log("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
 
     // Check if Limelight sees a valid tag - prefer it over odometry
     int limelightTagID = vision.getTid();
     if (limelightTagID != 0 && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)) {
       targetTagID = limelightTagID;
-      System.out.println("[AlignToAprilTag] Using Limelight tag: " + targetTagID);
+      DataLogManager.log("[AlignToAprilTag] Using Limelight tag: " + targetTagID);
     } else if (limelightTagID == 0) {
-      System.out.println(
+      DataLogManager.log(
           "[AlignToAprilTag] Limelight has no target, using odometry closest tag: " + targetTagID);
     } else {
-      System.out.println("[AlignToAprilTag] Limelight tag "
+      DataLogManager.log("[AlignToAprilTag] Limelight tag "
           + limelightTagID
           + " not in map, using odometry: "
           + targetTagID);
     }
 
-    // Store the tag ID to prevent switching mid-alignment
-    storedTagID = targetTagID;
-
     // Get tag data
     double[] tagData = AprilTagMaps.aprilTagMap.get(targetTagID);
     if (tagData == null) {
-      System.out.println("[AlignToAprilTag] ERROR: Tag data is null for ID: " + targetTagID);
+      DataLogManager.log("[AlignToAprilTag] ERROR: Tag data is null for ID: " + targetTagID);
       tagDetected = false;
       return;
     }
@@ -240,7 +231,7 @@ public class AlignToAprilTag extends Command {
     pidY.setSetpoint(targetPose.getY());
     pidRotate.setSetpoint(targetPose.getRotation().getRadians());
 
-    System.out.println("[AlignToAprilTag] Target Pose: X="
+    DataLogManager.log("[AlignToAprilTag] Target Pose: X="
         + targetPose.getX()
         + ", Y="
         + targetPose.getY()
@@ -280,10 +271,6 @@ public class AlignToAprilTag extends Command {
     SmartDashboard.putNumber("AlignToAprilTag/ErrorX", pidX.getError());
     SmartDashboard.putNumber("AlignToAprilTag/ErrorY", pidY.getError());
     SmartDashboard.putNumber("AlignToAprilTag/ErrorYaw", Math.toDegrees(pidRotate.getError()));
-
-    // Check if we need to flip direction based on alliance side
-    // Red side tags (6-11) may need direction adjustment
-    boolean isRedSide = Constants.contains(new int[] {6, 7, 8, 9, 10, 11}, targetTagID);
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
@@ -351,16 +338,16 @@ public class AlignToAprilTag extends Command {
     drivetrain.setControl(stop);
 
     // Return to field-centric drive mode
-    stateMachine.setDrivetrainMode(RobotStateMachine.DrivetrainMode.FIELD_CENTRIC);
+    stateMachine.setDrivetrainMode(DrivetrainMode.FIELD_CENTRIC);
 
     // Set alignment status based on completion
     if (!interrupted && tagDetected) {
       stateMachine.setAlignedToTarget(true);
-      System.out.println(
+      DataLogManager.log(
           "[AlignToAprilTag] Completed successfully - aligned to tag " + targetTagID);
     } else {
       stateMachine.setAlignedToTarget(false);
-      System.out.println("[AlignToAprilTag] "
+      DataLogManager.log("[AlignToAprilTag] "
           + (interrupted ? "Interrupted" : "Failed")
           + " - alignment not confirmed");
     }

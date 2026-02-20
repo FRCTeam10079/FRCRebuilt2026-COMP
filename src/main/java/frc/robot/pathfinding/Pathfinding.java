@@ -1,7 +1,12 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 package frc.robot.pathfinding;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DataLogManager;
 import java.util.List;
 
 /**
@@ -37,7 +42,7 @@ public final class Pathfinding {
   /** Ensure the pathfinding system is initialized. Creates a LocalADStar if not set. */
   public static void ensureInitialized() {
     if (pathfinder == null) {
-      System.out.println("[Pathfinding] Initializing default LocalADStar pathfinder");
+      DataLogManager.log("[Pathfinding] Initializing default LocalADStar pathfinder");
       pathfinder = new LocalADStar();
     }
   }

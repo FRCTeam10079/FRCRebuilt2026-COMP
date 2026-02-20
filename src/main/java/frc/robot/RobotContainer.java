@@ -7,32 +7,24 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 
 import choreo.auto.AutoFactory;
-import choreo.auto.AutoRoutine;
-import choreo.auto.AutoTrajectory;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants.AlignPosition;
-import frc.robot.commands.AlignToAprilTag;
-import frc.robot.commands.EndIntakingCommand;
-import frc.robot.commands.IntakeFuelCommand;
-import frc.robot.commands.RunIndexer;
+import frc.robot.auto.AutoCommands;
+import frc.robot.auto.Autos;
+import frc.robot.controllers.DriverControls;
+import frc.robot.controllers.OperatorControls;
+import frc.robot.controllers.TestingBindings;
 import frc.robot.generated.TunerConstants;
 import frc.robot.pathfinding.Pathfinding;
-import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.IndexerSubsystem;
-import frc.robot.subsystems.PivotIntake.IntakeWheelsSubsystem;
-import frc.robot.subsystems.PivotIntake.PivotSubsystem;
-import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.indexer.IndexerSubsystem;
+import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
+import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
+import frc.robot.subsystems.vision.VisionSubsystem;
 
 /**
  * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
@@ -43,6 +35,7 @@ public class RobotContainer {
   // Controllers
   private final CommandXboxController m_driverController = new CommandXboxController(0);
   private final CommandXboxController m_operatorController = new CommandXboxController(1);
+  private final CommandXboxController m_testController = new CommandXboxController(2);
 
   // State Machine
   private final RobotStateMachine m_stateMachine = RobotStateMachine.getInstance();
@@ -63,13 +56,16 @@ public class RobotContainer {
   private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();
 
+  // Climber (stub — hardware not wired yet)
+  private final ClimberSubsystem climber = new ClimberSubsystem();
+
   private final Telemetry m_telemetry =
       new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
-  // ==================== AUTO CHOOSER ====================
-  private final SendableChooser<Command> autoChooser;
-  private final SendableChooser<String> choreoChooser = new SendableChooser<>();
+  // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
+  private final AutoCommands autoCommands;
+  private final Autos autos;
 
   public RobotContainer() {
     // Create vision subsystem (needs drivetrain reference for pose injection)
@@ -91,239 +87,18 @@ public class RobotContainer {
         drivetrain);
 
     // ==================== REGISTER NAMED COMMANDS ====================
-    // These MUST be registered BEFORE any PathPlanner autos/paths are created.
-    // Named commands are referenced by name in PathPlanner GUI auto files.
-    registerNamedCommands();
-    registerChoreoBindings();
+    // AutoCommands provides DRY factory methods used by both PathPlanner and
+    // Choreo.
+    // Must be registered BEFORE any PathPlanner autos/paths are created.
+    autoCommands = new AutoCommands(intake, pivot, indexer, shooter, drivetrain, vision);
+    autoCommands.registerPathPlannerCommands();
+    autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
-    // Build a SendableChooser populated with all PathPlanner autos in the
-    // deploy/pathplanner/autos directory. Falls back to AD* pathfind if no
-    // PathPlanner autos exist yet.
-    autoChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData("Auto Chooser", autoChooser);
-
-    configureChoreoChooser();
-    SmartDashboard.putData("Choreo Auto", choreoChooser);
+    autos = new Autos(drivetrain, choreoAutoFactory);
 
     // Configure button bindings
     configureBindings();
-  }
-
-  private void configureChoreoChooser() {
-    choreoChooser.setDefaultOption("RS", "RS");
-    choreoChooser.addOption("LS_Depot", "LS_Depot");
-    choreoChooser.addOption("LS_Neutral", "LS_Neutral");
-    choreoChooser.addOption("MS_Depot_Climb", "MS_Depot_Climb");
-    choreoChooser.addOption("None", "");
-    choreoChooser.addOption("Right_OutPost", "Right_OutPost");
-  }
-
-  /**
-   * Register all named commands for PathPlanner autonomous routines. These commands are triggered
-   * by event markers and comm and groups in PathPlanner auto files.
-   *
-   * <p>IMPORTANT: Must be called BEFORE any PathPlannerAuto or AutoBuilder.buildAutoChooser()
-   * calls.
-   */
-  private void registerNamedCommands() {
-    // ===== INTAKE WHEELS =====
-    // Run intake motors to collect game pieces (runs until cancelled)
-    NamedCommands.registerCommand(
-        "intake", Commands.startEnd(() -> intake.intakeIn(), () -> intake.stop(), intake));
-
-    // Reverse intake wheels (unjam / eject)
-    NamedCommands.registerCommand(
-        "intakeOut", Commands.startEnd(() -> intake.intakeOut(), () -> intake.stop(), intake));
-
-    // Stop intake wheels immediately
-    NamedCommands.registerCommand("stopIntake", Commands.runOnce(() -> intake.stop(), intake));
-
-    // ===== PIVOT =====
-    // Deploy the intake pivot arm to pickup position
-    NamedCommands.registerCommand(
-        "deployPivot",
-        Commands.runOnce(() -> pivot.deployPivot(), pivot)
-            .andThen(Commands.waitUntil(pivot::reachedSetpoint)));
-
-    // Stow the intake pivot arm
-    NamedCommands.registerCommand(
-        "stowPivot",
-        Commands.runOnce(() -> pivot.stowPivot(), pivot)
-            .andThen(Commands.waitUntil(pivot::reachedSetpoint)));
-
-    // ===== COMBINED INTAKE + PIVOT =====
-    // Deploy pivot + spin intake, ends when pivot is deployed
-    NamedCommands.registerCommand("intakeFuel", new IntakeFuelCommand(pivot, intake));
-
-    // Stow pivot + stop intake, ends when pivot is stowed
-    NamedCommands.registerCommand("endIntaking", new EndIntakingCommand(pivot, intake));
-
-    // ===== INDEXER =====
-    // Feed game pieces forward
-    NamedCommands.registerCommand(
-        "runIndexer",
-        new RunIndexer(
-            indexer,
-            Constants.IndexerConstants.kFeederTargetRPM,
-            Constants.IndexerConstants.kSpindexerTargetRPM));
-
-    // Reverse indexer to unjam
-    NamedCommands.registerCommand(
-        "reverseIndexer",
-        new RunIndexer(
-            indexer,
-            Constants.IndexerConstants.kFeederReverseRPM,
-            Constants.IndexerConstants.kSpindexerReverseRPM));
-
-    // Stop indexer immediately
-    NamedCommands.registerCommand("stopIndexer", Commands.runOnce(() -> indexer.stop(), indexer));
-
-    // ===== SHOOTER =====
-    // Spin up flywheel to target RPM and hold
-    NamedCommands.registerCommand(
-        "spinUpShooter", shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM));
-
-    // Stop shooter immediately
-    NamedCommands.registerCommand("stopShooter", Commands.runOnce(() -> shooter.stop(), shooter));
-
-    // Shoot: spin up shooter, wait until ready, then feed with indexer
-    NamedCommands.registerCommand(
-        "shoot",
-        shooter
-            .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-            .alongWith(Commands.waitUntil(shooter::isReady)
-                .andThen(new RunIndexer(
-                        indexer,
-                        Constants.IndexerConstants.kFeederTargetRPM,
-                        Constants.IndexerConstants.kSpindexerTargetRPM)
-                    .withTimeout(1.0))));
-
-    // ===== VISION ALIGNMENT =====
-    // Align to AprilTag in various positions (run while held)
-    NamedCommands.registerCommand(
-        "alignCenter", new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
-    NamedCommands.registerCommand(
-        "alignLeft", new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT));
-    NamedCommands.registerCommand(
-        "alignRight", new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT));
-
-    // ===== STOP ALL =====
-    // Stop all mechanisms at once
-    NamedCommands.registerCommand(
-        "stopAll",
-        Commands.runOnce(
-            () -> {
-              intake.stop();
-              indexer.stop();
-              shooter.stop();
-            },
-            intake,
-            indexer,
-            shooter));
-
-    // ===== ALIASES (match capitalized names used in PathPlanner auto files) =====
-    // Right_OutPost.auto uses "Intake down", "Shoot", "Intake"
-    NamedCommands.registerCommand("Intake down", new IntakeFuelCommand(pivot, intake));
-    NamedCommands.registerCommand(
-        "Shoot",
-        shooter
-            .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-            .alongWith(Commands.waitUntil(shooter::isReady)
-                .andThen(new RunIndexer(
-                        indexer,
-                        Constants.IndexerConstants.kFeederTargetRPM,
-                        Constants.IndexerConstants.kSpindexerTargetRPM)
-                    .withTimeout(1.0))));
-    NamedCommands.registerCommand(
-        "Intake", Commands.startEnd(() -> intake.intakeIn(), () -> intake.stop(), intake));
-
-    System.out.println("[RobotContainer] Named commands registered for PathPlanner");
-  }
-
-  /**
-   * Register Choreo global marker bindings for subsystem actions.
-   *
-   * <p>These bindings are evaluated from event markers inside Choreo trajectories when using
-   * AutoRoutine APIs.
-   */
-  private void registerChoreoBindings() {
-    choreoAutoFactory
-        // Intake wheels
-        .bind("intake", Commands.startEnd(() -> intake.intakeIn(), () -> intake.stop(), intake))
-        .bind("intakeOut", Commands.startEnd(() -> intake.intakeOut(), () -> intake.stop(), intake))
-        .bind("stopIntake", Commands.runOnce(() -> intake.stop(), intake))
-        // Pivot
-        .bind(
-            "deployPivot",
-            Commands.runOnce(() -> pivot.deployPivot(), pivot)
-                .andThen(Commands.waitUntil(pivot::reachedSetpoint)))
-        .bind(
-            "stowPivot",
-            Commands.runOnce(() -> pivot.stowPivot(), pivot)
-                .andThen(Commands.waitUntil(pivot::reachedSetpoint)))
-        // Combined intake + pivot
-        .bind("intakeFuel", new IntakeFuelCommand(pivot, intake))
-        .bind("endIntaking", new EndIntakingCommand(pivot, intake))
-        // Indexer
-        .bind(
-            "runIndexer",
-            new RunIndexer(
-                indexer,
-                Constants.IndexerConstants.kFeederTargetRPM,
-                Constants.IndexerConstants.kSpindexerTargetRPM))
-        .bind(
-            "reverseIndexer",
-            new RunIndexer(
-                indexer,
-                Constants.IndexerConstants.kFeederReverseRPM,
-                Constants.IndexerConstants.kSpindexerReverseRPM))
-        .bind("stopIndexer", Commands.runOnce(() -> indexer.stop(), indexer))
-        // Shooter
-        .bind(
-            "spinUpShooter", shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM))
-        .bind("stopShooter", Commands.runOnce(() -> shooter.stop(), shooter))
-        .bind(
-            "shoot",
-            shooter
-                .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-                .alongWith(Commands.waitUntil(shooter::isReady)
-                    .andThen(new RunIndexer(
-                            indexer,
-                            Constants.IndexerConstants.kFeederTargetRPM,
-                            Constants.IndexerConstants.kSpindexerTargetRPM)
-                        .withTimeout(1.0))))
-        // Vision alignment
-        .bind("alignCenter", new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER))
-        .bind("alignLeft", new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT))
-        .bind("alignRight", new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT))
-        // Stop all
-        .bind(
-            "stopAll",
-            Commands.runOnce(
-                () -> {
-                  intake.stop();
-                  indexer.stop();
-                  shooter.stop();
-                },
-                intake,
-                indexer,
-                shooter))
-        // Aliases matching auto file names
-        .bind("Intake down", new IntakeFuelCommand(pivot, intake))
-        .bind(
-            "Shoot",
-            shooter
-                .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-                .alongWith(Commands.waitUntil(shooter::isReady)
-                    .andThen(new RunIndexer(
-                            indexer,
-                            Constants.IndexerConstants.kFeederTargetRPM,
-                            Constants.IndexerConstants.kSpindexerTargetRPM)
-                        .withTimeout(1.0))))
-        .bind("Intake", Commands.startEnd(() -> intake.intakeIn(), () -> intake.stop(), intake));
-
-    System.out.println("[RobotContainer] Marker bindings registered for Choreo");
   }
 
   /**
@@ -331,166 +106,22 @@ public class RobotContainer {
    * planning thread.
    */
   private void initializePathfinding() {
-    System.out.println("[RobotContainer] Initializing pathfinding system...");
+    DataLogManager.log("[RobotContainer] Initializing pathfinding system...");
     Pathfinding.ensureInitialized();
-    System.out.println("[RobotContainer] Pathfinding system ready");
+    DataLogManager.log("[RobotContainer] Pathfinding system ready");
   }
 
   /**
-   * Configure button bindings for driver and operator controllers This is where you bind controller
-   * buttons to commands
+   * Configure button bindings for driver and operator controllers. Delegates to dedicated binding
+   * classes for clean separation.
    */
   private void configureBindings() {
-    // ==================== DRIVER CONTROLS ====================
-    drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
-        () -> m_driverController.getLeftY(), // Forward/backward
-        () -> m_driverController.getLeftX(), // Left/right strafe
-        () -> -m_driverController.getRightX(), // Rotation
-        Constants.DrivetrainConstants.MAX_SPEED_MPS,
-        Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
-
-    // ==================== VISION ALIGNMENT ====================
-    // A button - Align to AprilTag (CENTER position)
-    m_driverController.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
-
-    // Left Bumper - Align to AprilTag (LEFT position)
-    m_driverController
-        .leftBumper()
-        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT));
-
-    // Right Bumper - Align to AprilTag (RIGHT position)
-    m_driverController
-        .rightBumper()
-        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT));
-
-    // Y button - Reset Field Heading
-    // Resets the robot's heading to the alliance-correct forward direction
-    // (0 deg for Blue, 180 deg for Red) while preserving XY position.
-    // This does NOT reset vision localization - MT2 immediately adapts
-    // to the new heading, so vision pose estimation stays accurate.
-    m_driverController.y().onTrue(drivetrain.runOnce(() -> drivetrain.resetFieldHeading()));
-    // ==================== INDEXER CONTROLS ====================
-
-    // Right Trigger, Run Indexer Forward (Intake/Feed)
-    // Uses the new RPM constants for Feeder and Spindexer
-    m_driverController
-        .rightTrigger(0.5)
-        .whileTrue(new RunIndexer(
-                indexer,
-                Constants.IndexerConstants.kFeederTargetRPM,
-                Constants.IndexerConstants.kSpindexerTargetRPM)
-            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
-
-    // B Button - Run Indexer Reverse (Unjam)
-    m_driverController
-        .b()
-        .whileTrue(new RunIndexer(
-                indexer,
-                Constants.IndexerConstants.kFeederReverseRPM,
-                Constants.IndexerConstants.kSpindexerReverseRPM)
-            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
-    // ==================== SLOW MODE ====================
-    // Left trigger - Hold for slow mode (useful for precise positioning/scoring)
-    m_driverController
-        .leftTrigger(0.5)
-        .whileTrue(Commands.startEnd(
-            () -> {
-              drivetrain.setTeleopVelocityCoefficient(
-                  Constants.DrivetrainConstants.SLOW_MODE_COEFFICIENT);
-              drivetrain.setRotationVelocityCoefficient(
-                  Constants.DrivetrainConstants.SLOW_MODE_COEFFICIENT);
-            },
-            () -> {
-              drivetrain.setTeleopVelocityCoefficient(
-                  Constants.DrivetrainConstants.NORMAL_SPEED_COEFFICIENT);
-              drivetrain.setRotationVelocityCoefficient(
-                  Constants.DrivetrainConstants.NORMAL_SPEED_COEFFICIENT);
-            }));
-
-    // ==================== OPERATOR CONTROLS ====================
-    // TODO: Add intake controls
-    // Intake In
-    m_operatorController
-        .a()
-        .toggleOnTrue(new StartEndCommand(() -> intake.intakeIn(), () -> intake.stop(), intake));
-    // Intake Out
-    // m_operatorController
-    // .a()
-    // .toggleOnTrue(new StartEndCommand(() -> intake.intakeOut(), () ->
-    // intake.stop(),
-    // intake));
-    // // Deploy Pivot Controls
-    m_operatorController
-        .rightBumper()
-        .toggleOnTrue(new StartEndCommand(
-            () -> pivot.deployPivot(), // action when button pressed
-            () -> {}, // nothing special on release
-            pivot));
-    // Stow Pivot Controls
-    m_operatorController
-        .leftBumper()
-        .toggleOnTrue(new StartEndCommand(
-            () -> pivot.stowPivot(), // action when button pressed
-            () -> {}, // nothing special on release
-            pivot));
-    // TODO: Add climb controls
-
-    // ==================== PATHFINDING CONTROLS ====================
-    // X button - Pathfind to AprilTag 10 (Red Alliance Hub Face)
-    // Uses AD* algorithm to find safe path around obstacles
-    // m_driverController.x().whileTrue(drivetrain.pathfindToAprilTag10());
-
-    // NOTE: Pathfind to AprilTag 18 moved to operator POV-Up to avoid
-    // conflicting with driver B button (reverse indexer).
-    m_operatorController.povUp().whileTrue(drivetrain.pathfindToAprilTag(18));
-
-    // ==================== OPERATOR (TEST) CONTROLS ====================
-    // Heading Lock to 0 degrees
-    // Hold X to lock heading to 0 degrees (facing opponent alliance wall)
-    m_operatorController
-        .x()
-        .whileTrue(drivetrain.headingLockedDriveCommand(
-            () -> m_driverController.getLeftY(),
-            () -> m_driverController.getLeftX(),
-            0.0, // Lock to 0 degrees
-            Constants.DrivetrainConstants.MAX_SPEED_MPS,
-            Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
-
-    // Heading Lock to face AprilTag
-    // Hold right trigger to lock heading toward visible AprilTag
-    // Uses limelight TX to compute target heading dynamically
-    m_operatorController
-        .rightTrigger(0.5)
-        .whileTrue(drivetrain.headingLockedDriveCommand(
-            () -> m_driverController.getLeftY(),
-            () -> m_driverController.getLeftX(),
-            () -> computeAprilTagHeading(), // Dynamic heading from Limelight
-            Constants.DrivetrainConstants.MAX_SPEED_MPS,
-            Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
-
-    // Shooter Spin-Up Test
-    // Hold Left Trigger to spin up shooter - controller will rumble when stable
-    // This is so that we can test the debounced isReady() logic
-    m_operatorController
-        .leftTrigger()
-        .whileTrue(shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM));
-
-    // Trigger-based rumble: rumble controller when shooter is ready
-    new Trigger(shooter::isReady)
-        .and(m_operatorController.leftTrigger()) // Only rumble while Left Trigger is held
-        .onTrue(Commands.runOnce(
-            () -> m_operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.8)))
-        .onFalse(Commands.runOnce(
-            () -> m_operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
-
-    // ==================== STATE MACHINE EXAMPLES ====================
-    // Example: Manual state transitions (add your actual bindings)
-    // m_driverController.y().onTrue(Commands.runOnce(() ->
-    // m_stateMachine.setGameState(RobotStateMachine.GameState.AIMING_AT_HUB)));
-
-    // Example: Hub shift state can be set based on FMS data or operator input
-    // m_operatorController.start().onTrue(Commands.runOnce(() ->
-    // m_stateMachine.setHubShiftState(RobotStateMachine.HubShiftState.MY_HUB_ACTIVE)));
+    DriverControls.configure(
+        m_driverController, drivetrain, vision, intake, pivot, shooter, indexer, m_stateMachine);
+    OperatorControls.configure(
+        m_operatorController, intake, pivot, indexer, climber, m_stateMachine);
+    TestingBindings.configure(
+        m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }
 
   /** Get the driver controller for use in commands/subsystems */
@@ -509,49 +140,11 @@ public class RobotContainer {
   }
 
   /**
-   * Returns the autonomous command to run during autonomous period. Uses the auto chooser from
-   * SmartDashboard if a PathPlanner auto is selected, otherwise falls back to AD* pathfinding.
+   * Returns the autonomous command selected via SmartDashboard.
+   *
+   * @see Autos#getSelected()
    */
   public Command getAutonomousCommand() {
-    String selectedChoreoTrajectory = choreoChooser.getSelected();
-    if (selectedChoreoTrajectory != null && !selectedChoreoTrajectory.isBlank()) {
-      AutoRoutine routine = choreoAutoFactory.newRoutine("SelectedChoreo");
-      AutoTrajectory trajectory = routine.trajectory(selectedChoreoTrajectory);
-      routine.active().onTrue(Commands.sequence(trajectory.resetOdometry(), trajectory.cmd()));
-      return routine.cmd().withName("Choreo: " + selectedChoreoTrajectory);
-    }
-
-    Command selectedAuto = autoChooser.getSelected();
-
-    // If a PathPlanner auto was selected (not the default "none"), use it
-    if (selectedAuto != null) {
-      return selectedAuto;
-    }
-
-    // Fallback: use AD* pathfinding to AprilTag 10 (Red Alliance Hub)
-    Pathfinding.setAutoObstacles();
-    return drivetrain.pathfindToAprilTag10().withName("Fallback: Pathfind to Tag 10");
-  }
-
-  /**
-   * Compute the target heading to face the currently visible AprilTag.
-   *
-   * <p>If a tag is visible, returns current heading - TX (to center the tag). If no tag visible,
-   * returns the current heading (maintain position).
-   *
-   * <p>This is used by the heading lock test to dynamically track AprilTags.
-   */
-  private double computeAprilTagHeading() {
-    if (vision.hasTarget()) {
-      // Target heading = current heading - TX (TX positive means target to the right)
-      double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-      double tx = vision.getTx();
-      double targetHeading = currentHeading - tx;
-      return MathUtil.inputModulus(targetHeading, -180.0, 180.0);
-    } else {
-      // No tag visible - maintain current heading
-      double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-      return MathUtil.inputModulus(currentHeading, -180.0, 180.0);
-    }
+    return autos.getSelected();
   }
 }

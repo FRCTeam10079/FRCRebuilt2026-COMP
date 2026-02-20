@@ -6,9 +6,12 @@ package frc.robot;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.statemachine.MatchState;
+import frc.robot.statemachine.RobotStateMachine;
 
 /**
  * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
@@ -23,6 +26,10 @@ public class Robot extends TimedRobot {
   private final RobotStateMachine m_stateMachine;
 
   public Robot() {
+    // Start structured data logging — logs are written to /home/lvuser/logs on the
+    // roboRIO.
+    DataLogManager.start();
+
     m_robotContainer = new RobotContainer();
     m_stateMachine = RobotStateMachine.getInstance();
 
@@ -34,7 +41,7 @@ public class Robot extends TimedRobot {
           .getStringArrayTopic("streams")
           .publish();
       pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
-      System.out.println(llName + " stream URL published to NetworkTables");
+      DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }
 
@@ -50,7 +57,7 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledInit() {
     // State machine transition: Robot disabled
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.DISABLED);
+    m_stateMachine.setMatchState(MatchState.DISABLED);
   }
 
   @Override
@@ -63,13 +70,13 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledExit() {
     // Leaving disabled state
-    System.out.println("Exiting disabled mode...");
+    DataLogManager.log("Exiting disabled mode...");
   }
 
   @Override
   public void autonomousInit() {
     // State machine transition: Autonomous starting
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_INIT);
+    m_stateMachine.setMatchState(MatchState.AUTO_INIT);
 
     // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
     // Heading is sent every frame in VisionSubsystem.periodic().
@@ -80,7 +87,7 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
       // Transition to running state
-      m_stateMachine.setMatchState(RobotStateMachine.MatchState.AUTO_RUNNING);
+      m_stateMachine.setMatchState(MatchState.AUTO_RUNNING);
     }
   }
 
@@ -92,13 +99,13 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousExit() {
     // Autonomous ending
-    System.out.println("Autonomous period ended");
+    DataLogManager.log("Autonomous period ended");
   }
 
   @Override
   public void teleopInit() {
     // State machine transition: Teleop starting
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_INIT);
+    m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
 
     // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
     // Heading is sent every frame in VisionSubsystem.periodic().
@@ -109,7 +116,7 @@ public class Robot extends TimedRobot {
     }
 
     // Transition to running state
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.TELEOP_RUNNING);
+    m_stateMachine.setMatchState(MatchState.TELEOP_RUNNING);
   }
 
   @Override
@@ -120,18 +127,18 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopExit() {
     // Teleop ending
-    System.out.println("Teleop period ended");
+    DataLogManager.log("Teleop period ended");
   }
 
   @Override
   public void testInit() {
     // State machine transition: Test mode starting
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.TEST_INIT);
+    m_stateMachine.setMatchState(MatchState.TEST_INIT);
 
     CommandScheduler.getInstance().cancelAll();
 
     // Transition to running state
-    m_stateMachine.setMatchState(RobotStateMachine.MatchState.TEST_RUNNING);
+    m_stateMachine.setMatchState(MatchState.TEST_RUNNING);
   }
 
   @Override
@@ -142,7 +149,7 @@ public class Robot extends TimedRobot {
   @Override
   public void testExit() {
     // Test mode ending
-    System.out.println("Test mode ended");
+    DataLogManager.log("Test mode ended");
   }
 
   @Override

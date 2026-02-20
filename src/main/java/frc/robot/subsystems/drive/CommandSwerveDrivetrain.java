@@ -1,4 +1,8 @@
-package frc.robot.subsystems;
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+package frc.robot.subsystems.drive;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -21,6 +25,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -28,8 +33,9 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
-import frc.robot.subsystems.SwerveHeadingController.HeadingControllerState;
+import frc.robot.subsystems.drive.SwerveHeadingController.HeadingControllerState;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
@@ -51,17 +57,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   /* Keep track if we've ever applied the operator perspective before or not */
   private boolean m_hasAppliedOperatorPerspective = false;
 
-  /*
-   * Skew compensation scalar Compensates for rotational drift during translation
-   * - negative value corrects the direction the robot drifts when both
-   * translating and rotating
-   */
-  private static final double SKEW_COMPENSATION_SCALAR = -0.03;
-
-  /*
-   * Controller deadband Standard deadband to eliminate joystick drift
-   */
-  private static final double CONTROLLER_DEADBAND = 0.1;
+  // Skew compensation and deadband sourced from Constants
+  private static final double SKEW_COMPENSATION_SCALAR =
+      Constants.DrivetrainConstants.SKEW_COMPENSATION_SCALAR;
+  private static final double CONTROLLER_DEADBAND = Constants.DrivetrainConstants.DEADBAND_PERCENT;
 
   /*
    * Velocity coefficients for dynamic speed control These allow runtime
@@ -81,9 +80,18 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       new SwerveRequest.ApplyRobotSpeeds();
 
   // ==================== CHOREO TRAJECTORY FOLLOWER ====================
-  private final PIDController m_choreoXController = new PIDController(7.0, 0.0, 0.0);
-  private final PIDController m_choreoYController = new PIDController(7.0, 0.0, 0.0);
-  private final PIDController m_choreoHeadingController = new PIDController(5.0, 0.0, 0.0);
+  private final PIDController m_choreoXController = new PIDController(
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KP,
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KI,
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KD);
+  private final PIDController m_choreoYController = new PIDController(
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KP,
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KI,
+      Constants.DrivetrainConstants.CHOREO_TRANSLATION_KD);
+  private final PIDController m_choreoHeadingController = new PIDController(
+      Constants.DrivetrainConstants.CHOREO_HEADING_KP,
+      Constants.DrivetrainConstants.CHOREO_HEADING_KI,
+      Constants.DrivetrainConstants.CHOREO_HEADING_KD);
 
   /* Swerve requests to apply during SysId characterization */
   private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization =
@@ -113,7 +121,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    * SysId routine for characterizing steer. This is used to find PID gains for
    * the steer motors.
    */
-  private final SysIdRoutine F = new SysIdRoutine(
+  private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
       new SysIdRoutine.Config(
           null, // Use default ramp rate (1 V/s)
           Volts.of(7), // Use dynamic voltage of 7 V
@@ -154,7 +162,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // pose estimator's heading matches our desired heading. XY is preserved.
     resetPose(correctedPose);
 
-    System.out.println("[Heading] Reset field heading: "
+    DataLogManager.log("[Heading] Reset field heading: "
         + currentPose.getRotation().getDegrees() + "° -> "
         + allianceForwardHeading.getDegrees() + "° (XY preserved: "
         + String.format("%.2f, %.2f", currentPose.getX(), currentPose.getY()) + ")");
@@ -276,9 +284,15 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())),
           new PPHolonomicDriveController(
               // PID constants for translation
-              new PIDConstants(7, 0, 0),
+              new PIDConstants(
+                  Constants.DrivetrainConstants.PP_TRANSLATION_KP,
+                  Constants.DrivetrainConstants.PP_TRANSLATION_KI,
+                  Constants.DrivetrainConstants.PP_TRANSLATION_KD),
               // PID constants for rotation
-              new PIDConstants(5, 0, 0)),
+              new PIDConstants(
+                  Constants.DrivetrainConstants.PP_ROTATION_KP,
+                  Constants.DrivetrainConstants.PP_ROTATION_KI,
+                  Constants.DrivetrainConstants.PP_ROTATION_KD)),
           config,
           // Assume the path needs to be flipped for Red vs Blue, this is normally the
           // case

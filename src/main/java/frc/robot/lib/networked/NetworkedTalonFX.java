@@ -1,4 +1,8 @@
-package frc.robot.lib.NetworkedLib;
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
+package frc.robot.lib.networked;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -15,7 +19,8 @@ public class NetworkedTalonFX extends TalonFX {
 
   private String name;
 
-  // networked prefix to just to avoid ambigiouity between actual values and their networked
+  // networked prefix to just to avoid ambigiouity between actual values and their
+  // networked
   // partners
   private NetworkedDouble networkedKA; // acceleration gain
   private NetworkedDouble networkedkD; // derivative gain
@@ -28,19 +33,6 @@ public class NetworkedTalonFX extends TalonFX {
   private TalonFXConfiguration activeConfig;
 
   /**
-   * Drop-in constructor for default TalonFX motor
-   *
-   * @param ID motor ID
-   * @param canbus canbus name
-   */
-  public NetworkedTalonFX(int ID, String canbus) {
-    super(ID, canbus);
-    instanceCount++;
-
-    this.name = "NetworkedTalonFX_" + instanceCount;
-  }
-
-  /**
    * Drop-in constructor for default TalonFX motor (using CANBus object)
    *
    * @param ID motor ID
@@ -51,20 +43,6 @@ public class NetworkedTalonFX extends TalonFX {
     instanceCount++;
 
     this.name = "NetworkedTalonFX_" + instanceCount;
-  }
-
-  /**
-   * Constructor with name setter
-   *
-   * @param ID motor ID
-   * @param canbus canbus name
-   * @param name motor name for Network Tables
-   */
-  public NetworkedTalonFX(int ID, String canbus, String name) {
-    super(ID, canbus);
-    instanceCount++;
-
-    this.name = name;
   }
 
   /**
@@ -139,9 +117,11 @@ public class NetworkedTalonFX extends TalonFX {
           .withKS(networkedKS.get())
           .withKV(networkedKV.get());
 
-      // the reason we arent directly applying slot0Configs is because it leaves open more stuff to
+      // the reason we arent directly applying slot0Configs is because it leaves open
+      // more stuff to
       // add to the networked possiblities later.
-      // in the future we could network other parts of the config (like current limits!)
+      // in the future we could network other parts of the config (like current
+      // limits!)
 
       this.getConfigurator().apply(this.activeConfig);
     }

@@ -14,309 +14,31 @@ public final class Constants {
 
   public static final CANBus kCANBus = new CANBus("rio");
 
-  /** Game timing constants for REBUILT */
-  public static final class GameConstants {
-    // Match period durations (seconds)
-    public static final double AUTO_DURATION = 20.0; // 0:00 - 0:20
-    public static final double TELEOP_DURATION = 150.0; // 2:30 total
-    public static final double ENDGAME_THRESHOLD = 30.0; // Last 30 seconds
+  public static final class GameConstants extends frc.robot.constants.GameConstants {}
 
-    // Hub Shift timing (transition period where both hubs are active)
-    public static final double TRANSITION_START_TIME = 150.0; // Match time when transition starts
-    public static final double TRANSITION_END_TIME = 140.0; // Match time when transition ends
-    public static final double TRANSITION_DURATION = 10.0; // 10 second transition period
+  public static final class ControllerConstants extends frc.robot.constants.ControllerConstants {}
 
-    // Fuel constants
-    public static final int PRELOAD_FUEL_LIMIT = 8;
-    // NO max capacity during gameplay - robots can hoard unlimited fuel!
+  public static final class DrivetrainConstants extends frc.robot.constants.DrivetrainConstants {}
 
-    // Climb scoring
-    public static final int CLIMB_L1_POINTS = 15; // Level 1 climb points
-    public static final int CLIMB_L2_POINTS = 30; // Level 2 climb points (estimated)
-    public static final int CLIMB_L3_POINTS = 50; // Level 3 climb points (estimated)
+  public static final class IntakeConstants extends frc.robot.constants.IntakeConstants {}
 
-    // Height restriction during climb (inches)
-    public static final double MAX_HEIGHT_DURING_CLIMB = 30.0;
-  }
+  public static final class ShooterConstants extends frc.robot.constants.ShooterConstants {}
 
-  /** Controller port assignments */
-  public static final class ControllerConstants {
-    public static final int DRIVER_CONTROLLER_PORT = 0;
-    public static final int OPERATOR_CONTROLLER_PORT = 1;
+  public static final class ClimberConstants extends frc.robot.constants.ClimberConstants {}
 
-    // Deadband for joystick inputs
-    public static final double JOYSTICK_DEADBAND = 0.1;
-  }
+  public static final class HeadingControllerConstants
+      extends frc.robot.constants.HeadingControllerConstants {}
 
-  /** Drivetrain constants */
-  public static final class DrivetrainConstants {
-    // ==================== SPEEDS ====================
-    // These are the ABSOLUTE maximums - derived from TunerConstants.kSpeedAt12Volts
-    // The robot physically cannot exceed these values
-    public static final double MAX_SPEED_MPS =
-        10.0; // The theoretical possible maximum translation speed is 10.81
-    // m/s - from TunerConstants
-    public static final double MAX_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0; // 360 deg/s
-    // ==================== SPEED COEFFICIENTS ====================
-    // Runtime multipliers applied to MAX_SPEED - these can be changed dynamically
-    // Use: swerve.driveFieldCentricSmooth(..., MAX_SPEED_MPS *
-    // NORMAL_SPEED_COEFFICIENT, ...)
-    public static final double NORMAL_SPEED_COEFFICIENT = 1.0; // Full speed
-    public static final double SLOW_MODE_COEFFICIENT = 0.7; // Precision mode (70%)
-    public static final double SCORING_SPEED_COEFFICIENT = 0.5; // Slow for scoring
+  public static final class StateMachineConstants
+      extends frc.robot.constants.StateMachineConstants {}
 
-    // ==================== DEADBAND ====================
-    public static final double DEADBAND_PERCENT = 0.1;
+  public static final class VisionConstants extends frc.robot.constants.VisionConstants {}
 
-    // Vision alignment tolerances
-    public static final double POSITION_TOLERANCE_METERS = 0.02; // 2cm position tolerance
-    public static final double YAW_TOLERANCE_RADIANS = Math.PI / 32; // ~5.6 degrees
+  public static final class IndexerConstants extends frc.robot.constants.IndexerConstants {}
 
-    // Alignment PID values
-    public static final double ALIGN_PID_KP = 8.0;
-    public static final double ALIGN_PID_KI = 0.0;
-    public static final double ALIGN_PID_KD = 0.01;
-    public static final double ALIGN_ROTATION_KP = 3.0;
-    public static final double ALIGN_ROTATION_KD = 0.02;
+  public static final class PathfindingPIDConstants
+      extends frc.robot.constants.PathfindingPIDConstants {}
 
-    // Movement speeds during alignment (m/s, rad/s)
-    public static final double ALIGN_SPEED_MPS = 3.5;
-    public static final double ALIGN_ROTATION_SPEED = 0.9;
-
-    // Alignment offset distances from AprilTag (meters)
-    // These define where the robot stops relative to the tag
-    public static final double ALIGN_OFFSET_X_LEFT = -0.41; // Back from tag for LEFT
-    public static final double ALIGN_OFFSET_Y_LEFT = 0.13; // Left of tag center
-    public static final double ALIGN_OFFSET_X_RIGHT = -0.41; // Back from tag for RIGHT
-    public static final double ALIGN_OFFSET_Y_RIGHT = -0.23; // Right of tag center
-    public static final double ALIGN_OFFSET_X_CENTER = -0.50; // Back from tag for CENTER
-    public static final double ALIGN_OFFSET_Y_CENTER = 0.0; // Centered on tag
-  }
-
-  /** Intake Pivot/Wheels constants */
-  public static final class IntakeConstants {
-    public static final class Pivot {
-      public static final int MOTOR_ID = 24;
-
-      public static final double INTAKE_POSITION = 0;
-      public static final double STOWED_POSITION = -5.5;
-
-      public static final int SUPPLY_CURRENT_LIMIT = 40;
-      public static final int STATOR_CURRENT_LIMIT = 80;
-
-      // public static final int SENSOR_MECHANISM_RATIO = 41;
-
-      public static final double DEPLOY_TOLERANCE = 0.1;
-
-      // TUNE ALL:
-      public static final double KA = 0;
-      public static final double KS = 0.4;
-      public static final double KG = 0;
-      public static final double KP = 1.4;
-      public static final double KI = 0.05;
-      public static final double KD = 0.1;
-      public static final double KV = 0;
-    }
-
-    public static final class Wheels {
-      public static final int MOTOR_ID = 19;
-
-      public static final int SUPPLY_CURRENT_LIMIT = 40;
-      public static final int STATOR_CURRENT_LIMIT = 80;
-
-      // extremely slow for testing, ramp up for actual
-      public static final double INTAKE_IN_RPM = 2000;
-      public static final double INTAKE_OUT_RPM = -2000;
-
-      // TUNE ALL: (SysId could work well here, though it's not that important to be
-      // super accurate)
-      public static final double KA = 0;
-      public static final double KS = 0.1;
-      public static final double KP = 0.3;
-      public static final double KI = 0;
-      public static final double KD = 0;
-      public static final double KV = 0.5;
-    }
-  }
-
-  /**
-   * Shooter constants
-   *
-   * <p>Hardware: 2x Kraken X60 (TalonFX) on CANivore bus Configuration: Counter-rotating flywheels
-   * (slave inverted)
-   */
-  public static final class ShooterConstants {
-    // CAN IDs for shooter motors
-    public static final int MASTER_MOTOR_ID = 7; // TODO: Set actual CAN ID
-    public static final int SLAVE_MOTOR_ID = 20; // TODO: Set actual CAN ID
-
-    // Target RPM values
-    public static final double SHOOTER_IDLE_RPM = 0;
-    public static final double SHOOTER_SPINUP_RPM = 2200; // Default spin-up target
-    public static final double SHOOTER_MAX_RPM = 5500; // Kraken X60 free speed ~6000 RPM
-
-    // RPM tolerance for "at setpoint" check
-    // 1678 used 500 RPM - starting with 150 cuz Krakens are more consistent at that
-    // speed
-    public static final double SHOOTER_RPM_TOLERANCE = 150;
-
-    // Velocity PID gains
-    // Units: kS in Volts, kV in Volts per RPS, kP in Volts per RPS error
-    // These values need to be tuned!
-    public static final double SHOOTER_KS = 0.15; // Static friction compensation
-    public static final double SHOOTER_KV = 0.12; // Velocity feedforward (main term)
-    public static final double SHOOTER_KP = 0.5; // Proportional gain for error correction
-
-    // Feeder speed when firing
-    public static final double FEEDER_SPEED = 1.0;
-  }
-
-  /** Climber constants (placeholder) */
-  public static final class ClimberConstants {
-    // Climber arm positions (encoder units - fill in with actual values later)
-    public static final double CLIMBER_STOWED_POSITION = 0;
-    public static final double CLIMBER_L1_REACH_POSITION = 50;
-    public static final double CLIMBER_L2_REACH_POSITION = 80;
-    public static final double CLIMBER_L3_REACH_POSITION = 100;
-
-    // Climber motor speeds
-    public static final double CLIMBER_EXTEND_SPEED = 0.7;
-    public static final double CLIMBER_RETRACT_SPEED = -0.8;
-  }
-
-  /**
-   * Heading Controller constants
-   *
-   * <p>These control the swerve heading lock behavior. SNAP mode: Higher gains for quickly rotating
-   * to a target MAINTAIN mode: Lower gains for holding position with minimal oscillation
-   */
-  public static final class HeadingControllerConstants {
-    // SNAP mode gains - aggressive to quickly reach target heading
-    // Output is normalized (-1 to 1), so these are effectively output per degree of
-    // error
-    public static final double SNAP_KP = 0.02; // 254 used 0.05 (degrees output per degree error)
-    public static final double SNAP_KI = 0.0;
-    public static final double SNAP_KD = 0.001;
-
-    // MAINTAIN mode gains - gentle to hold position without oscillation
-    public static final double MAINTAIN_KP = 0.01; // 254 used 0.01
-    public static final double MAINTAIN_KI = 0.0;
-    public static final double MAINTAIN_KD = 0.0005;
-
-    // Heading tolerance for "at goal" detection (degrees)
-    public static final double HEADING_TOLERANCE_DEGREES = 2.0;
-  }
-
-  /** State machine timing constants */
-  public static final class StateMachineConstants {
-    // Rumble feedback durations (seconds)
-    public static final double RUMBLE_SHORT = 0.15;
-    public static final double RUMBLE_MEDIUM = 0.3;
-    public static final double RUMBLE_LONG = 0.5;
-    public static final double RUMBLE_EXTRA_LONG = 1.0;
-
-    // Rumble intensities
-    public static final double RUMBLE_LIGHT = 0.3;
-    public static final double RUMBLE_MEDIUM_INTENSITY = 0.5;
-    public static final double RUMBLE_STRONG = 0.8;
-    public static final double RUMBLE_MAX = 1.0;
-
-    // State history buffer size
-    public static final int STATE_HISTORY_SIZE = 20;
-
-    /** Minimum cycle time to be considered valid (seconds) */
-    public static final double MIN_VALID_CYCLE_TIME = 1.0;
-  }
-
-  /** Vision/Limelight constants */
-  public static final class VisionConstants {
-    public static final String LIMELIGHT_LEFT_NAME = "limelight-left";
-    public static final String LIMELIGHT_RIGHT_NAME = "limelight-right";
-    /** All Limelight camera names for iteration. */
-    public static final String[] LIMELIGHT_NAMES = {LIMELIGHT_LEFT_NAME, LIMELIGHT_RIGHT_NAME};
-
-    // Pipeline IDs
-    public static final int PIPELINE_APRILTAG = 0;
-
-    // Maximum angular velocity for valid vision measurements (degrees/sec)
-    // MegaTag2 results degrade significantly when spinning fast
-    // Limelight docs recommend 360 deg/s
-    public static final double MAX_ANGULAR_VELOCITY_DEG_PER_SEC = 360.0;
-
-    // Field boundary margins for pose rejection (meters)
-    public static final double FIELD_BORDER_MARGIN = 0.5;
-    public static final double FIELD_LENGTH_METERS = 16.54;
-    public static final double FIELD_WIDTH_METERS = 8.07;
-
-    // ==================== MT2 STANDARD DEVIATIONS ====================
-    // Base std devs for MegaTag2 - multiplied by avgTagDist at runtime.
-    // Heading (theta) is always 99999 because MT2 heading comes from the gyro.
-    public static final double MT2_BASE_XY_STDDEV = 0.3;
-    public static final double MT2_THETA_STDDEV = 99999.0;
-
-    // ==================== MT1 FALLBACK STANDARD DEVIATIONS ====================
-    // MT1 multi-tag (2+ tags) - geometric heading is accurate, lower std devs
-    public static final double MT1_MULTI_TAG_XY_STDDEV = 0.7;
-    public static final double MT1_MULTI_TAG_THETA_STDDEV = 0.5;
-
-    // MT1 single-tag - heading is ambiguous, high std devs for safety
-    public static final double MT1_SINGLE_TAG_XY_STDDEV = 1.5;
-    public static final double MT1_SINGLE_TAG_THETA_STDDEV = 99999.0;
-
-    // ==================== HEADING VALIDATION ====================
-    // Max heading divergence between MT2 pose heading and pose estimator heading
-    // before we reject the measurement. Catches cases where MT2 received wrong
-    // heading.
-    public static final double HEADING_DIVERGENCE_THRESHOLD_DEG = 30.0;
-
-    // Max heading divergence between MT1 multi-tag heading and pose estimator
-    // heading
-    // before auto-correcting the pose estimator (during disabled)
-    public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
-
-    // Whether to auto-correct heading from MT1 multi-tag while disabled
-    public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;
-
-    // ==================== POSE ESTIMATOR DIVERGENCE ====================
-    // If odometry and MT2 diverge by more than this, log a warning
-    public static final double POSE_DIVERGENCE_WARNING_METERS = 2.0;
-  }
-
-  public static final class IndexerConstants {
-    public static final int kFeederMotorID = 15;
-    public static final int kSpindexerMotorID = 21;
-
-    // Safety
-    public static final int kCurrentLimit = 40; // Amps
-
-    // ==================== FEEDER PID GAINS ====================
-    public static final double kFeederKP = 0.5;
-    public static final double kFeederKI = 0.0;
-    public static final double kFeederKD = 0.0;
-    public static final double kFeederKS = 0.5;
-    public static final double kFeederKV = 0.3;
-    public static final double kFeederKA = 0.01;
-
-    public static final double kFeederKG = 0.0;
-
-    // ==================== SPINDEXER PID GAINS ====================
-    public static final double kSpindexerKP = 0.3;
-    public static final double kSpindexerKI = 0.0;
-    public static final double kSpindexerKD = 0.0;
-    public static final double kSpindexerKS = 0.2;
-    public static final double kSpindexerKV = 0.12;
-    public static final double kSpindexerKA = 0.01;
-    public static final double kSpindexerKG = 0.0;
-
-    // ==================== TARGET SPEEDS (RPM) ====================
-    // Feeder (Fast)
-    public static final double kFeederTargetRPM = 3000;
-    public static final double kFeederReverseRPM = -3000;
-
-    // Spindexer (Slow/Torque)
-    public static final double kSpindexerTargetRPM = 5000;
-    public static final double kSpindexerReverseRPM = -5000;
-  }
   // ==================== UTILITY METHODS ====================
 
   /** Inches to Meters conversion factor */
@@ -361,56 +83,7 @@ public final class Constants {
    *
    * <p>Format: HashMap<TagID, double[]{X_inches, Y_inches, Z_inches, Yaw_degrees, Pitch_degrees}>
    */
-  public static final class AprilTagMaps {
-    public static final java.util.HashMap<Integer, double[]> aprilTagMap =
-        new java.util.HashMap<>();
-
-    static {
-      // 2026 REBUILT Field - Welded Perimeter
-      // Format: {X, Y, Z, Yaw, Pitch}
-      aprilTagMap.put(1, new double[] {467.64, 292.31, 35.00, 180.0, 0.0}); // Trench, Red
-      aprilTagMap.put(2, new double[] {469.11, 182.60, 44.25, 90.0, 0.0}); // Hub, Red
-      aprilTagMap.put(3, new double[] {445.35, 172.84, 44.25, 180.0, 0.0}); // Hub, Red
-      aprilTagMap.put(4, new double[] {445.35, 158.84, 44.25, 180.0, 0.0}); // Hub, Red
-      aprilTagMap.put(5, new double[] {469.11, 135.09, 44.25, 270.0, 0.0}); // Hub, Red
-      aprilTagMap.put(6, new double[] {467.64, 25.37, 35.00, 180.0, 0.0}); // Trench, Red
-      aprilTagMap.put(7, new double[] {470.59, 25.37, 35.00, 0.0, 0.0}); // Trench, Red
-      aprilTagMap.put(8, new double[] {483.11, 135.09, 44.25, 270.0, 0.0}); // Hub, Red
-      aprilTagMap.put(9, new double[] {492.88, 144.84, 44.25, 0.0, 0.0}); // Hub, Red
-      aprilTagMap.put(10, new double[] {492.88, 158.84, 44.25, 0.0, 0.0}); // Hub, Red
-      aprilTagMap.put(11, new double[] {483.11, 182.60, 44.25, 90.0, 0.0}); // Hub, Red
-      aprilTagMap.put(12, new double[] {470.59, 292.31, 35.00, 0.0, 0.0}); // Trench, Red
-      aprilTagMap.put(13, new double[] {650.92, 291.47, 21.75, 180.0, 0.0}); // Outpost, Red
-      aprilTagMap.put(14, new double[] {650.92, 274.47, 21.75, 180.0, 0.0}); // Outpost, Red
-      aprilTagMap.put(15, new double[] {650.90, 170.22, 21.75, 180.0, 0.0}); // Tower, Red
-      aprilTagMap.put(16, new double[] {650.90, 153.22, 21.75, 180.0, 0.0}); // Tower, Red
-      aprilTagMap.put(17, new double[] {183.59, 25.37, 35.00, 0.0, 0.0}); // Trench, Blue
-      aprilTagMap.put(18, new double[] {182.11, 135.09, 44.25, 270.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(19, new double[] {205.87, 144.84, 44.25, 0.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(20, new double[] {205.87, 158.84, 44.25, 0.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(21, new double[] {182.11, 182.60, 44.25, 90.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(22, new double[] {183.59, 292.31, 35.00, 0.0, 0.0}); // Trench, Blue
-      aprilTagMap.put(23, new double[] {180.64, 292.31, 35.00, 180.0, 0.0}); // Trench, Blue
-      aprilTagMap.put(24, new double[] {168.11, 182.60, 44.25, 90.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(25, new double[] {158.34, 172.84, 44.25, 180.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(26, new double[] {158.34, 158.84, 44.25, 180.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(27, new double[] {168.11, 135.09, 44.25, 270.0, 0.0}); // Hub, Blue
-      aprilTagMap.put(28, new double[] {180.64, 25.37, 35.00, 180.0, 0.0}); // Trench, Blue
-      aprilTagMap.put(29, new double[] {0.30, 26.22, 21.75, 0.0, 0.0}); // Outpost, Blue
-      aprilTagMap.put(30, new double[] {0.30, 43.22, 21.75, 0.0, 0.0}); // Outpost, Blue
-      aprilTagMap.put(31, new double[] {0.32, 147.47, 21.75, 0.0, 0.0}); // Tower, Blue
-      aprilTagMap.put(32, new double[] {0.32, 164.47, 21.75, 0.0, 0.0}); // Tower, Blue
-    }
-
-    // Red side tag IDs (for direction flipping logic)
-    public static final int[] RED_SIDE_TAGS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-    };
-
-    // Blue side tag IDs
-    public static final int[] BLUE_SIDE_TAGS = {
-      17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
-    };
-  }
+  public static final class AprilTagMaps extends frc.robot.constants.AprilTagMaps {}
 
   /** Alignment position enum - left or right side offset from AprilTag */
   public enum AlignPosition {

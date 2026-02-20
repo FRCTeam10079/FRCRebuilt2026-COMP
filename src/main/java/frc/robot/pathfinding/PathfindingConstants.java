@@ -1,9 +1,14 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 package frc.robot.pathfinding;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DataLogManager;
 import frc.robot.Constants.AprilTagMaps;
 
 /**
@@ -11,7 +16,7 @@ import frc.robot.Constants.AprilTagMaps;
  *
  * <p>Robot physics calculations for 2026 REBUILT:
  *
- * <p>Robot dimensions: 33" x 34" with bumpers Diagonal: √(33² + 34²) = √2245 ≈ 47.4" → radius ≈
+ * <p>Robot dimensions: 33" x 34" with bumpers Diagonal: √(33² + 34²) = √2245 ≈ 47.4" -> radius ≈
  * 0.602m Inflation radius: 0.65m (3.25 grid cells) provides ~5cm buffer for safe rotation
  */
 public final class PathfindingConstants {
@@ -105,27 +110,24 @@ public final class PathfindingConstants {
     Translation2d scoringPosition = tagPosition.plus(standoffOffset);
 
     // === DEBUG LOGGING ===
-    System.out.println("\n========== APRILTAG POSE CALCULATION DEBUG ==========");
-    System.out.println("[TagPose] Tag ID: " + tagId);
-    System.out.println("[TagPose] Raw Tag Data (inches): X=" + tagData[0] + ", Y=" + tagData[1]
-        + ", Yaw=" + tagYawDegrees + "°");
-    System.out.println("[TagPose] Tag Position (meters): X=" + String.format("%.3f", tagX) + ", Y="
-        + String.format("%.3f", tagY));
-    System.out.println(
-        "[TagPose] Tag Facing Direction: " + String.format("%.1f", tagFacing.getDegrees()) + "°");
-    System.out.println(
-        "[TagPose] Robot Should Face: " + String.format("%.1f", robotFacing.getDegrees()) + "°");
-    System.out.println("[TagPose] Standoff Distance: " + SCORING_STANDOFF_METERS + "m");
-    System.out.println(
-        "[TagPose] Standoff Offset Vector: X=" + String.format("%.3f", standoffOffset.getX())
-            + ", Y=" + String.format("%.3f", standoffOffset.getY()));
-    System.out.println(
-        "[TagPose] Final Scoring Position: X=" + String.format("%.3f", scoringPosition.getX())
-            + ", Y=" + String.format("%.3f", scoringPosition.getY()));
-    System.out.println("[TagPose] Final Pose: (" + String.format("%.3f", scoringPosition.getX())
+    DataLogManager.log("\\n========== APRILTAG POSE CALCULATION DEBUG ==========="
+        + "\\n[TagPose] Tag ID: " + tagId
+        + "\\n[TagPose] Raw Tag Data (inches): X=" + tagData[0] + ", Y=" + tagData[1]
+        + ", Yaw=" + tagYawDegrees + "°"
+        + "\\n[TagPose] Tag Position (meters): X=" + String.format("%.3f", tagX) + ", Y="
+        + String.format("%.3f", tagY)
+        + "\\n[TagPose] Tag Facing Direction: " + String.format("%.1f", tagFacing.getDegrees())
+        + "°"
+        + "\\n[TagPose] Robot Should Face: " + String.format("%.1f", robotFacing.getDegrees()) + "°"
+        + "\\n[TagPose] Standoff Distance: " + SCORING_STANDOFF_METERS + "m"
+        + "\\n[TagPose] Standoff Offset Vector: X=" + String.format("%.3f", standoffOffset.getX())
+        + ", Y=" + String.format("%.3f", standoffOffset.getY())
+        + "\\n[TagPose] Final Scoring Position: X=" + String.format("%.3f", scoringPosition.getX())
+        + ", Y=" + String.format("%.3f", scoringPosition.getY())
+        + "\\n[TagPose] Final Pose: (" + String.format("%.3f", scoringPosition.getX())
         + ", " + String.format("%.3f", scoringPosition.getY()) + ", "
-        + String.format("%.1f", robotFacing.getDegrees()) + "°)");
-    System.out.println("=====================================================\n");
+        + String.format("%.1f", robotFacing.getDegrees()) + "°)"
+        + "\\n=====================================================\\n");
 
     return new Pose2d(scoringPosition, robotFacing);
   }

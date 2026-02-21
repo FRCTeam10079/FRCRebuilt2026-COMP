@@ -28,10 +28,6 @@ spotless {
     target "**/*.yaml", "**/*.yml"
     jackson()
   }
-  flexmark {
-    target "**/*.md"
-    flexmark()
-  }
 }
 
 java {

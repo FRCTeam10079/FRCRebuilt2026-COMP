@@ -57,16 +57,16 @@ public final class TestingBindings {
 
     // ==================== SYSID CHARACTERIZATION ====================
     // A - SysId quasistatic forward
-    controller.a().whileTrue(drivetrain.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    controller.a().whileTrue(shooter.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
 
     // B - SysId quasistatic reverse
-    controller.b().whileTrue(drivetrain.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    controller.b().whileTrue(shooter.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
 
     // X - SysId dynamic forward
-    controller.x().whileTrue(drivetrain.sysIdDynamic(SysIdRoutine.Direction.kForward));
+    controller.x().whileTrue(shooter.sysIdDynamic(SysIdRoutine.Direction.kForward));
 
     // Y - SysId dynamic reverse
-    controller.y().whileTrue(drivetrain.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+    controller.y().whileTrue(shooter.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // ==================== DISPLACED DRIVER/OPERATOR CONTROLS ====================
     // Left/Right Bumper - AprilTag align variants moved from driver
@@ -83,6 +83,7 @@ public final class TestingBindings {
 
     // POV Down - Stow pivot jogger
     controller.povDown().onTrue(pivot.stowCommand());
+    controller.povRight().onTrue(pivot.deployCommand());
 
     Trigger backHeld = controller.back();
     Trigger rightTrigger = controller.rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD);

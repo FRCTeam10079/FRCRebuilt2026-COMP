@@ -99,4 +99,7 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
   public Command stopCommand() {
     return runOnce(this::stop).withName("Intake Stop");
   }
+
+  @Override
+  public void periodic() {}
 }

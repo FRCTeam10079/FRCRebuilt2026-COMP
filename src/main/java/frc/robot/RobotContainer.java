@@ -83,7 +83,7 @@ public class RobotContainer {
         () -> drivetrain.getState().Pose,
         drivetrain::resetPose,
         drivetrain::followTrajectory,
-        true,
+        false,
         drivetrain);
 
     // ==================== REGISTER NAMED COMMANDS ====================

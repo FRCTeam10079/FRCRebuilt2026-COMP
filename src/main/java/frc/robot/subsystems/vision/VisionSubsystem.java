@@ -9,6 +9,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
@@ -31,6 +32,8 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * - Limelight rotation is never trusted (theta stddev = 9999999)
  * - 50ms transmission delay subtracted from timestamps for accurate Kalman
  * filter fusion
+ * - Timestamps computed as FPGA_now - captureLatency - pipelineLatency -
+ * transmissionDelay (bypasses unreliable NT server timestamps)
  *
  * Both cameras feed into the CTRE SwerveDrivetrain's built-in Kalman filter
  * pose estimator.
@@ -196,8 +199,18 @@ public class VisionSubsystem extends SubsystemBase {
     // Step 2: Read MT2 estimate
     LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
 
-    // Step 3: Validate and accept
-    processMT2(mt2, cameraName, odoPose, logPrefix);
+    // Step 3: Compute timestamp using "current time minus all latencies" method.
+    // This is more robust than using NT server timestamps (which have ambiguous
+    // capture latency handling). We read capture + pipeline latency separately
+    // and subtract them plus a fixed network transmission delay from FPGA now.
+    double cl = LimelightHelpers.getLatency_Capture(cameraName);
+    double tl = LimelightHelpers.getLatency_Pipeline(cameraName);
+    double timestamp = Timer.getFPGATimestamp()
+        - (cl + tl) / 1000.0
+        - VisionConstants.LIMELIGHT_TRANSMISSION_DELAY;
+
+    // Step 4: Validate and accept
+    processMT2(mt2, cameraName, odoPose, timestamp, logPrefix);
   }
 
   /**
@@ -220,6 +233,7 @@ public class VisionSubsystem extends SubsystemBase {
       LimelightHelpers.PoseEstimate mt2,
       String cameraName,
       Pose2d odoPose,
+      double timestamp,
       String logPrefix) {
 
     // Gate 1: No data - null, stale, or no tags visible
@@ -232,7 +246,7 @@ public class VisionSubsystem extends SubsystemBase {
     if (Boolean.TRUE.equals(unconditionallyTrustVision.get())) {
       drivetrain.addVisionMeasurement(
           mt2.pose,
-          mt2.timestampSeconds,
+          timestamp,
           VecBuilder.fill(0.01, 0.01, 1));
       drivetrain.resetPose(mt2.pose);
       Logger.recordOutput(logPrefix + "MT2/Status", "UNCONDITIONAL_TRUST");
@@ -297,14 +311,13 @@ public class VisionSubsystem extends SubsystemBase {
       xyStdDev *= avgTagDist;
     }
 
-    // Compute corrected timestamp: subtract transmission delay for accurate
-    // Kalman filter fusion with odometry history.
-    double correctedTimestamp = mt2.timestampSeconds - VisionConstants.LIMELIGHT_TRANSMISSION_DELAY;
-
-    // Feed into the CTRE pose estimator's Kalman filter
+    // Feed into the CTRE pose estimator's Kalman filter.
+    // Timestamp was computed in processCamera() as:
+    // FPGA_now - captureLatency - pipelineLatency - transmissionDelay
+    // The drivetrain's addVisionMeasurement converts FPGA -> CTRE time internally.
     drivetrain.addVisionMeasurement(
         mt2.pose,
-        correctedTimestamp,
+        timestamp,
         VecBuilder.fill(xyStdDev, xyStdDev, VisionConstants.ROTATION_STDDEV));
 
     // Telemetry

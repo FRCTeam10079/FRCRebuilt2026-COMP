@@ -92,6 +92,8 @@ public class VisionSubsystem extends SubsystemBase {
   // ==================== TELEMETRY ====================
   private int totalMt2Accepted = 0;
   private int totalRejected = 0;
+  private int debugCounter = 0;
+  private static final int DEBUG_PRINT_INTERVAL = 25; // ~0.5s at 50Hz
 
   /**
    * Creates a new VisionSubsystem.
@@ -128,12 +130,17 @@ public class VisionSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    debugCounter++;
+    boolean shouldPrint = (debugCounter % DEBUG_PRINT_INTERVAL == 0);
+
     // Update active camera selection (for targeting data getters)
     updateActiveCameraSelection();
 
     // Skip pose estimation if vision is disabled via dashboard
     if (!Boolean.TRUE.equals(visionEnabled.get())) {
       Logger.recordOutput("Vision/Enabled", false);
+      if (shouldPrint)
+        System.out.println("[VISION] DISABLED via dashboard toggle");
       return;
     }
     Logger.recordOutput("Vision/Enabled", true);
@@ -148,10 +155,26 @@ public class VisionSubsystem extends SubsystemBase {
     double rollDeg = drivetrain.getPigeon2().getRoll().getValueAsDouble();
     double rollRateDeg = drivetrain.getPigeon2().getAngularVelocityXWorld().getValueAsDouble();
 
+    if (shouldPrint) {
+      System.out.println("========== [VISION DEBUG] Frame " + debugCounter + " ==========");
+      System.out.println("[VISION] OdoPose: x=" + String.format("%.3f", odoPose.getX())
+          + " y=" + String.format("%.3f", odoPose.getY())
+          + " rot=" + String.format("%.2f", odoPose.getRotation().getDegrees()) + "deg");
+      System.out.println("[VISION] Pigeon2 -> yaw=" + String.format("%.2f", yawDeg)
+          + " yawRate=" + String.format("%.2f", yawRateDeg)
+          + " pitch=" + String.format("%.2f", pitchDeg)
+          + " pitchRate=" + String.format("%.2f", pitchRateDeg)
+          + " roll=" + String.format("%.2f", rollDeg)
+          + " rollRate=" + String.format("%.2f", rollRateDeg));
+      System.out.println("[VISION] FPGATimestamp=" + String.format("%.4f", Timer.getFPGATimestamp()));
+      System.out.println("[VISION] Totals: accepted=" + totalMt2Accepted + " rejected=" + totalRejected);
+    }
+
     // Process both cameras
     for (int i = 0; i < names.length; i++) {
       processCamera(
-          names[i], odoPose, yawDeg, yawRateDeg, pitchDeg, pitchRateDeg, rollDeg, rollRateDeg);
+          names[i], odoPose, yawDeg, yawRateDeg, pitchDeg, pitchRateDeg, rollDeg, rollRateDeg,
+          shouldPrint);
     }
 
     // Log global telemetry
@@ -161,6 +184,10 @@ public class VisionSubsystem extends SubsystemBase {
     Logger.recordOutput("Vision/FusedHeadingDeg", yawDeg);
     Logger.recordOutput(
         "Vision/Pigeon2RawYawDeg", drivetrain.getPigeon2().getYaw().getValueAsDouble());
+
+    if (shouldPrint) {
+      System.out.println("========== [VISION DEBUG] End Frame " + debugCounter + " ==========");
+    }
   }
 
   // ==================== CORE VISION PIPELINE ====================
@@ -184,33 +211,66 @@ public class VisionSubsystem extends SubsystemBase {
       double pitchDeg,
       double pitchRateDeg,
       double rollDeg,
-      double rollRateDeg) {
+      double rollRateDeg,
+      boolean shouldPrint) {
 
     String logPrefix = "Vision/" + cameraName + "/";
+    String tag = "[VISION][" + cameraName + "] ";
 
     // Step 1: Send full 6-DOF Pigeon2 orientation to Limelight every frame.
-    // This is essential for MegaTag2 - it pins the rotation solve to the gyro,
-    // leaving only translation to be solved from AprilTag geometry.
-    // All 6 values (yaw, yawRate, pitch, pitchRate, roll, rollRate) improve
-    // accuracy.
     LimelightHelpers.SetRobotOrientation(
         cameraName, yawDeg, yawRateDeg, pitchDeg, pitchRateDeg, rollDeg, rollRateDeg);
 
     // Step 2: Read MT2 estimate
     LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
 
-    // Step 3: Compute timestamp using "current time minus all latencies" method.
-    // This is more robust than using NT server timestamps (which have ambiguous
-    // capture latency handling). We read capture + pipeline latency separately
-    // and subtract them plus a fixed network transmission delay from FPGA now.
+    // Step 3: Compute timestamp
     double cl = LimelightHelpers.getLatency_Capture(cameraName);
     double tl = LimelightHelpers.getLatency_Pipeline(cameraName);
-    double timestamp = Timer.getFPGATimestamp()
+    double fpgaNow = Timer.getFPGATimestamp();
+    double timestamp = fpgaNow
         - (cl + tl) / 1000.0
         - VisionConstants.LIMELIGHT_TRANSMISSION_DELAY;
 
+    if (shouldPrint) {
+      System.out.println(tag + "--- RAW DATA ---");
+      System.out.println(tag + "CL=" + String.format("%.1f", cl) + "ms"
+          + " TL=" + String.format("%.1f", tl) + "ms"
+          + " totalLatency=" + String.format("%.1f", cl + tl) + "ms");
+      System.out.println(tag + "fpgaNow=" + String.format("%.4f", fpgaNow)
+          + " computedTimestamp=" + String.format("%.4f", timestamp)
+          + " age=" + String.format("%.1f", (fpgaNow - timestamp) * 1000.0) + "ms");
+      System.out.println(tag + "mt2 is null? " + (mt2 == null));
+      if (mt2 != null) {
+        System.out.println(tag + "mt2.timestampSeconds=" + String.format("%.4f", mt2.timestampSeconds)
+            + " tagCount=" + mt2.tagCount
+            + " avgTagDist=" + String.format("%.2f", mt2.avgTagDist));
+        System.out.println(tag + "mt2.pose: x=" + String.format("%.3f", mt2.pose.getX())
+            + " y=" + String.format("%.3f", mt2.pose.getY())
+            + " rot=" + String.format("%.2f", mt2.pose.getRotation().getDegrees()) + "deg");
+        boolean poseZero = mt2.pose.getX() == 0 && mt2.pose.getY() == 0
+            && mt2.pose.getRotation().getDegrees() == 0;
+        System.out.println(tag + "pose is all zeros? " + poseZero);
+
+        // Also grab raw botpose for comparison
+        double[] rawBp = LimelightHelpers.getBotPose_wpiBlue(cameraName);
+        if (rawBp != null && rawBp.length >= 7) {
+          System.out.println(tag + "rawBotpose: x=" + String.format("%.3f", rawBp[0])
+              + " y=" + String.format("%.3f", rawBp[1])
+              + " yaw=" + String.format("%.2f", rawBp[5])
+              + (rawBp.length >= 8 ? " latency=" + String.format("%.1f", rawBp[6]) + "ms" : "")
+              + (rawBp.length >= 9 ? " tagCount=" + String.format("%.0f", rawBp[7]) : ""));
+        } else {
+          System.out.println(tag + "rawBotpose: NULL or empty");
+        }
+
+        boolean tv = LimelightHelpers.getTV(cameraName);
+        System.out.println(tag + "TV (target valid)=" + tv);
+      }
+    }
+
     // Step 4: Validate and accept
-    processMT2(mt2, cameraName, odoPose, timestamp, logPrefix);
+    processMT2(mt2, cameraName, odoPose, timestamp, logPrefix, shouldPrint, tag);
   }
 
   /**
@@ -234,11 +294,17 @@ public class VisionSubsystem extends SubsystemBase {
       String cameraName,
       Pose2d odoPose,
       double timestamp,
-      String logPrefix) {
+      String logPrefix,
+      boolean shouldPrint,
+      String tag) {
 
     // Gate 1: No data - null, stale, or no tags visible
     if (mt2 == null || mt2.timestampSeconds == 0 || mt2.tagCount < 1) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "NO_DATA");
+      String reason = mt2 == null ? "NULL"
+          : (mt2.timestampSeconds == 0 ? "TIMESTAMP_ZERO" : "TAGCOUNT_" + mt2.tagCount);
+      Logger.recordOutput(logPrefix + "MT2/Status", "NO_DATA_" + reason);
+      if (shouldPrint)
+        System.out.println(tag + "REJECTED @ Gate1 NO_DATA: " + reason);
       return;
     }
 
@@ -252,33 +318,48 @@ public class VisionSubsystem extends SubsystemBase {
       Logger.recordOutput(logPrefix + "MT2/Status", "UNCONDITIONAL_TRUST");
       Logger.recordOutput(logPrefix + "MT2/Pose", mt2.pose);
       totalMt2Accepted++;
+      if (shouldPrint) {
+        System.out.println(tag + "UNCONDITIONAL_TRUST -> resetPose to ("
+            + String.format("%.3f", mt2.pose.getX()) + ", "
+            + String.format("%.3f", mt2.pose.getY()) + ")");
+      }
       return;
     }
 
     // Gate 2: Empty pose - Limelight returned a zeroed-out pose
-    if (mt2.pose.equals(new Pose2d())) {
+    boolean isPoseEmpty = mt2.pose.equals(new Pose2d());
+    if (isPoseEmpty) {
       Logger.recordOutput(logPrefix + "MT2/Status", "EMPTY_POSE");
       totalRejected++;
+      if (shouldPrint)
+        System.out.println(tag + "REJECTED @ Gate2 EMPTY_POSE (all zeros)");
       return;
     }
 
     // Gate 3: Field bounds - reject poses outside the field (0.15m margin)
     double x = mt2.pose.getX();
     double y = mt2.pose.getY();
-    if (x < -FIELD_MARGIN
-        || x > FIELD_LENGTH + FIELD_MARGIN
-        || y < -FIELD_MARGIN
-        || y > FIELD_WIDTH + FIELD_MARGIN) {
+    boolean inBounds = x >= -FIELD_MARGIN
+        && x <= FIELD_LENGTH + FIELD_MARGIN
+        && y >= -FIELD_MARGIN
+        && y <= FIELD_WIDTH + FIELD_MARGIN;
+    if (!inBounds) {
       Logger.recordOutput(logPrefix + "MT2/Status", "OUT_OF_BOUNDS");
       totalRejected++;
+      if (shouldPrint) {
+        System.out.println(tag + "REJECTED @ Gate3 OUT_OF_BOUNDS: x=" + String.format("%.3f", x)
+            + " y=" + String.format("%.3f", y)
+            + " (valid: x=[" + String.format("%.2f", -FIELD_MARGIN) + ".."
+            + String.format("%.2f", FIELD_LENGTH + FIELD_MARGIN) + "]"
+            + " y=[" + String.format("%.2f", -FIELD_MARGIN) + ".."
+            + String.format("%.2f", FIELD_WIDTH + FIELD_MARGIN) + "])");
+      }
       return;
     }
 
-    // Gate 4: Heading divergence - if MT2 heading disagrees with pose estimator
-    // heading by more than 5deg, reject. This catches the "bad heading -> bad MT2
-    // ->
-    // worse heading" death spiral. Since we send our heading to MT2, the returned
-    // heading should nearly match - if it doesn't, something is wrong.
+    // Gate 4: Heading divergence
+    double visionHeadingDeg = mt2.pose.getRotation().getDegrees();
+    double odoHeadingDeg = odoPose.getRotation().getDegrees();
     double headingDivergenceDeg = Math.abs(
         odoPose.getRotation().minus(mt2.pose.getRotation()).getDegrees());
     Logger.recordOutput(logPrefix + "MT2/HeadingDivergenceDeg", headingDivergenceDeg);
@@ -286,6 +367,13 @@ public class VisionSubsystem extends SubsystemBase {
     if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
       Logger.recordOutput(logPrefix + "MT2/Status", "HEADING_DIVERGE");
       totalRejected++;
+      if (shouldPrint) {
+        System.out.println(tag + "REJECTED @ Gate4 HEADING_DIVERGE: divergence="
+            + String.format("%.2f", headingDivergenceDeg) + "deg"
+            + " (threshold=" + VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG + "deg)"
+            + " visionHeading=" + String.format("%.2f", visionHeadingDeg)
+            + " odoHeading=" + String.format("%.2f", odoHeadingDeg));
+      }
       return;
     }
 
@@ -294,27 +382,51 @@ public class VisionSubsystem extends SubsystemBase {
     if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE) {
       Logger.recordOutput(logPrefix + "MT2/Status", "DIST_REJECT");
       totalRejected++;
+      if (shouldPrint) {
+        System.out.println(tag + "REJECTED @ Gate5 DIST_REJECT: avgTagDist="
+            + String.format("%.2f", avgTagDist) + "m"
+            + " (max=" + VisionConstants.MAX_TAG_DISTANCE + "m)");
+      }
       return;
     }
 
     // ===== ACCEPTED - compute distance-scaled standard deviations =====
 
     double xyStdDev = VisionConstants.MT2_BASE_XY_STDDEV;
+    String scalingMode;
 
     if (mt2.tagCount < 2) {
-      // Single tag: cubic scaling - heavily penalizes distant single-tag solves.
-      // At 1m: 0.3, at 2m: 2.4, at 3m: 8.1
       xyStdDev *= avgTagDist * avgTagDist * avgTagDist;
+      scalingMode = "CUBIC";
     } else {
-      // Multi-tag: linear scaling - geometric multi-tag solve is much more reliable.
-      // At 1m: 0.3, at 2m: 0.6, at 3m: 0.9
       xyStdDev *= avgTagDist;
+      scalingMode = "LINEAR";
+    }
+
+    // Distance from odo
+    double dxFromOdo = mt2.pose.getX() - odoPose.getX();
+    double dyFromOdo = mt2.pose.getY() - odoPose.getY();
+    double distFromOdo = Math.sqrt(dxFromOdo * dxFromOdo + dyFromOdo * dyFromOdo);
+
+    if (shouldPrint) {
+      System.out.println(tag + "ACCEPTED! tagCount=" + mt2.tagCount
+          + " avgDist=" + String.format("%.2f", avgTagDist) + "m"
+          + " scaling=" + scalingMode
+          + " xyStdDev=" + String.format("%.4f", xyStdDev));
+      System.out.println(tag + "  visionPose: x=" + String.format("%.3f", mt2.pose.getX())
+          + " y=" + String.format("%.3f", mt2.pose.getY())
+          + " rot=" + String.format("%.2f", mt2.pose.getRotation().getDegrees()) + "deg");
+      System.out.println(tag + "  odoPose:    x=" + String.format("%.3f", odoPose.getX())
+          + " y=" + String.format("%.3f", odoPose.getY())
+          + " rot=" + String.format("%.2f", odoPose.getRotation().getDegrees()) + "deg");
+      System.out.println(tag + "  offset: dx=" + String.format("%.3f", dxFromOdo)
+          + " dy=" + String.format("%.3f", dyFromOdo)
+          + " dist=" + String.format("%.3f", distFromOdo) + "m");
+      System.out.println(tag + "  timestamp=" + String.format("%.4f", timestamp)
+          + " headingDiv=" + String.format("%.2f", headingDivergenceDeg) + "deg");
     }
 
     // Feed into the CTRE pose estimator's Kalman filter.
-    // Timestamp was computed in processCamera() as:
-    // FPGA_now - captureLatency - pipelineLatency - transmissionDelay
-    // The drivetrain's addVisionMeasurement converts FPGA -> CTRE time internally.
     drivetrain.addVisionMeasurement(
         mt2.pose,
         timestamp,

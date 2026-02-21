@@ -14,7 +14,8 @@ import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State
+ * Machine for
  * comprehensive robot control
  */
 public class Robot extends TimedRobot {
@@ -26,7 +27,7 @@ public class Robot extends TimedRobot {
   private final RobotStateMachine m_stateMachine;
 
   public Robot() {
-    // Start structured data logging — logs are written to /home/lvuser/logs on the
+    // Start structured data logging - logs are written to /home/lvuser/logs on the
     // roboRIO.
     DataLogManager.start();
 
@@ -40,7 +41,7 @@ public class Robot extends TimedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
+      pub.set(new String[] { "mjpg:http://" + llName + ".local:5800/stream.mjpg" });
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }
@@ -62,9 +63,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // Send heading to Limelights (Mode 0 = EXTERNAL_ONLY, no LL4 internal IMU).
-    // Also checks MT1 multi-tag heading for auto-correction of pose estimator.
-    m_robotContainer.vision.updateWhileDisabled();
+    // Vision runs via periodic() in the command scheduler; no special disabled
+    // handling needed.
   }
 
   @Override
@@ -77,9 +77,6 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(MatchState.AUTO_INIT);
-
-    // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -106,9 +103,6 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
-
-    // Vision uses Mode 0 (EXTERNAL_ONLY) — no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

@@ -13,6 +13,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
+import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.ShooterMath;
+import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
@@ -20,27 +23,31 @@ import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import java.util.function.Supplier;
 
 /**
- * Driver controller bindings (Port 0). All driver button->command mappings live here so
+ * Driver controller bindings (Port 0). All driver button->command mappings live
+ * here so
  * RobotContainer stays lean.
  */
 public final class DriverControls {
 
-  private DriverControls() {} // Static utility class
+  private DriverControls() {
+  } // Static utility class
 
   /**
    * Bind all driver controls.
    *
-   * @param controller the driver's Xbox controller
-   * @param drivetrain swerve drivetrain subsystem
-   * @param vision vision subsystem (for alignment commands)
-   * @param intake intake wheels subsystem
-   * @param pivot intake pivot subsystem
-   * @param shooter shooter subsystem
-   * @param indexer indexer subsystem
+   * @param controller   the driver's Xbox controller
+   * @param drivetrain   swerve drivetrain subsystem
+   * @param vision       vision subsystem (for alignment commands)
+   * @param intake       intake wheels subsystem
+   * @param pivot        intake pivot subsystem
+   * @param shooter      shooter subsystem
+   * @param indexer      indexer subsystem
    * @param stateMachine global robot state machine
    */
   public static void configure(
@@ -50,8 +57,10 @@ public final class DriverControls {
       IntakeWheelsSubsystem intake,
       PivotSubsystem pivot,
       ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
-      RobotStateMachine stateMachine) {
+      RobotStateMachine stateMachine,
+      Supplier<ShooterSetpoint> setpointSupplier) {
 
     // ==================== DEFAULT DRIVE ====================
     drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
@@ -66,29 +75,56 @@ public final class DriverControls {
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(Commands.startEnd(
-                () -> {
-                  pivot.deployPivot();
-                  intake.intakeIn();
-                  stateMachine.setGameState(GameState.COLLECTING);
-                },
-                () -> {
-                  intake.stop();
-                  pivot.stowPivot();
-                  if (stateMachine.getGameState() == GameState.COLLECTING) {
-                    stateMachine.setGameState(GameState.IDLE);
-                  }
-                },
-                intake,
-                pivot)
+            () -> {
+              pivot.deployPivot();
+              intake.intakeIn();
+              stateMachine.setGameState(GameState.COLLECTING);
+            },
+            () -> {
+              intake.stop();
+              pivot.stowPivot();
+              if (stateMachine.getGameState() == GameState.COLLECTING) {
+                stateMachine.setGameState(GameState.IDLE);
+              }
+            },
+            intake,
+            pivot)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
-    // ==================== SHOOTING ====================
-    // Right Trigger - Hold to spin up, wait for ready, then feed
+    controller
+        .rightBumper()
+        .whileTrue(
+            ShooterFactory.aimAtHub(
+                drivetrain,
+                controller::getLeftY,
+                controller::getLeftX,
+                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+                Constants.DrivetrainConstants.MAX_SPEED_MPS,
+                Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC)
+                .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
+                .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
+                .finallyDo(() -> {
+                  if (stateMachine.getGameState() == GameState.SCORING) {
+                    stateMachine.setGameState(GameState.IDLE);
+                  }
+                }));
+
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(shooter
-            .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-            .alongWith(Commands.waitUntil(shooter::isReady).andThen(indexer.feedCommand()))
+        .whileTrue(ShooterFactory
+            .shoot(
+                setpointSupplier,
+                shooter,
+                shooterPivot,
+                indexer,
+                () -> {
+                  double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
+                  double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
+                  double error = Math.abs(
+                      edu.wpi.first.math.MathUtil.inputModulus(
+                          currentHeading - targetHeading, -180, 180));
+                  return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
+                })
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
               if (stateMachine.getGameState() == GameState.SCORING) {
@@ -97,7 +133,6 @@ public final class DriverControls {
             })
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
-    // Rumble while shooter is ready and right trigger is held
     new Trigger(shooter::isReady)
         .and(controller.rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD))
         .onTrue(Commands.runOnce(() -> controller

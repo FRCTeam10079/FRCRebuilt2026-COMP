@@ -136,10 +136,16 @@ public class AutoCommands {
     return shooter.stopCommand();
   }
 
+  /**
+   * Distance-based auto shoot: spin up + track pivot + feed when on-target.
+   * In auto, heading is assumed correct from the trajectory, so heading
+   * check is always true.
+   */
   public Command shoot() {
     return ShooterFactory.autoShoot(setpointSupplier, shooter, shooterPivot, indexer);
   }
 
+  /** Fixed fender shot for close-range scoring positions in auto. */
   public Command fenderShot() {
     return ShooterFactory.fenderShot(shooter, shooterPivot, indexer);
   }

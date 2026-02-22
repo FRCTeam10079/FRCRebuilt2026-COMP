@@ -74,6 +74,7 @@ public class RobotContainer {
   private final Autos autos;
 
   // ==================== DISTANCE-BASED SHOOTING ====================
+  /** Memoized setpoint supplier that caches by robot pose. */
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
   public RobotContainer() {
@@ -82,14 +83,17 @@ public class RobotContainer {
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 
+    // Create the memoized setpoint supplier (caches by pose X/Y/theta)
     m_setpointSupplier = ShooterMath.createSetpointSupplier(() -> drivetrain.getState().Pose);
 
     // Register controllers with state machine for haptic feedback
     m_stateMachine.registerControllers(m_driverController, m_operatorController);
 
+    // Wire subsystem state into the state machine so isReadyToFire() works
     m_stateMachine.registerShooterSuppliers(
         shooter::isReady,
         () -> {
+          // Heading is "aligned" when robot faces the hub within tolerance
           double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
           double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
           double error = Math.abs(
@@ -98,6 +102,7 @@ public class RobotContainer {
           return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
         });
 
+    // Initialize the pathfinding system
     initializePathfinding();
 
     choreoAutoFactory = new AutoFactory(
@@ -107,11 +112,16 @@ public class RobotContainer {
         false,
         drivetrain);
 
+    // ==================== REGISTER NAMED COMMANDS ====================
+    // AutoCommands provides factory methods used by both PathPlanner and
+    // Choreo.
+    // Must be registered BEFORE any PathPlanner autos/paths are created.
     autoCommands = new AutoCommands(
         intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
+    // ==================== BUILD AUTO CHOOSER ====================
     autos = new Autos(drivetrain, choreoAutoFactory);
 
     // Configure button bindings

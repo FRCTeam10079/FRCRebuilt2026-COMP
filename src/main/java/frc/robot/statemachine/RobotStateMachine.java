@@ -277,6 +277,11 @@ public class RobotStateMachine extends SubsystemBase {
     }
   }
 
+  /**
+   * Poll registered subsystem suppliers to keep isShooterAtRPM and
+   * isAlignedToTarget in sync every cycle. This fixes the original bug
+   * where these were never set from actual hardware state.
+   */
   private void pollSubsystemState() {
     isShooterAtRPM = shooterReadySupplier.getAsBoolean();
     isAlignedToTarget = headingAlignedSupplier.getAsBoolean();
@@ -511,6 +516,15 @@ public class RobotStateMachine extends SubsystemBase {
     this.operatorController = operator;
   }
 
+  /**
+   * Register subsystem suppliers so the state machine can poll shooter/alignment
+   * status each cycle. This replaces the old approach where isShooterAtRPM was
+   * never set from anywhere.
+   *
+   * @param shooterReady   supplier from ShooterSubsystem.isReady()
+   * @param headingAligned supplier that returns true when drivetrain heading is
+   *                       on target
+   */
   public void registerShooterSuppliers(
       BooleanSupplier shooterReady, BooleanSupplier headingAligned) {
     this.shooterReadySupplier = shooterReady;

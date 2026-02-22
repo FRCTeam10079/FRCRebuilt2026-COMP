@@ -304,16 +304,36 @@ public class ShooterSubsystem extends SubsystemBase {
     return runOnce(this::stop).withName("Shooter Stop");
   }
 
+  /**
+   * Command to hold the shooter at a specific RPM while the command runs
+   *
+   * @param rpm Target RPM to maintain
+   */
   public Command holdRPMCommand(double rpm) {
     return startEnd(() -> setTargetRPM(rpm), this::stop).withName("Shooter Hold " + rpm + " RPM");
   }
 
+  /**
+   * Command to continuously track a dynamic RPM from a supplier.
+   * This is the main distance-based shooting command - the RPM supplier
+   * typically comes from ShooterSetpoint via the interpolation table.
+   *
+   * @param rpmSupplier supplier that provides the target RPM each loop
+   * @return a command that continuously updates the target RPM
+   */
   public Command holdRPMCommand(DoubleSupplier rpmSupplier) {
     return run(() -> setTargetRPM(rpmSupplier.getAsDouble()))
         .finallyDo(interrupted -> stop())
         .withName("Shooter Dynamic RPM");
   }
 
+  /**
+   * Check if the shooter is within a percentage tolerance of a given target RPM.
+   * Used for on-target gating in the shoot command.
+   *
+   * @param targetRPM the target RPM to check against
+   * @return true if current RPM is within ON_TARGET_RPM_PERCENT of target
+   */
   public boolean isAtRPM(double targetRPM) {
     if (targetRPM <= 0)
       return false;

@@ -41,14 +41,16 @@ public final class DriverControls {
   /**
    * Bind all driver controls.
    *
-   * @param controller   the driver's Xbox controller
-   * @param drivetrain   swerve drivetrain subsystem
-   * @param vision       vision subsystem (for alignment commands)
-   * @param intake       intake wheels subsystem
-   * @param pivot        intake pivot subsystem
-   * @param shooter      shooter subsystem
-   * @param indexer      indexer subsystem
-   * @param stateMachine global robot state machine
+   * @param controller       the driver's Xbox controller
+   * @param drivetrain       swerve drivetrain subsystem
+   * @param vision           vision subsystem (for alignment commands)
+   * @param intake           intake wheels subsystem
+   * @param pivot            intake pivot subsystem
+   * @param shooter          shooter subsystem
+   * @param shooterPivot     shooter pivot subsystem
+   * @param indexer          indexer subsystem
+   * @param stateMachine     global robot state machine
+   * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
       CommandXboxController controller,
@@ -91,6 +93,11 @@ public final class DriverControls {
             pivot)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
+    // ==================== SHOOTING (DISTANCE-BASED) ====================
+    // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
+    // angle
+    // The driver controls translation while the drivetrain auto-rotates toward the
+    // hub.
     controller
         .rightBumper()
         .whileTrue(
@@ -109,6 +116,8 @@ public final class DriverControls {
                   }
                 }));
 
+    // Right Trigger - Hold to shoot (waits for on-target, then auto-feeds)
+    // Assumes aim-at-hub is engaged via right bumper, OR driver is manually aiming.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(ShooterFactory
@@ -118,6 +127,7 @@ public final class DriverControls {
                 shooterPivot,
                 indexer,
                 () -> {
+                  // Heading is "on target" when we're close to the hub bearing
                   double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
                   double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
                   double error = Math.abs(
@@ -133,6 +143,7 @@ public final class DriverControls {
             })
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
+    // Rumble while shooter is ready and right trigger is held
     new Trigger(shooter::isReady)
         .and(controller.rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD))
         .onTrue(Commands.runOnce(() -> controller

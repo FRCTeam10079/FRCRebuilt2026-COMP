@@ -63,9 +63,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // Send heading to Limelights (Mode 0 = EXTERNAL_ONLY, no LL4 internal IMU).
-    // Also checks MT1 multi-tag heading for auto-correction of pose estimator.
     m_robotContainer.vision.updateWhileDisabled();
+    m_robotContainer.shooterPivot.reZeroIfNeeded();
   }
 
   @Override

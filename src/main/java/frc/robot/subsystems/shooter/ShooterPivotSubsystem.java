@@ -32,7 +32,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0.0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
-  private boolean m_isHomed = false;
+  private boolean m_isHomed = true;
   private double m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE_DEGREES;
 
   public ShooterPivotSubsystem() {
@@ -67,12 +67,12 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withMotionMagicJerk(ShooterPivotConstants.MOTION_MAGIC_JERK);
 
     config.SoftwareLimitSwitch = new SoftwareLimitSwitchConfigs()
-        .withForwardSoftLimitEnable(false)
-        .withReverseSoftLimitEnable(false)
+        .withForwardSoftLimitEnable(true)
+        .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(
-            ShooterPivotConstants.degreesToMotorRotations(ShooterPivotConstants.MAX_ANGLE_DEGREES))
-        .withReverseSoftLimitThreshold(
-            ShooterPivotConstants.degreesToMotorRotations(ShooterPivotConstants.MIN_ANGLE_DEGREES));
+            ShooterPivotConstants.degreesToMotorRotations(
+                ShooterPivotConstants.MAX_ANGLE_DEGREES - ShooterPivotConstants.MIN_ANGLE_DEGREES))
+        .withReverseSoftLimitThreshold(0.0);
 
     m_pivotMotor.getConfigurator().apply(config);
 
@@ -86,13 +86,15 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         ShooterPivotConstants.MAX_ANGLE_DEGREES);
     m_targetAngleDegrees = angleDegrees;
 
-    double motorRotations = ShooterPivotConstants.degreesToMotorRotations(angleDegrees);
+    double motorRotations = ShooterPivotConstants.degreesToMotorRotations(
+        angleDegrees - ShooterPivotConstants.MIN_ANGLE_DEGREES);
     m_pivotMotor.setControl(m_motionMagicRequest.withPosition(motorRotations));
   }
 
   public double getCurrentAngleDegrees() {
     return ShooterPivotConstants.motorRotationsToDegrees(
-        m_pivotMotor.getPosition().getValueAsDouble());
+        m_pivotMotor.getPosition().getValueAsDouble())
+        + ShooterPivotConstants.MIN_ANGLE_DEGREES;
   }
 
   public boolean isAtAngle(double targetDegrees, double toleranceDegrees) {
@@ -129,14 +131,20 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     return m_pivotMotor.getVelocity().getValueAsDouble();
   }
 
+  public void reZeroIfNeeded() {
+    if (m_pivotMotor.getPosition().getValueAsDouble() < 0.0) {
+      m_pivotMotor.setPosition(0);
+    }
+  }
+
   private void enableSoftwareLimits() {
     var softLimits = new SoftwareLimitSwitchConfigs()
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(
-            ShooterPivotConstants.degreesToMotorRotations(ShooterPivotConstants.MAX_ANGLE_DEGREES))
-        .withReverseSoftLimitThreshold(
-            ShooterPivotConstants.degreesToMotorRotations(ShooterPivotConstants.MIN_ANGLE_DEGREES));
+            ShooterPivotConstants.degreesToMotorRotations(
+                ShooterPivotConstants.MAX_ANGLE_DEGREES - ShooterPivotConstants.MIN_ANGLE_DEGREES))
+        .withReverseSoftLimitThreshold(0.0);
     m_pivotMotor.getConfigurator().apply(softLimits);
   }
 

@@ -4,12 +4,16 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Volts;
+
+import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
@@ -17,6 +21,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.ShooterConstants;
 
 /**
@@ -53,11 +58,28 @@ public class ShooterSubsystem extends SubsystemBase {
   // flickering.
   private int m_stabilityCounter = 0;
 
+  // Niche sysiD
+  private final VoltageOut m_voltReq = new VoltageOut(0.0);
+
+  private final SysIdRoutine m_sysIdRoutine;
+
   /** Creates a new ShooterSubsystem */
   public ShooterSubsystem() {
     m_masterMotor = new TalonFX(ShooterConstants.MASTER_MOTOR_ID);
     // DUAL MOTOR: Uncomment for 2-motor setup
     m_slaveMotor = new TalonFX(ShooterConstants.SLAVE_MOTOR_ID);
+
+    m_sysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null, // Use default ramp rate (1 V/s)
+            Volts.of(4), // Reduce dynamic step voltage to 4 to prevent brownout
+            null, // Use default timeout (10 s)
+            // Log state with Phoenix SignalLogger class
+            (state) -> SignalLogger.writeString("state", state.toString())),
+        new SysIdRoutine.Mechanism(
+            (volts) -> m_masterMotor.setControl(m_voltReq.withOutput(volts.in(Volts))),
+            null,
+            this));
 
     configureMotors();
 
@@ -98,8 +120,8 @@ public class ShooterSubsystem extends SubsystemBase {
         .withKS(ShooterConstants.SHOOTER_KS)
         .withKV(ShooterConstants.SHOOTER_KV)
         .withKP(ShooterConstants.SHOOTER_KP)
-        .withKI(0)
-        .withKD(0);
+        .withKI(ShooterConstants.SHOOTER_KI)
+        .withKD(ShooterConstants.SHOOTER_KD);
 
     // Apply configuration
     m_masterMotor.getConfigurator().apply(masterConfig);
@@ -275,5 +297,13 @@ public class ShooterSubsystem extends SubsystemBase {
    */
   public Command holdRPMCommand(double rpm) {
     return startEnd(() -> setTargetRPM(rpm), this::stop).withName("Shooter Hold " + rpm + " RPM");
+  }
+
+  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return m_sysIdRoutine.quasistatic(direction);
+  }
+
+  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+    return m_sysIdRoutine.dynamic(direction);
   }
 }

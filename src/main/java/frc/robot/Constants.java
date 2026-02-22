@@ -24,6 +24,9 @@ public final class Constants {
 
   public static final class ShooterConstants extends frc.robot.constants.ShooterConstants {}
 
+  public static final class ShooterPivotConstants
+      extends frc.robot.constants.ShooterPivotConstants {}
+
   public static final class ClimberConstants extends frc.robot.constants.ClimberConstants {}
 
   public static final class HeadingControllerConstants

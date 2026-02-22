@@ -23,6 +23,7 @@ import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
 
@@ -52,6 +53,7 @@ public class RobotContainer {
   // Mechanisms
 
   public final ShooterSubsystem shooter = new ShooterSubsystem();
+  public final ShooterPivotSubsystem shooterPivot = new ShooterPivotSubsystem();
   // Intake
   private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();
@@ -119,7 +121,7 @@ public class RobotContainer {
     DriverControls.configure(
         m_driverController, drivetrain, vision, intake, pivot, shooter, indexer, m_stateMachine);
     OperatorControls.configure(
-        m_operatorController, intake, pivot, indexer, climber, m_stateMachine);
+        m_operatorController, intake, pivot, indexer, climber, shooterPivot, m_stateMachine);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }

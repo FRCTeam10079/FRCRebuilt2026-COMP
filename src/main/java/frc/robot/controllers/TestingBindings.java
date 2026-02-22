@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
+import frc.robot.Constants.VisionConstants;
+import frc.robot.LimelightHelpers;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
@@ -151,8 +153,10 @@ public final class TestingBindings {
   private static double computeAprilTagHeading(
       CommandSwerveDrivetrain drivetrain, VisionSubsystem vision) {
     double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-    if (vision.hasTarget()) {
-      return MathUtil.inputModulus(currentHeading - vision.getTx(), -180.0, 180.0);
+    for (String name : VisionConstants.LIMELIGHT_NAMES) {
+      if (LimelightHelpers.getTV(name)) {
+        return MathUtil.inputModulus(currentHeading - LimelightHelpers.getTX(name), -180.0, 180.0);
+      }
     }
     return MathUtil.inputModulus(currentHeading, -180.0, 180.0);
   }

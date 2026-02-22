@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.*;
+import frc.robot.LimelightHelpers;
 import frc.robot.statemachine.DrivetrainMode;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -162,7 +163,14 @@ public class AlignToAprilTag extends Command {
     DataLogManager.log("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
 
     // Check if Limelight sees a valid tag - prefer it over odometry
-    int limelightTagID = vision.getTid();
+    int limelightTagID = 0;
+    for (String name : VisionConstants.LIMELIGHT_NAMES) {
+      int fid = (int) LimelightHelpers.getFiducialID(name);
+      if (fid != 0) {
+        limelightTagID = fid;
+        break;
+      }
+    }
     if (limelightTagID != 0 && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)) {
       targetTagID = limelightTagID;
       DataLogManager.log("[AlignToAprilTag] Using Limelight tag: " + targetTagID);

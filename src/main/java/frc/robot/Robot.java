@@ -63,8 +63,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // Vision runs via periodic() in the command scheduler; no special disabled
-    // handling needed.
+    // Send heading to Limelights (Mode 0 = EXTERNAL_ONLY, no LL4 internal IMU).
+    // Also checks MT1 multi-tag heading for auto-correction of pose estimator.
+    m_robotContainer.vision.updateWhileDisabled();
   }
 
   @Override
@@ -77,6 +78,9 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(MatchState.AUTO_INIT);
+
+    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
+    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -103,6 +107,9 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
+
+    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
+    // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

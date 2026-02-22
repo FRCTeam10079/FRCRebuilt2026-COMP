@@ -16,6 +16,7 @@ import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 
 /** Operator controller bindings (Port 1). Handles state-machine management and safety overrides. */
 public final class OperatorControls {
@@ -38,6 +39,7 @@ public final class OperatorControls {
       PivotSubsystem pivot,
       frc.robot.subsystems.indexer.IndexerSubsystem indexer,
       ClimberSubsystem climber,
+      ShooterPivotSubsystem shooterPivot,
       RobotStateMachine stateMachine) {
 
     // ==================== INVENTORY ====================
@@ -65,6 +67,8 @@ public final class OperatorControls {
         .b()
         .whileTrue(Commands.startEnd(pivot::deployPivot, pivot::stowPivot, pivot)
             .alongWith(intake.intakeOutCommand(), indexer.reverseCommand()));
+
+    shooterPivot.setDefaultCommand(shooterPivot.manualControlCommand(() -> -operator.getLeftY()));
 
     // ==================== CLIMB SAFETY ====================
     // Start + Back together -> L1 climb sequence arm (safety interlock)

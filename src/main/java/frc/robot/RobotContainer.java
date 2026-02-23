@@ -156,6 +156,7 @@ public class RobotContainer {
         pivot,
         indexer,
         climber,
+        shooter,
         shooterPivot,
         m_stateMachine,
         m_setpointSupplier);

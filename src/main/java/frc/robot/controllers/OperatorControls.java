@@ -7,6 +7,7 @@ package frc.robot.controllers;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.FuelState;
@@ -18,6 +19,7 @@ import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterSubsystem;
 import java.util.function.Supplier;
 
 /** Operator controller bindings (Port 1). Handles state-machine management and safety overrides. */
@@ -33,6 +35,7 @@ public final class OperatorControls {
    * @param pivot pivot arm subsystem
    * @param indexer indexer subsystem
    * @param climber climber subsystem
+   * @param shooter shooter flywheel subsystem (for force-shoot override)
    * @param shooterPivot shooter pivot subsystem
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
@@ -43,6 +46,7 @@ public final class OperatorControls {
       PivotSubsystem pivot,
       frc.robot.subsystems.indexer.IndexerSubsystem indexer,
       ClimberSubsystem climber,
+      ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier) {
@@ -85,6 +89,15 @@ public final class OperatorControls {
 
     // Left Bumper - Manual override (operator left stick Y)
     operator.leftBumper().whileTrue(shooterPivot.manualControlCommand(() -> -operator.getLeftY()));
+
+    // ==================== FORCE SHOOT OVERRIDE ====================
+    // Right Trigger - Force-feed the shooter, bypassing on-target gates.
+    // Use when the robot thinks it can't make the shot but the operator
+    // disagrees (e.g., out-of-range or heading misalignment).
+    operator
+        .rightTrigger(0.5)
+        .whileTrue(ShooterFactory.forceShoot(setpointSupplier, shooter, shooterPivot, indexer)
+            .withName("Operator Force Shoot"));
 
     // ==================== CLIMB SAFETY ====================
     // Start + Back together -> L1 climb sequence arm (safety interlock)

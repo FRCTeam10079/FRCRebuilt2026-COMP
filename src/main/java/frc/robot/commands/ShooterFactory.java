@@ -179,6 +179,41 @@ public final class ShooterFactory {
   }
 
   /**
+   * Force-shoot override: spins up the flywheel and tracks the pivot angle, but feeds as soon as
+   * the flywheel is at speed — bypassing setpoint validity, heading alignment, and pivot angle
+   * checks.
+   *
+   * <p>This is an operator safety-override for situations where the normal on-target gating is too
+   * restrictive (e.g., the robot thinks it's out of range but the operator wants to shoot anyway).
+   *
+   * @param setpointSupplier dynamic setpoint (still used for RPM and pivot tracking)
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem for feeding
+   * @return command that feeds as soon as flywheel is ready, ignoring other gates
+   */
+  public static Command forceShoot(
+      Supplier<ShooterSetpoint> setpointSupplier,
+      ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
+      IndexerSubsystem indexer) {
+
+    return aimAndSpinUp(setpointSupplier, shooter, shooterPivot)
+        .alongWith(
+            // Only wait for flywheel - skip validity, heading, and pivot checks
+            Commands.waitUntil(() -> {
+                  ShooterSetpoint sp = setpointSupplier.get();
+                  double targetRPM =
+                      (sp != null && sp.getFlywheelRPM() > 0) ? sp.getFlywheelRPM() : 0.0;
+                  boolean ready = targetRPM > 0 && shooter.isAtRPM(targetRPM);
+                  SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
+                  return ready;
+                })
+                .andThen(indexer.feedCommand()))
+        .withName("ShooterFactory ForceShoot");
+  }
+
+  /**
    * Create a heading-locked drive command that aims the drivetrain at the hub while the driver
    * controls translation.
    *

@@ -26,23 +26,15 @@ import frc.robot.Constants.ShooterConstants;
 import java.util.function.DoubleSupplier;
 
 /**
- * This subsystem contains: - Debounced "isReady()" check to ensure flywheel
- * stability before
- * feeding - Single motor configuration (dual motor support commented out for
- * future use)
+ * This subsystem contains: - Debounced "isReady()" check to ensure flywheel stability before
+ * feeding - Single motor configuration (dual motor support commented out for future use)
  *
- * <p>
- * Some features I added: 1. Use velocity control for consistent shot power
- * regardless of battery
- * voltage 2. Implement a stability counter that requires the flywheel to be
- * within tolerance for
- * multiple consecutive cycles before reporting "ready" 3. Coast mode when idle
- * to prevent belt
+ * <p>Some features I added: 1. Use velocity control for consistent shot power regardless of battery
+ * voltage 2. Implement a stability counter that requires the flywheel to be within tolerance for
+ * multiple consecutive cycles before reporting "ready" 3. Coast mode when idle to prevent belt
  * skipping during rapid starts
  *
- * <p>
- * NOTE: Dual motor (master/slave counter-rotating) code is commented out.
- * Uncomment the slave
+ * <p>NOTE: Dual motor (master/slave counter-rotating) code is commented out. Uncomment the slave
  * motor sections if we switch to a 2-motor setup.
  */
 public class ShooterSubsystem extends SubsystemBase {
@@ -51,7 +43,8 @@ public class ShooterSubsystem extends SubsystemBase {
   // DUAL MOTOR: Uncomment for 2-motor setup
   private final TalonFX m_slaveMotor;
 
-  private final VelocityVoltage m_velocityRequest = new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
+  private final VelocityVoltage m_velocityRequest =
+      new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
   // DUAL MOTOR: Uncomment for 2-motor setup
   private final Follower m_followerRequest;
@@ -160,7 +153,8 @@ public class ShooterSubsystem extends SubsystemBase {
       double error = Math.abs(m_targetRPM - currentRPM);
       if (error <= ShooterConstants.SHOOTER_RPM_TOLERANCE) {
         // Within tolerance - increment counter (capped at required cycles)
-        m_stabilityCounter = Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
+        m_stabilityCounter =
+            Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
       } else {
         // Outside tolerance - reset counter
         m_stabilityCounter = 0;
@@ -234,14 +228,10 @@ public class ShooterSubsystem extends SubsystemBase {
   /**
    * Check if the shooter is ready to fire.
    *
-   * <p>
-   * It does NOT just check if RPM is within tolerance - it requires the flywheel
-   * to have been
+   * <p>It does NOT just check if RPM is within tolerance - it requires the flywheel to have been
    * stable for multiple consecutive cycles.
    *
-   * <p>
-   * This prevents false positives where RPM momentarily crosses the threshold but
-   * isn't actually
+   * <p>This prevents false positives where RPM momentarily crosses the threshold but isn't actually
    * stable yet.
    *
    * @return true if shooter is spun up AND has been stable for sufficient time
@@ -253,8 +243,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Check if the shooter is within tolerance (instantaneous check, no debounce)
-   * Useful for
+   * Check if the shooter is within tolerance (instantaneous check, no debounce) Useful for
    * telemetry but should NOT be used for firing decisions.
    *
    * @return true if current RPM is within tolerance of target
@@ -283,8 +272,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Command to spin up the shooter to the default RPM Ends immediately after
-   * setting the target
+   * Command to spin up the shooter to the default RPM Ends immediately after setting the target
    * (does not wait for ready)
    */
   public Command spinUpCommand() {
@@ -292,8 +280,7 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Command to spin up and wait until the shooter is ready This blocks until
-   * isReady() returns true
+   * Command to spin up and wait until the shooter is ready This blocks until isReady() returns true
    */
   public Command spinUpAndWaitCommand() {
     return run(this::spinUp).until(this::isReady).withName("Shooter Spin Up & Wait");
@@ -314,9 +301,9 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Command to continuously track a dynamic RPM from a supplier.
-   * This is the main distance-based shooting command - the RPM supplier
-   * typically comes from ShooterSetpoint via the interpolation table.
+   * Command to continuously track a dynamic RPM from a supplier. This is the main distance-based
+   * shooting command - the RPM supplier typically comes from ShooterSetpoint via the interpolation
+   * table.
    *
    * @param rpmSupplier supplier that provides the target RPM each loop
    * @return a command that continuously updates the target RPM
@@ -328,15 +315,14 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   /**
-   * Check if the shooter is within a percentage tolerance of a given target RPM.
-   * Used for on-target gating in the shoot command.
+   * Check if the shooter is within a percentage tolerance of a given target RPM. Used for on-target
+   * gating in the shoot command.
    *
    * @param targetRPM the target RPM to check against
    * @return true if current RPM is within ON_TARGET_RPM_PERCENT of target
    */
   public boolean isAtRPM(double targetRPM) {
-    if (targetRPM <= 0)
-      return false;
+    if (targetRPM <= 0) return false;
     double currentRPM = getCurrentRPM();
     double percentError = Math.abs(currentRPM - targetRPM) / targetRPM;
     return percentError <= ShooterConstants.ON_TARGET_RPM_PERCENT;

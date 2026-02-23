@@ -14,8 +14,7 @@ import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State
- * Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
  * comprehensive robot control
  */
 public class Robot extends TimedRobot {
@@ -41,7 +40,7 @@ public class Robot extends TimedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] { "mjpg:http://" + llName + ".local:5800/stream.mjpg" });
+      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }

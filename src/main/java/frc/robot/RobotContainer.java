@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.*;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoCommands;
 import frc.robot.auto.Autos;
@@ -32,8 +31,7 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * RobotContainer for FRC 2026 REBUILT season This class is where the robot's
- * subsystems, commands,
+ * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
  * and button bindings are defined.
  */
 public class RobotContainer {
@@ -66,7 +64,8 @@ public class RobotContainer {
   // Climber (stub — hardware not wired yet)
   private final ClimberSubsystem climber = new ClimberSubsystem();
 
-  private final Telemetry m_telemetry = new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+  private final Telemetry m_telemetry =
+      new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
   // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
@@ -90,17 +89,14 @@ public class RobotContainer {
     m_stateMachine.registerControllers(m_driverController, m_operatorController);
 
     // Wire subsystem state into the state machine so isReadyToFire() works
-    m_stateMachine.registerShooterSuppliers(
-        shooter::isReady,
-        () -> {
-          // Heading is "aligned" when robot faces the hub within tolerance
-          double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
-          double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-          double error = Math.abs(
-              edu.wpi.first.math.MathUtil.inputModulus(
-                  currentHeading - targetHeading, -180, 180));
-          return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
-        });
+    m_stateMachine.registerShooterSuppliers(shooter::isReady, () -> {
+      // Heading is "aligned" when robot faces the hub within tolerance
+      double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
+      double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
+      double error = Math.abs(
+          edu.wpi.first.math.MathUtil.inputModulus(currentHeading - targetHeading, -180, 180));
+      return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
+    });
 
     // Initialize the pathfinding system
     initializePathfinding();
@@ -129,8 +125,7 @@ public class RobotContainer {
   }
 
   /**
-   * Initialize the pathfinding system. This loads the navgrid and starts the
-   * background AD*
+   * Initialize the pathfinding system. This loads the navgrid and starts the background AD*
    * planning thread.
    */
   private void initializePathfinding() {
@@ -140,8 +135,7 @@ public class RobotContainer {
   }
 
   /**
-   * Configure button bindings for driver and operator controllers. Delegates to
-   * dedicated binding
+   * Configure button bindings for driver and operator controllers. Delegates to dedicated binding
    * classes for clean separation.
    */
   private void configureBindings() {

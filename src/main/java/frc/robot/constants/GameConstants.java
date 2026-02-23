@@ -25,13 +25,14 @@ public class GameConstants {
   /**
    * Hub center positions derived from AprilTag locations.
    *
-   * Red hub: tags 9 & 10; center ~ (469.1 in, 158.85 in) -> (11.915 m, 4.035 m)
-   * Blue hub: tags 25 & 26; center ~ (182.1 in, 158.85 in) -> (4.625 m, 4.035 m)
+   * <p>Red hub: tags 9 & 10; center ~ (469.1 in, 158.85 in) -> (11.915 m, 4.035 m) Blue hub: tags
+   * 25 & 26; center ~ (182.1 in, 158.85 in) -> (4.625 m, 4.035 m)
    *
-   * These are used by ShooterMath to compute distance and heading to the
-   * active hub for distance-based shooting.
+   * <p>These are used by ShooterMath to compute distance and heading to the active hub for
+   * distance-based shooting.
    */
   public static final Translation2d RED_HUB_CENTER = new Translation2d(11.915, 4.035);
+
   public static final Translation2d BLUE_HUB_CENTER = new Translation2d(4.625, 4.035);
 
   /** Height of the hub opening from the field carpet, in meters. (72 inches) */
@@ -41,8 +42,8 @@ public class GameConstants {
   public static final double SHOOTER_RELEASE_HEIGHT_METERS = 19.5 * 0.0254; // 0.4953 m
 
   /** Vertical distance the ball must travel, in meters. */
-  public static final double SHOT_HEIGHT_DELTA_METERS = HUB_OPENING_HEIGHT_METERS - SHOOTER_RELEASE_HEIGHT_METERS;
+  public static final double SHOT_HEIGHT_DELTA_METERS =
+      HUB_OPENING_HEIGHT_METERS - SHOOTER_RELEASE_HEIGHT_METERS;
 
-  protected GameConstants() {
-  }
+  protected GameConstants() {}
 }

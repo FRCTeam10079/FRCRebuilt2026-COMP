@@ -8,6 +8,7 @@ public class ShooterConstants {
   public static final double SHOOTER_IDLE_RPM = 0;
   /** Default fixed spin-up RPM (used when NOT in distance-based mode). */
   public static final double SHOOTER_SPINUP_RPM = 2200;
+
   public static final double SHOOTER_MAX_RPM = 5500;
 
   // ==================== FENDER / PRESET SHOTS ====================
@@ -19,9 +20,7 @@ public class ShooterConstants {
   // ==================== TOLERANCES ====================
   public static final double SHOOTER_RPM_TOLERANCE = 150;
   public static final int STABILITY_CYCLES_REQUIRED = 5;
-  /**
-   * Percentage tolerance for on-target check (inspired by 254's 4% tolerance).
-   */
+  /** Percentage tolerance for on-target check (inspired by 254's 4% tolerance). */
   public static final double ON_TARGET_RPM_PERCENT = 0.04;
 
   // ==================== PID GAINS (Slot 0) ====================
@@ -43,6 +42,5 @@ public class ShooterConstants {
   /** Heading tolerance for "aligned to hub" in degrees. */
   public static final double HEADING_TOLERANCE_DEGREES = 3.0;
 
-  protected ShooterConstants() {
-  }
+  protected ShooterConstants() {}
 }

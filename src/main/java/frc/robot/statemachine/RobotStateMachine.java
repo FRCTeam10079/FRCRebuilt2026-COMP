@@ -19,14 +19,10 @@ import java.util.function.BooleanSupplier;
 /**
  * MASTER ROBOT STATE MACHINE - FRC 2026 REBUILT
  *
- * <p>
- * Tracks the robot's lifecycle phase (MatchState), high-level strategy
- * (GameState), drivetrain
+ * <p>Tracks the robot's lifecycle phase (MatchState), high-level strategy (GameState), drivetrain
  * control mode, hub-shift timing, climb progress, and fuel inventory.
  *
- * <p>
- * Robot.java drives MatchState transitions; game-level states are set by
- * commands/subsystems as
+ * <p>Robot.java drives MatchState transitions; game-level states are set by commands/subsystems as
  * mechanisms come online. Telemetry is published to SmartDashboard every cycle.
  */
 public class RobotStateMachine extends SubsystemBase {
@@ -94,8 +90,7 @@ public class RobotStateMachine extends SubsystemBase {
 
   // ==================== CONSTRUCTOR ====================
 
-  private RobotStateMachine() {
-  }
+  private RobotStateMachine() {}
 
   // ==================== STATE TRANSITIONS ====================
 
@@ -208,8 +203,7 @@ public class RobotStateMachine extends SubsystemBase {
             Constants.StateMachineConstants.RUMBLE_STRONG,
             Constants.StateMachineConstants.RUMBLE_LONG);
       }
-      default -> {
-      }
+      default -> {}
     }
   }
 
@@ -219,8 +213,7 @@ public class RobotStateMachine extends SubsystemBase {
       case CLIMBING, CLIMBED -> setDrivetrainMode(DrivetrainMode.LOCKED);
       case DEFENDING -> setDrivetrainMode(DrivetrainMode.FIELD_CENTRIC);
       case SCORING -> setDrivetrainMode(DrivetrainMode.VISION_TRACKING);
-      default -> {
-      } // Other states do not force a drivetrain mode
+      default -> {} // Other states do not force a drivetrain mode
     }
   }
 
@@ -246,8 +239,7 @@ public class RobotStateMachine extends SubsystemBase {
         rumbleDriver(
             Constants.StateMachineConstants.RUMBLE_MAX,
             Constants.StateMachineConstants.RUMBLE_LONG);
-      default -> {
-      }
+      default -> {}
     }
   }
 
@@ -278,9 +270,8 @@ public class RobotStateMachine extends SubsystemBase {
   }
 
   /**
-   * Poll registered subsystem suppliers to keep isShooterAtRPM and
-   * isAlignedToTarget in sync every cycle. This fixes the original bug
-   * where these were never set from actual hardware state.
+   * Poll registered subsystem suppliers to keep isShooterAtRPM and isAlignedToTarget in sync every
+   * cycle. This fixes the original bug where these were never set from actual hardware state.
    */
   private void pollSubsystemState() {
     isShooterAtRPM = shooterReadySupplier.getAsBoolean();
@@ -416,8 +407,7 @@ public class RobotStateMachine extends SubsystemBase {
   }
 
   public boolean isTransitionPeriod() {
-    if (!DriverStation.isTeleopEnabled())
-      return false;
+    if (!DriverStation.isTeleopEnabled()) return false;
     double t = DriverStation.getMatchTime();
     return t >= Constants.GameConstants.TRANSITION_END_TIME
         && t <= Constants.GameConstants.TRANSITION_START_TIME;
@@ -517,13 +507,11 @@ public class RobotStateMachine extends SubsystemBase {
   }
 
   /**
-   * Register subsystem suppliers so the state machine can poll shooter/alignment
-   * status each cycle. This replaces the old approach where isShooterAtRPM was
-   * never set from anywhere.
+   * Register subsystem suppliers so the state machine can poll shooter/alignment status each cycle.
+   * This replaces the old approach where isShooterAtRPM was never set from anywhere.
    *
-   * @param shooterReady   supplier from ShooterSubsystem.isReady()
-   * @param headingAligned supplier that returns true when drivetrain heading is
-   *                       on target
+   * @param shooterReady supplier from ShooterSubsystem.isReady()
+   * @param headingAligned supplier that returns true when drivetrain heading is on target
    */
   public void registerShooterSuppliers(
       BooleanSupplier shooterReady, BooleanSupplier headingAligned) {
@@ -629,8 +617,7 @@ public class RobotStateMachine extends SubsystemBase {
   }
 
   public double getMatchElapsedTime() {
-    if (matchStartTime == 0)
-      return 0;
+    if (matchStartTime == 0) return 0;
     return edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - matchStartTime;
   }
 

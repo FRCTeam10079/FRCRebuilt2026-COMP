@@ -9,12 +9,11 @@ public class ShooterPivotConstants {
 
   /** Physical range of motion in degrees. */
   public static final double MIN_ANGLE_DEGREES = 60.0;
+
   public static final double MAX_ANGLE_DEGREES = 80.0;
 
   // ==================== HOMING ====================
-  /**
-   * Duty cycle output for slow hard-stop homing (negative = toward hard stop).
-   */
+  /** Duty cycle output for slow hard-stop homing (negative = toward hard stop). */
   public static final double HOMING_SPEED = -0.06;
 
   /** Stator current threshold (amps) to detect the hard stop. */
@@ -32,9 +31,8 @@ public class ShooterPivotConstants {
   public static final double KV = 0.12;
 
   /**
-   * Gravity feedforward coefficient.
-   * Applied as kG * cos(pivotAngle) to hold position against gravity.
-   * Tune by finding the minimum voltage to hold the pivot at various angles.
+   * Gravity feedforward coefficient. Applied as kG * cos(pivotAngle) to hold position against
+   * gravity. Tune by finding the minimum voltage to hold the pivot at various angles.
    */
   public static final double KG = 0.3;
 
@@ -60,25 +58,25 @@ public class ShooterPivotConstants {
   // ==================== MANUAL OVERRIDE ====================
   /** Maximum duty cycle for manual operator control (fallback). */
   public static final double MANUAL_MAX_OUTPUT = 0.35;
+
   public static final double MANUAL_DEADBAND = 0.1;
 
   // ==================== CONVERSIONS ====================
   /**
-   * Convert degrees of pivot angle to motor rotations.
-   * motorRotations = degrees * GEAR_RATIO / 360.0
+   * Convert degrees of pivot angle to motor rotations. motorRotations = degrees * GEAR_RATIO /
+   * 360.0
    */
   public static double degreesToMotorRotations(double degrees) {
     return degrees * GEAR_RATIO / 360.0;
   }
 
   /**
-   * Convert motor rotations to degrees of pivot angle.
-   * degrees = motorRotations * 360.0 / GEAR_RATIO
+   * Convert motor rotations to degrees of pivot angle. degrees = motorRotations * 360.0 /
+   * GEAR_RATIO
    */
   public static double motorRotationsToDegrees(double motorRotations) {
     return motorRotations * 360.0 / GEAR_RATIO;
   }
 
-  protected ShooterPivotConstants() {
-  }
+  protected ShooterPivotConstants() {}
 }

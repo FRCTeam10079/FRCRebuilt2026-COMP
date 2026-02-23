@@ -26,14 +26,11 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * Factory for autonomous command compositions. Each method returns a <b>new</b>
- * Command instance so
- * it can be safely registered with both PathPlanner NamedCommands and Choreo
- * AutoFactory bindings
+ * Factory for autonomous command compositions. Each method returns a <b>new</b> Command instance so
+ * it can be safely registered with both PathPlanner NamedCommands and Choreo AutoFactory bindings
  * (WPILib commands cannot be shared across multiple triggers).
  *
- * <p>
- * This class eliminates the massive duplication that previously existed between
+ * <p>This class eliminates the massive duplication that previously existed between
  * registerNamedCommands() and registerChoreoBindings() in RobotContainer.
  */
 public class AutoCommands {
@@ -85,9 +82,7 @@ public class AutoCommands {
 
   // ==================== PIVOT ====================
 
-  /**
-   * Deploy the intake pivot arm to pickup position, waits until setpoint reached.
-   */
+  /** Deploy the intake pivot arm to pickup position, waits until setpoint reached. */
   public Command deployPivot() {
     return pivot.deployCommand();
   }
@@ -137,9 +132,8 @@ public class AutoCommands {
   }
 
   /**
-   * Distance-based auto shoot: spin up + track pivot + feed when on-target.
-   * In auto, heading is assumed correct from the trajectory, so heading
-   * check is always true.
+   * Distance-based auto shoot: spin up + track pivot + feed when on-target. In auto, heading is
+   * assumed correct from the trajectory, so heading check is always true.
    */
   public Command shoot() {
     return ShooterFactory.autoShoot(setpointSupplier, shooter, shooterPivot, indexer);
@@ -185,8 +179,7 @@ public class AutoCommands {
   // ==================== BULK REGISTRATION ====================
 
   /**
-   * Register all named commands for PathPlanner autonomous routines. Must be
-   * called BEFORE any
+   * Register all named commands for PathPlanner autonomous routines. Must be called BEFORE any
    * PathPlannerAuto or AutoBuilder.buildAutoChooser() calls.
    */
   public void registerPathPlannerCommands() {
@@ -232,8 +225,7 @@ public class AutoCommands {
   }
 
   /**
-   * Register Choreo global marker bindings for subsystem actions. These bindings
-   * are evaluated from
+   * Register Choreo global marker bindings for subsystem actions. These bindings are evaluated from
    * event markers inside Choreo trajectories.
    */
   public void registerChoreoBindings(AutoFactory factory) {

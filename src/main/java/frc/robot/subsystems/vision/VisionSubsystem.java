@@ -68,16 +68,24 @@ public class VisionSubsystem extends SubsystemBase {
 
     String logPrefix = "Vision/" + cameraName + "/";
 
+    // Reject entire frame if rotating too fast
+    if (Math.abs(angularVelocityDegPerSec) > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
+      Logger.recordOutput(logPrefix + "Status", "ANGULAR_VEL_REJECT");
+      totalRejected++;
+      return;
+    }
+
     LimelightHelpers.SetRobotOrientation(
         cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
 
     LimelightHelpers.PoseEstimate mt2 =
         LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
-    LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
 
     boolean mt2Accepted = tryAcceptMT2(mt2, odoPose, logPrefix);
 
+    // Only fetch MT1 if MT2 was rejected (lazy-fetch saves bandwidth)
     if (!mt2Accepted) {
+      LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
       tryAcceptMT1(mt1, odoPose, logPrefix);
     }
   }
@@ -127,11 +135,16 @@ public class VisionSubsystem extends SubsystemBase {
       return false;
     }
 
-    double xyStdev = VisionConstants.DEFAULT_XY_STDDEV;
+    // MT2 stddev scaling:
+    // Single-tag: linear (d^1) - MT2 eliminates ambiguity, d^3 was way too
+    // aggressive
+    // Multi-tag: flat - MT2 multi-tag is very reliable at any reasonable distance
+    // Base 0.7 is what Limelight says
+    double xyStdev;
     if (mt2.tagCount < 2) {
-      xyStdev *= avgTagDist * avgTagDist * avgTagDist;
+      xyStdev = VisionConstants.DEFAULT_XY_STDDEV * avgTagDist;
     } else {
-      xyStdev *= avgTagDist;
+      xyStdev = VisionConstants.DEFAULT_XY_STDDEV;
     }
 
     Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, VisionConstants.THETA_STDDEV);
@@ -190,6 +203,18 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
+    // Reject single-tag MT1 with high ambiguity (pose flip uncertainty).
+    // MT1 is susceptible to ambiguity - 6328 uses 0.4 threshold.
+    if (mt1.tagCount == 1 && mt1.rawFiducials.length > 0) {
+      double ambiguity = mt1.rawFiducials[0].ambiguity;
+      Logger.recordOutput(logPrefix + "MT1/Ambiguity", ambiguity);
+      if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+        Logger.recordOutput(logPrefix + "MT1/Status", "AMBIGUITY_REJECT");
+        totalRejected++;
+        return;
+      }
+    }
+
     double xyStdev =
         VisionConstants.DEFAULT_XY_STDDEV * avgTagDist * avgTagDist / mt1.tagCount / mt1.tagCount;
     double thetaStdDev = VisionConstants.THETA_STDDEV;
@@ -213,7 +238,8 @@ public class VisionSubsystem extends SubsystemBase {
 
     for (String name : names) {
       LimelightHelpers.SetRobotOrientation(name, currentHeadingDeg, 0, 0, 0, 0, 0);
-      LimelightHelpers.SetIMUMode(name, 0);
+      // Mode 1 while disabled: seeds LL4's internal IMU with external gyro.
+      LimelightHelpers.SetIMUMode(name, 1);
 
       if (VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED) {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);

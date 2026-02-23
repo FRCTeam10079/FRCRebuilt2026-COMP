@@ -35,14 +35,14 @@ public final class ShooterInterpolationTable {
     // Close range: low RPM, steep angle (fuel doesn't need much speed)
     rpmTable.put(1.0, 2000.0);
     rpmTable.put(2.2, 2050.0);
-    //rpmTable.put(2.5, 2100.0);
+    // rpmTable.put(2.5, 2100.0);
     rpmTable.put(3.0, 2325.0);
-    //rpmTable.put(3.5, 2500.0);
-    //rpmTable.put(4.5, 2500.0);
-    //rpmTable.put(4.5, 3300.0);
-    //rpmTable.put(5.0, 2500.0);
-    //rpmTable.put(5.5, 3900.0);
-    //rpmTable.put(6.0, 4200.0);
+    // rpmTable.put(3.5, 2500.0);
+    // rpmTable.put(4.5, 2500.0);
+    // rpmTable.put(4.5, 3300.0);
+    // rpmTable.put(5.0, 2500.0);
+    // rpmTable.put(5.5, 3900.0);
+    // rpmTable.put(6.0, 4200.0);
   }
 
   // ==================== ANGLE TABLE ====================
@@ -63,10 +63,10 @@ public final class ShooterInterpolationTable {
     angleTable.put(3.2, 61.0);
     // angleTable.put(3.5, 64.0);
     angleTable.put(4.5, 63.5);
-    //angleTable.put(5, 68.0);
-    //angleTable.put(5.0, 67.0);
+    // angleTable.put(5, 68.0);
+    // angleTable.put(5.0, 67.0);
     // angleTable.put(5.5,76.0);
-    //angleTable.put(6.0, 66.5);
+    // angleTable.put(6.0, 66.5);
   }
 
   /**

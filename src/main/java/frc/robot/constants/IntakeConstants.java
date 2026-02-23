@@ -10,6 +10,11 @@ public class IntakeConstants {
     public static final int SUPPLY_CURRENT_LIMIT = 40;
     public static final int STATOR_CURRENT_LIMIT = 80;
 
+    /** Stator current (amps) above which the pivot is considered stalling. */
+    public static final double STALL_CURRENT_THRESHOLD = 35.0;
+    /** How long (seconds) current must exceed the threshold before declaring a stall. */
+    public static final double STALL_TIME_THRESHOLD = 0.25;
+
     public static final double DEPLOY_TOLERANCE = 0.05;
 
     public static final double KA = 0;
@@ -20,8 +25,7 @@ public class IntakeConstants {
     public static final double KD = 0.25;
     public static final double KV = 0;
 
-    protected Pivot() {
-    }
+    protected Pivot() {}
   }
 
   public static class Wheels {
@@ -40,10 +44,8 @@ public class IntakeConstants {
     public static final double KD = 0.1;
     public static final double KV = 0.5;
 
-    protected Wheels() {
-    }
+    protected Wheels() {}
   }
 
-  protected IntakeConstants() {
-  }
+  protected IntakeConstants() {}
 }

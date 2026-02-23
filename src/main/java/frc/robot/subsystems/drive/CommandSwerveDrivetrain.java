@@ -519,13 +519,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // while maintaining direction (sign)
     angularMagnitude = Math.copySign(angularMagnitude * angularMagnitude, angularMagnitude);
 
-    // Calculate velocities (flip for alliance if needed)
-    // Apply velocity coefficients for runtime speed adjustment (slow mode, etc.)
-    boolean isBlueAlliance = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
-    double xVelocity =
-        (isBlueAlliance ? -xMagnitude : xMagnitude) * maxVelocity * teleopVelocityCoefficient;
-    double yVelocity =
-        (isBlueAlliance ? -yMagnitude : yMagnitude) * maxVelocity * teleopVelocityCoefficient;
+    // Convert joystick axes to field-relative velocities.
+    // Joystick Y-axis is inverted (push forward = negative), X-axis is inverted
+    // (push left = negative).
+    // Alliance rotation is handled by setOperatorPerspectiveForward() in
+    // periodic(), so no
+    // per-alliance flip is needed here.
+    double xVelocity = -xMagnitude * maxVelocity * teleopVelocityCoefficient;
+    double yVelocity = -yMagnitude * maxVelocity * teleopVelocityCoefficient;
     double angularVelocity = -angularMagnitude * maxAngularVelocity * rotationVelocityCoefficient;
 
     // Apply skew compensation for smooth combined translation/rotation
@@ -655,12 +656,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     double xMagnitude = MathUtil.applyDeadband(xInput, CONTROLLER_DEADBAND);
     double yMagnitude = MathUtil.applyDeadband(yInput, CONTROLLER_DEADBAND);
 
-    // Calculate translation velocities (flip for alliance)
-    boolean isBlueAlliance = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
-    double xVelocity =
-        (isBlueAlliance ? -xMagnitude : xMagnitude) * maxVelocity * teleopVelocityCoefficient;
-    double yVelocity =
-        (isBlueAlliance ? -yMagnitude : yMagnitude) * maxVelocity * teleopVelocityCoefficient;
+    // Convert joystick to field-relative velocities.
+    // Alliance rotation handled by setOperatorPerspectiveForward() — no
+    // per-alliance flip.
+    double xVelocity = -xMagnitude * maxVelocity * teleopVelocityCoefficient;
+    double yVelocity = -yMagnitude * maxVelocity * teleopVelocityCoefficient;
 
     // Get current heading
     double currentHeadingDegrees = getState().Pose.getRotation().getDegrees();

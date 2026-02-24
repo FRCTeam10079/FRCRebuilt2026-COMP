@@ -16,13 +16,15 @@ import frc.robot.pathfinding.Pathfinding;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
 /**
- * Central auto-mode configuration. Builds the SmartDashboard choosers for PathPlanner and Choreo
+ * Central auto-mode configuration. Builds the SmartDashboard choosers for
+ * PathPlanner and Choreo
  * autos and provides the selected autonomous command to Robot.java.
  */
 public class Autos {
 
   private final CommandSwerveDrivetrain drivetrain;
   private final AutoFactory choreoAutoFactory;
+  private final AutoCommands autoCommands;
 
   private final SendableChooser<Command> pathPlannerChooser;
   private final SendableChooser<String> choreoChooser = new SendableChooser<>();
@@ -30,12 +32,14 @@ public class Autos {
   /**
    * Create the auto configuration and publish choosers to SmartDashboard.
    *
-   * @param drivetrain the swerve drivetrain
-   * @param choreoAutoFactory the Choreo AutoFactory (already created in RobotContainer)
+   * @param drivetrain        the swerve drivetrain
+   * @param choreoAutoFactory the Choreo AutoFactory (already created in
+   *                          RobotContainer)
    */
-  public Autos(CommandSwerveDrivetrain drivetrain, AutoFactory choreoAutoFactory) {
+  public Autos(CommandSwerveDrivetrain drivetrain, AutoFactory choreoAutoFactory, AutoCommands autoCommands) {
     this.drivetrain = drivetrain;
     this.choreoAutoFactory = choreoAutoFactory;
+    this.autoCommands = autoCommands;
 
     // PathPlanner chooser — populates from deploy/pathplanner/autos/
     pathPlannerChooser = AutoBuilder.buildAutoChooser();
@@ -63,9 +67,9 @@ public class Autos {
    * Returns the autonomous command selected by the dashboard. Priority:
    *
    * <ol>
-   *   <li>Choreo trajectory (if a non-blank name is selected)
-   *   <li>PathPlanner auto (from the auto chooser)
-   *   <li>Fallback: AD* pathfind to AprilTag 10
+   * <li>Choreo trajectory (if a non-blank name is selected)
+   * <li>PathPlanner auto (from the auto chooser)
+   * <li>Fallback: AD* pathfind to AprilTag 10
    * </ol>
    */
   public Command getSelected() {
@@ -99,7 +103,8 @@ public class Autos {
   }
 
   /**
-   * Emergency recovery path — AD* pathfind to AprilTag 10. Use when no auto is selected or as a
+   * Emergency recovery path — AD* pathfind to AprilTag 10. Use when no auto is
+   * selected or as a
    * fallback.
    *
    * @return a pathfinding command targeting AprilTag 10
@@ -107,5 +112,38 @@ public class Autos {
   public Command getRecoveryPath() {
     Pathfinding.setAutoObstacles();
     return drivetrain.pathfindToAprilTag10().withName("Fallback: Pathfind to Tag 10");
+  }
+
+  // ==================== CHOREO ROUTINES ====================
+
+  /**
+   * Right-side depot auto: drive to outpost, deploy pivot, score, return to
+   * neutral.
+   */
+  public AutoRoutine RightSideDepot() {
+    AutoRoutine routine = choreoAutoFactory.newRoutine("RS_Depot");
+    // Load the routine's trajectories
+    AutoTrajectory rStartToOp = routine.trajectory("rStartToOp");
+    AutoTrajectory OpToRScore = routine.trajectory("OpToRScore");
+    AutoTrajectory RScoreToNeutral = routine.trajectory("RScoreToNeutral");
+
+    routine.active().onTrue(
+        Commands.sequence(
+            rStartToOp.resetOdometry(),
+
+            Commands.parallel(
+                rStartToOp.cmd(),
+                autoCommands.deployPivot()),
+
+            Commands.parallel(
+                OpToRScore.cmd(),
+                autoCommands.spinUpShooter()),
+
+            Commands.parallel(
+                autoCommands.runIndexer(),
+                autoCommands.shoot().withTimeout(5.0)),
+
+            RScoreToNeutral.cmd().withTimeout(4.0).andThen(autoCommands.intake())));
+    return routine;
   }
 }

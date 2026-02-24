@@ -1,9 +1,11 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Time;
 
 public class IntakeConstants {
@@ -17,7 +19,7 @@ public class IntakeConstants {
     public static final int STATOR_CURRENT_LIMIT = 80;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
-    public static final double STALL_CURRENT_THRESHOLD = 35.0;
+    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(35.0);
     /** How long (seconds) current must exceed the threshold before declaring a stall. */
     public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.25);
 

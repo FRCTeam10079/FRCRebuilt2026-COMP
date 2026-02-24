@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.StatusSignal;
@@ -127,7 +128,8 @@ public class PivotSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Pivot/position", getPivotPosition().in(Rotations));
     SmartDashboard.putBoolean("Pivot/reachedSetpoint?", reachedSetpoint());
     SmartDashboard.putBoolean("Pivot/isStalled", m_isStalled);
-    SmartDashboard.putNumber("Pivot/statorCurrent", statorCurrentSignal.getValueAsDouble());
+    SmartDashboard.putNumber(
+        "Pivot/statorCurrent", statorCurrentSignal.getValue().in(Amps));
   }
 
   private void detectStall() {
@@ -135,8 +137,8 @@ public class PivotSubsystem extends SubsystemBase {
       return;
     }
 
-    double statorCurrent = statorCurrentSignal.getValueAsDouble();
-    if (statorCurrent <= IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD) {
+    var statorCurrent = statorCurrentSignal.getValue();
+    if (statorCurrent.lte(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD)) {
       // Current dropped below threshold — reset timer
       m_stallTimer.restart();
       return;

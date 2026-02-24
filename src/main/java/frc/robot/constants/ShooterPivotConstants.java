@@ -1,8 +1,17 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Second;
 
+import edu.wpi.first.units.AngularAccelerationUnit;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Velocity;
 
 public class ShooterPivotConstants {
   public static final int MOTOR_ID = 23;
@@ -21,7 +30,7 @@ public class ShooterPivotConstants {
   public static final double HOMING_SPEED = -0.06;
 
   /** Stator current threshold (amps) to detect the hard stop. */
-  public static final double HOMING_CURRENT_THRESHOLD = 20.0;
+  public static final Current HOMING_CURRENT_THRESHOLD = Amps.of(20.0);
 
   /** Number of consecutive loops above threshold to confirm hard stop. */
   public static final int HOMING_STALL_CYCLES = 5;
@@ -42,22 +51,22 @@ public class ShooterPivotConstants {
 
   // ==================== MOTION MAGIC ====================
   /** Cruise velocity in motor rotations per second. */
-  public static final double MOTION_MAGIC_CRUISE_VELOCITY = 40.0;
+  public static final AngularVelocity MOTION_MAGIC_CRUISE_VELOCITY = RotationsPerSecond.of(40.0);
   /** Acceleration in motor rotations per second^2. */
-  public static final double MOTION_MAGIC_ACCELERATION = 80.0;
+  public static final AngularAcceleration MOTION_MAGIC_ACCELERATION =
+      RotationsPerSecondPerSecond.of(80.0);
   /** Jerk in motor rotations per second^3 (0 = trapezoidal, >0 = S-curve). */
-  public static final double MOTION_MAGIC_JERK = 400.0;
+  public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK =
+      RotationsPerSecondPerSecond.per(Second).of(400.0);
 
   // ==================== TOLERANCES ====================
-  /** Position tolerance for "at setpoint" in degrees. */
-  public static final double POSITION_TOLERANCE_DEGREES = 1.0;
 
   /** Wider tolerance for "ready to shoot" in degrees. */
   public static final Angle SHOOTING_TOLERANCE = Degrees.of(2.0);
 
   // ==================== CURRENT LIMITS ====================
-  public static final int SUPPLY_CURRENT_LIMIT = 30;
-  public static final int STATOR_CURRENT_LIMIT = 60;
+  public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(30);
+  public static final Current STATOR_CURRENT_LIMIT = Amps.of(60);
 
   // ==================== MANUAL OVERRIDE ====================
   /** Maximum duty cycle for manual operator control (fallback). */

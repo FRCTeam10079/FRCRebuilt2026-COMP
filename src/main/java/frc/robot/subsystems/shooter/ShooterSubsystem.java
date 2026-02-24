@@ -20,7 +20,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -28,7 +27,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
-import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -154,7 +152,7 @@ public class ShooterSubsystem extends SubsystemBase {
     // Update stability counter (debouncing logic)
     boolean isTargetPositive = m_targetRPM.gt(RPM.zero());
     if (m_isEnabled && isTargetPositive) {
-      if (currentRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_RPM_TOLERANCE)) {
+      if (currentRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
         // Within tolerance - increment counter (capped at required cycles)
         m_stabilityCounter =
             Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
@@ -204,10 +202,11 @@ public class ShooterSubsystem extends SubsystemBase {
    * @param rpm Target velocity in rotations per minute
    */
   private void setTargetRPM(AngularVelocity rpm) {
-    AngularVelocity clampedRPM = Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_RPM);
+    AngularVelocity clampedRPM =
+        Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_SPEED);
 
     // Reset stability counter when setpoint changes significantly
-    if (clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_RPM_TOLERANCE)) {
+    if (clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
       m_stabilityCounter = 0;
     }
 
@@ -217,7 +216,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /** Enable the shooter at the pre-configured spin-up RPM */
   private void spinUp() {
-    setTargetRPM(ShooterConstants.SHOOTER_SPINUP_RPM);
+    setTargetRPM(ShooterConstants.SHOOTER_SPINUP_SPEED);
   }
 
   /** Stop the shooter (coast to stop) */
@@ -254,7 +253,7 @@ public class ShooterSubsystem extends SubsystemBase {
     if (!m_isEnabled || m_targetRPM.lt(RPM.zero())) {
       return false;
     }
-    return m_targetRPM.isNear(velocitySignal.getValue(), ShooterConstants.SHOOTER_RPM_TOLERANCE);
+    return m_targetRPM.isNear(velocitySignal.getValue(), ShooterConstants.SHOOTER_SPEED_TOLERANCE);
   }
 
   /** @return Current flywheel velocity in RPM */

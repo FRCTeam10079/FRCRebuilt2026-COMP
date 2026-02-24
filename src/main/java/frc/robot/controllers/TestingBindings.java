@@ -134,7 +134,7 @@ public final class TestingBindings {
     // Back + Left Trigger - Shooter spin-up test moved from operator
     leftTrigger
         .and(backHeld)
-        .whileTrue(shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM));
+        .whileTrue(shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_SPEED));
 
     new Trigger(shooter::isReady)
         .and(leftTrigger)

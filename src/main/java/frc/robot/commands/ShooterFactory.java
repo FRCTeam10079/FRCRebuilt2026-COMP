@@ -4,9 +4,14 @@
 
 package frc.robot.commands;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -97,9 +102,7 @@ public final class ShooterFactory {
         })
         .alongWith(shooterPivot.trackAngleCommand(() -> {
           ShooterSetpoint sp = setpointSupplier.get();
-          return (sp != null && sp.isValid())
-              ? sp.pivotAngle()
-              : ShooterPivotConstants.MIN_ANGLE;
+          return (sp != null && sp.isValid()) ? sp.pivotAngle() : ShooterPivotConstants.MIN_ANGLE;
         }))
         .withName("ShooterFactory AimAndSpinUp");
   }
@@ -149,7 +152,7 @@ public final class ShooterFactory {
     Supplier<ShooterSetpoint> fixed = () -> ShooterSetpoint.FENDER_SHOT;
 
     return shooter
-        .holdRPMCommand(ShooterConstants.FENDER_SHOT_RPM)
+        .holdRPMCommand(ShooterConstants.FENDER_SHOT_SPEED)
         .alongWith(
             shooterPivot.goToAngleCommand(ShooterConstants.FENDER_SHOT_PIVOT_ANGLE),
             Commands.waitUntil(() -> shooter.isReady() && shooterPivot.isAtTarget())
@@ -206,7 +209,9 @@ public final class ShooterFactory {
             // Only wait for flywheel - skip validity, heading, and pivot checks
             Commands.waitUntil(() -> {
                   ShooterSetpoint sp = setpointSupplier.get();
-                  AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero())) ? sp.flywheelRPM() : RPM.zero();
+                  AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero()))
+                      ? sp.flywheelRPM()
+                      : RPM.zero();
                   boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
                   SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
                   return ready;
@@ -222,21 +227,26 @@ public final class ShooterFactory {
    * @param drivetrain swerve drivetrain
    * @param xInput driver X (forward) input
    * @param yInput driver Y (strafe) input
-   * @param headingSupplier supplier of the target heading to the hub (degrees)
-   * @param maxVelocity max translation speed (m/s)
-   * @param maxAngularVelocity max angular speed (rad/s)
+   * @param headingSupplier supplier of the target heading to the hub
+   * @param maxVelocity max translation speed
+   * @param maxAngularVelocity max angular speed
    * @return command that applies heading lock toward the hub
    */
   public static Command aimAtHub(
       CommandSwerveDrivetrain drivetrain,
       DoubleSupplier xInput,
       DoubleSupplier yInput,
-      DoubleSupplier headingSupplier,
-      double maxVelocity,
-      double maxAngularVelocity) {
+      Supplier<Angle> headingSupplier,
+      LinearVelocity maxVelocity,
+      AngularVelocity maxAngularVelocity) {
 
     return drivetrain
-        .headingLockedDriveCommand(xInput, yInput, headingSupplier, maxVelocity, maxAngularVelocity)
+        .headingLockedDriveCommand(
+            xInput,
+            yInput,
+            () -> headingSupplier.get().in(Degrees),
+            maxVelocity.in(MetersPerSecond),
+            maxAngularVelocity.in(RadiansPerSecond))
         .withName("ShooterFactory AimAtHub");
   }
 }

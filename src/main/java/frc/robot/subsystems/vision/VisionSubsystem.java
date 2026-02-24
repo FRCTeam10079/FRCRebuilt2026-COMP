@@ -244,7 +244,7 @@ public class VisionSubsystem extends SubsystemBase {
       if (VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED) {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
 
-        if (mt1 != null && mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
+        if (mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
           double mt1HeadingDeg = mt1.pose.getRotation().getDegrees();
           double divergenceDeg =
               Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));

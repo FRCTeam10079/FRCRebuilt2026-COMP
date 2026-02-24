@@ -5,6 +5,7 @@
 package frc.robot.controllers;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -119,11 +120,10 @@ public final class DriverControls {
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(ShooterFactory.shoot(setpointSupplier, shooter, shooterPivot, indexer, () -> {
               // Heading is "on target" when we're close to the hub bearing
-              double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
-              double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-              double error = Math.abs(edu.wpi.first.math.MathUtil.inputModulus(
-                  currentHeading - targetHeading, -180, 180));
-              return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
+              Angle targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
+              Angle currentHeading = drivetrain.getState().Pose.getRotation().getMeasure();
+              return Constants.angleDistance(currentHeading, targetHeading)
+                  .lte(Constants.ShooterConstants.HEADING_TOLERANCE);
             })
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {

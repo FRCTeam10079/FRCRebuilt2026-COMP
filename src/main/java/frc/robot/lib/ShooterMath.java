@@ -1,9 +1,11 @@
 package frc.robot.lib;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -49,11 +51,11 @@ public final class ShooterMath {
    * @param robotPose current field-relative robot pose
    * @return heading in degrees (-180 to 180)
    */
-  public static double getHeadingToHub(Pose2d robotPose) {
+  public static Angle getHeadingToHub(Pose2d robotPose) {
     Translation2d hubPosition = getHubPosition();
     double dx = hubPosition.getX() - robotPose.getX();
     double dy = hubPosition.getY() - robotPose.getY();
-    return Math.toDegrees(Math.atan2(dy, dx));
+    return Radians.of(Math.atan2(dy, dx));
   }
 
   /**

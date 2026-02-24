@@ -21,6 +21,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -225,8 +226,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
                   m_pivotMotor.setControl(
                       m_dutyCycleRequest.withOutput(ShooterPivotConstants.HOMING_SPEED));
 
-                  double statorCurrent = m_pivotMotor.getStatorCurrent().getValueAsDouble();
-                  if (statorCurrent > ShooterPivotConstants.HOMING_CURRENT_THRESHOLD) {
+                  Current statorCurrent = m_pivotMotor.getStatorCurrent().getValue();
+                  if (statorCurrent.gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD)) {
                     stallCounter[0]++;
                   } else {
                     stallCounter[0] = 0;

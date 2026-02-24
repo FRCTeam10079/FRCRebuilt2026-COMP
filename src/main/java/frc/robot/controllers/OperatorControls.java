@@ -83,9 +83,7 @@ public final class OperatorControls {
     // The pivot continuously tracks the angle from the interpolation table.
     shooterPivot.setDefaultCommand(shooterPivot.trackAngleCommand(() -> {
       ShooterSetpoint sp = setpointSupplier.get();
-      return (sp != null && sp.isValid())
-          ? sp.pivotAngle()
-          : ShooterPivotConstants.MIN_ANGLE;
+      return (sp != null && sp.isValid()) ? sp.pivotAngle() : ShooterPivotConstants.MIN_ANGLE;
     }));
 
     // Left Bumper - Manual override (operator left stick Y)

@@ -7,6 +7,8 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 
 import choreo.auto.AutoFactory;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -91,11 +93,12 @@ public class RobotContainer {
     // Wire subsystem state into the state machine so isReadyToFire() works
     m_stateMachine.registerShooterSuppliers(shooter::isReady, () -> {
       // Heading is "aligned" when robot faces the hub within tolerance
-      double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
-      double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
-      double error = Math.abs(
-          edu.wpi.first.math.MathUtil.inputModulus(currentHeading - targetHeading, -180, 180));
-      return error <= Constants.ShooterConstants.HEADING_TOLERANCE_DEGREES;
+      double targetHeading =
+          ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+      double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
+      Angle error = Radians.of(
+          Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
+      return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
     });
 
     // Initialize the pathfinding system

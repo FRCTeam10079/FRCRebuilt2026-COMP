@@ -4,9 +4,13 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
+
 import com.ctre.phoenix6.CANBus;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Unit;
+import edu.wpi.first.units.measure.Angle;
 
 /**
  * Constants for FRC 2026 REBUILT season Contains game-specific values, timing, and robot
@@ -85,6 +89,11 @@ public final class Constants {
     if (x.lte(min)) return min;
     if (x.gte(max)) return max;
     return x;
+  }
+
+  public static Angle angleDistance(Angle a, Angle b) {
+    return Degrees.of(
+        Math.abs(MathUtil.inputModulus(b.in(Degrees) - a.in(Degrees), -180.0, +180.0)));
   }
 
   // ==================== APRIL TAG FIELD LAYOUT ====================

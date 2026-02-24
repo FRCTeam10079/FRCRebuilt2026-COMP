@@ -10,14 +10,12 @@ import frc.robot.constants.ShooterConstants;
 import frc.robot.constants.ShooterPivotConstants;
 
 /**
- * Represents a complete shooter setpoint: flywheel RPM and pivot angle.
- * <br>
+ * Represents a complete shooter setpoint: flywheel RPM and pivot angle. <br>
  * The setpoint is computed from the distance to the hub using interpolation tables.
  *
  * @see ShooterInterpolationTable
  */
-public record ShooterSetpoint(
-    AngularVelocity flywheelRPM, Angle pivotAngle, boolean isValid) {
+public record ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngle, boolean isValid) {
 
   /**
    * Create a new ShooterSetpoint.
@@ -86,5 +84,5 @@ public record ShooterSetpoint(
    * bypass distance-based interpolation for a known reliable shot.
    */
   public static final ShooterSetpoint FENDER_SHOT = new ShooterSetpoint(
-      ShooterConstants.FENDER_SHOT_RPM, ShooterConstants.FENDER_SHOT_PIVOT_ANGLE, true);
+      ShooterConstants.FENDER_SHOT_SPEED, ShooterConstants.FENDER_SHOT_PIVOT_ANGLE, true);
 }

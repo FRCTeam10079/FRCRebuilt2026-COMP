@@ -1,5 +1,9 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Degrees;
+
+import edu.wpi.first.units.measure.Angle;
+
 public class ShooterPivotConstants {
   public static final int MOTOR_ID = 23;
 
@@ -8,9 +12,9 @@ public class ShooterPivotConstants {
   public static final double GEAR_RATIO = 118.0;
 
   /** Physical range of motion in degrees. */
-  public static final double MIN_ANGLE_DEGREES = 60.0;
+  public static final Angle MIN_ANGLE = Degrees.of(60.0);
 
-  public static final double MAX_ANGLE_DEGREES = 80.0;
+  public static final Angle MAX_ANGLE = Degrees.of(80.0);
 
   // ==================== HOMING ====================
   /** Duty cycle output for slow hard-stop homing (negative = toward hard stop). */
@@ -49,7 +53,7 @@ public class ShooterPivotConstants {
   public static final double POSITION_TOLERANCE_DEGREES = 1.0;
 
   /** Wider tolerance for "ready to shoot" in degrees. */
-  public static final double SHOOTING_TOLERANCE_DEGREES = 2.0;
+  public static final Angle SHOOTING_TOLERANCE = Degrees.of(2.0);
 
   // ==================== CURRENT LIMITS ====================
   public static final int SUPPLY_CURRENT_LIMIT = 30;
@@ -62,20 +66,14 @@ public class ShooterPivotConstants {
   public static final double MANUAL_DEADBAND = 0.1;
 
   // ==================== CONVERSIONS ====================
-  /**
-   * Convert degrees of pivot angle to motor rotations. motorRotations = degrees * GEAR_RATIO /
-   * 360.0
-   */
-  public static double degreesToMotorRotations(double degrees) {
-    return degrees * GEAR_RATIO / 360.0;
+  /** Convert position of pivot angle to motor rotations. motorRotations = position * GEAR_RATIO */
+  public static Angle degreesToMotorRotations(Angle position) {
+    return position.times(GEAR_RATIO);
   }
 
-  /**
-   * Convert motor rotations to degrees of pivot angle. degrees = motorRotations * 360.0 /
-   * GEAR_RATIO
-   */
-  public static double motorRotationsToDegrees(double motorRotations) {
-    return motorRotations * 360.0 / GEAR_RATIO;
+  /** Convert motor rotations to degrees of pivot angle. degrees = motorPosition / GEAR_RATIO */
+  public static Angle motorRotationsToDegrees(Angle motorPosition) {
+    return motorPosition.div(GEAR_RATIO);
   }
 
   protected ShooterPivotConstants() {}

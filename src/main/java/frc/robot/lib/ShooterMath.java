@@ -1,7 +1,10 @@
 package frc.robot.lib;
 
+import static edu.wpi.first.units.Units.Meters;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constants.GameConstants;
@@ -22,9 +25,9 @@ public final class ShooterMath {
    * @param robotPose current field-relative robot pose
    * @return distance in meters
    */
-  public static double getDistanceToHub(Pose2d robotPose) {
+  public static Distance getDistanceToHub(Pose2d robotPose) {
     Translation2d hubPosition = getHubPosition();
-    return robotPose.getTranslation().getDistance(hubPosition);
+    return Meters.of(robotPose.getTranslation().getDistance(hubPosition));
   }
 
   /**
@@ -92,7 +95,7 @@ public final class ShooterMath {
         lastX = x;
         lastY = y;
         lastTheta = theta;
-        double distance = getDistanceToHub(pose);
+        Distance distance = getDistanceToHub(pose);
         cached = ShooterSetpoint.fromDistance(distance);
       }
       return cached;

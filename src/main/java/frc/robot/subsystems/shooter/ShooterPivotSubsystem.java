@@ -4,6 +4,9 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Degrees;
+
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -17,12 +20,15 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.Constants.ShooterPivotConstants;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 /**
  * Shooter pivot subsystem with closed-loop MotionMagic position control.
@@ -34,20 +40,20 @@ import java.util.function.DoubleSupplier;
  */
 public class ShooterPivotSubsystem extends SubsystemBase {
 
-  private final TalonFX m_pivotMotor;
+  private final TalonFX m_pivotMotor = new TalonFX(ShooterPivotConstants.MOTOR_ID);
 
   // Control requests
   private final MotionMagicVoltage m_motionMagicRequest =
       new MotionMagicVoltage(0.0).withSlot(0).withEnableFOC(true);
   private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0.0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
+  StatusSignal<Angle> positionSignal = m_pivotMotor.getPosition();
 
   // State tracking
   private boolean m_isHomed = true;
-  private double m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE_DEGREES;
+  private Angle m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
 
   public ShooterPivotSubsystem() {
-    m_pivotMotor = new TalonFX(ShooterPivotConstants.MOTOR_ID);
     configureMotor();
   }
 
@@ -87,7 +93,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE_DEGREES - ShooterPivotConstants.MIN_ANGLE_DEGREES))
+            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)))
         .withReverseSoftLimitThreshold(0.0);
 
     m_pivotMotor.getConfigurator().apply(config);
@@ -101,46 +107,43 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   /**
    * Command the pivot to a specific angle using MotionMagic.
    *
-   * @param angleDegrees target angle in degrees (60-80deg range)
+   * @param angle target angle (60-80deg range)
    */
-  public void setAngle(double angleDegrees) {
+  public void setAngle(Angle angle) {
     // Clamp to safe range
-    angleDegrees = MathUtil.clamp(
-        angleDegrees,
-        ShooterPivotConstants.MIN_ANGLE_DEGREES,
-        ShooterPivotConstants.MAX_ANGLE_DEGREES);
-    m_targetAngleDegrees = angleDegrees;
+    angle =
+        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+    m_targetAngleDegrees = angle;
 
-    double motorRotations = ShooterPivotConstants.degreesToMotorRotations(
-        angleDegrees - ShooterPivotConstants.MIN_ANGLE_DEGREES);
-    m_pivotMotor.setControl(m_motionMagicRequest.withPosition(motorRotations));
+    m_pivotMotor.setControl(
+        m_motionMagicRequest.withPosition(ShooterPivotConstants.degreesToMotorRotations(
+            angle.minus(ShooterPivotConstants.MIN_ANGLE))));
   }
 
   /**
-   * Get the current pivot angle in degrees.
+   * Get the current pivot angle.
    *
-   * @return pivot angle in degrees (relative to hard stop zero)
+   * @return pivot angle (relative to hard stop zero)
    */
-  public double getCurrentAngleDegrees() {
-    return ShooterPivotConstants.motorRotationsToDegrees(
-            m_pivotMotor.getPosition().getValueAsDouble())
-        + ShooterPivotConstants.MIN_ANGLE_DEGREES;
+  public Angle getCurrentAngle() {
+    return ShooterPivotConstants.motorRotationsToDegrees(positionSignal.getValue())
+        .plus(ShooterPivotConstants.MIN_ANGLE);
   }
 
   /**
    * Check if the pivot is at the target angle within shooting tolerance.
    *
    * @param targetDegrees the target angle
-   * @param toleranceDegrees the tolerance in degrees
+   * @param toleranceDegrees the tolerance
    * @return true if within tolerance
    */
-  public boolean isAtAngle(double targetDegrees, double toleranceDegrees) {
-    return Math.abs(getCurrentAngleDegrees() - targetDegrees) <= toleranceDegrees;
+  public boolean isAtAngle(Angle targetDegrees, Angle toleranceDegrees) {
+    return getCurrentAngle().isNear(targetDegrees, toleranceDegrees);
   }
 
   /** Check if the pivot is at its current target within shooting tolerance. */
   public boolean isAtTarget() {
-    return isAtAngle(m_targetAngleDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE_DEGREES);
+    return isAtAngle(m_targetAngleDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE);
   }
 
   /** @return whether the pivot has been homed via hard-stop detection. */
@@ -148,8 +151,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     return m_isHomed;
   }
 
-  /** @return the current target angle in degrees. */
-  public double getTargetAngleDegrees() {
+  /** @return the current target angle. */
+  public Angle getTargetAngleDegrees() {
     return m_targetAngleDegrees;
   }
 
@@ -192,7 +195,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE_DEGREES - ShooterPivotConstants.MIN_ANGLE_DEGREES))
+            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)))
         .withReverseSoftLimitThreshold(0.0);
     m_pivotMotor.getConfigurator().apply(softLimits);
   }
@@ -235,7 +238,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
               m_pivotMotor.setPosition(0);
               m_isHomed = true;
               enableSoftwareLimits();
-              m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE_DEGREES;
+              m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
             }),
             // Stop motor
             Commands.runOnce(this::stop))
@@ -248,11 +251,11 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    * Command to continuously track a target angle from a supplier. This is the main auto-aim command
    * used during shooting.
    *
-   * @param angleSupplier supplier that provides the target angle in degrees
+   * @param angleSupplier supplier that provides the target angle
    * @return a command that continuously sets the pivot angle
    */
-  public Command trackAngleCommand(DoubleSupplier angleSupplier) {
-    return run(() -> setAngle(angleSupplier.getAsDouble()))
+  public Command trackAngleCommand(Supplier<Angle> angleSupplier) {
+    return run(() -> setAngle(angleSupplier.get()))
         .finallyDo(interrupted -> stop())
         .withName("ShooterPivot Track Angle");
   }
@@ -260,10 +263,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   /**
    * Command to go to a fixed angle and hold it.
    *
-   * @param angleDegrees the target angle in degrees
+   * @param angleDegrees the target angle
    * @return a command that holds the angle until cancelled
    */
-  public Command goToAngleCommand(double angleDegrees) {
+  public Command goToAngleCommand(Angle angleDegrees) {
     return run(() -> setAngle(angleDegrees))
         .finallyDo(interrupted -> stop())
         .withName("ShooterPivot GoTo " + angleDegrees + "deg");
@@ -291,8 +294,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("ShooterPivot/AngleDegrees", getCurrentAngleDegrees());
-    SmartDashboard.putNumber("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees);
+    SmartDashboard.putNumber("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
+    SmartDashboard.putNumber("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees.in(Degrees));
     SmartDashboard.putNumber("ShooterPivot/Position (rot)", getPosition());
     SmartDashboard.putNumber("ShooterPivot/Velocity (rps)", getVelocity());
     SmartDashboard.putBoolean("ShooterPivot/IsHomed", m_isHomed);

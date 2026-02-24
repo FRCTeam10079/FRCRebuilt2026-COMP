@@ -7,6 +7,7 @@ package frc.robot.controllers;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.ShooterPivotConstants;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.ClimbState;
@@ -83,8 +84,8 @@ public final class OperatorControls {
     shooterPivot.setDefaultCommand(shooterPivot.trackAngleCommand(() -> {
       ShooterSetpoint sp = setpointSupplier.get();
       return (sp != null && sp.isValid())
-          ? sp.getPivotAngleDegrees()
-          : frc.robot.Constants.ShooterPivotConstants.MIN_ANGLE_DEGREES;
+          ? sp.pivotAngle()
+          : ShooterPivotConstants.MIN_ANGLE;
     }));
 
     // Left Bumper - Manual override (operator left stick Y)

@@ -4,6 +4,9 @@
 
 package frc.robot.commands;
 
+import static edu.wpi.first.units.Units.RPM;
+
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -57,9 +60,9 @@ public final class ShooterFactory {
       return false;
     }
 
-    boolean flywheelReady = shooter.isAtRPM(sp.getFlywheelRPM());
-    boolean pivotReady = shooterPivot.isAtAngle(
-        sp.getPivotAngleDegrees(), ShooterPivotConstants.SHOOTING_TOLERANCE_DEGREES);
+    boolean flywheelReady = shooter.isAt(sp.flywheelRPM());
+    boolean pivotReady =
+        shooterPivot.isAtAngle(sp.pivotAngle(), ShooterPivotConstants.SHOOTING_TOLERANCE);
     boolean headingReady = headingOnTarget.get();
 
     // Telemetry for debugging
@@ -90,13 +93,13 @@ public final class ShooterFactory {
     return shooter
         .holdRPMCommand(() -> {
           ShooterSetpoint sp = setpointSupplier.get();
-          return (sp != null && sp.isValid()) ? sp.getFlywheelRPM() : 0.0;
+          return (sp != null && sp.isValid()) ? sp.flywheelRPM() : RPM.zero();
         })
         .alongWith(shooterPivot.trackAngleCommand(() -> {
           ShooterSetpoint sp = setpointSupplier.get();
           return (sp != null && sp.isValid())
-              ? sp.getPivotAngleDegrees()
-              : ShooterPivotConstants.MIN_ANGLE_DEGREES;
+              ? sp.pivotAngle()
+              : ShooterPivotConstants.MIN_ANGLE;
         }))
         .withName("ShooterFactory AimAndSpinUp");
   }
@@ -148,7 +151,7 @@ public final class ShooterFactory {
     return shooter
         .holdRPMCommand(ShooterConstants.FENDER_SHOT_RPM)
         .alongWith(
-            shooterPivot.goToAngleCommand(ShooterConstants.FENDER_SHOT_PIVOT_DEGREES),
+            shooterPivot.goToAngleCommand(ShooterConstants.FENDER_SHOT_PIVOT_ANGLE),
             Commands.waitUntil(() -> shooter.isReady() && shooterPivot.isAtTarget())
                 .andThen(indexer.feedCommand()))
         .withName("ShooterFactory Fender Shot");
@@ -203,9 +206,8 @@ public final class ShooterFactory {
             // Only wait for flywheel - skip validity, heading, and pivot checks
             Commands.waitUntil(() -> {
                   ShooterSetpoint sp = setpointSupplier.get();
-                  double targetRPM =
-                      (sp != null && sp.getFlywheelRPM() > 0) ? sp.getFlywheelRPM() : 0.0;
-                  boolean ready = targetRPM > 0 && shooter.isAtRPM(targetRPM);
+                  AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero())) ? sp.flywheelRPM() : RPM.zero();
+                  boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
                   SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
                   return ready;
                 })

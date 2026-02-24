@@ -5,6 +5,8 @@
 package frc.robot;
 
 import com.ctre.phoenix6.CANBus;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Unit;
 
 /**
  * Constants for FRC 2026 REBUILT season Contains game-specific values, timing, and robot
@@ -77,6 +79,12 @@ public final class Constants {
       }
     }
     return false;
+  }
+
+  public static <U extends Unit, T extends Measure<U>> T clamp(T x, T min, T max) {
+    if (x.lte(min)) return min;
+    if (x.gte(max)) return max;
+    return x;
   }
 
   // ==================== APRIL TAG FIELD LAYOUT ====================

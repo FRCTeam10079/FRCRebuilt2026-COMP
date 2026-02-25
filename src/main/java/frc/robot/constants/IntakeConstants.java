@@ -15,8 +15,8 @@ public class IntakeConstants {
     public static final Angle INTAKE_POSITION = Rotations.of(0);
     public static final Angle STOWED_POSITION = Rotations.of(-6.25);
 
-    public static final int SUPPLY_CURRENT_LIMIT = 40;
-    public static final int STATOR_CURRENT_LIMIT = 80;
+    public static final int SUPPLY_CURRENT_LIMIT = 30;
+    public static final int STATOR_CURRENT_LIMIT = 40;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
     public static final Current STALL_CURRENT_THRESHOLD = Amps.of(35.0);
@@ -25,9 +25,22 @@ public class IntakeConstants {
 
     public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.05);
 
+    /**
+     * How long (seconds) the pivot must be at setpoint before switching to idle (NeutralOut). Brake
+     * mode holds position mechanically once the motor is off.
+     */
+    public static final double IDLE_DEBOUNCE_SECONDS = 0.5;
+
     public static final double KA = 0;
     public static final double KS = 0.4;
-    public static final double KG = 0;
+    /**
+     * Gravity compensation feedforward. Tune this by commanding the pivot to 90deg and measuring
+     * the duty cycle needed to hold it still - that's approximately kG. With Arm_Cosine gravity
+     * type, the controller applies kG * cos(angle) automatically. TODO: Tune this value on the
+     * robot. Start at ~0.15 and adjust.
+     */
+    public static final double KG = 0.15;
+
     public static final double KP = 1.8;
     public static final double KI = 0;
     public static final double KD = 0.25;

@@ -89,6 +89,12 @@ public final class OperatorControls {
     // Left Bumper - Manual override (operator left stick Y)
     operator.leftBumper().whileTrue(shooterPivot.manualControlCommand(() -> -operator.getLeftY()));
 
+    // Right Bumper - Hold to control shooter pivot with left stick Y
+    operator.rightBumper().whileTrue(shooterPivot.manualControlCommand(() -> -operator.getLeftY()));
+
+    // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
+    operator.x().onTrue(shooterPivot.homeCommand());
+
     // ==================== FORCE SHOOT OVERRIDE ====================
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.
     // Use when the robot thinks it can't make the shot but the operator

@@ -135,19 +135,49 @@ public class VisionSubsystem extends SubsystemBase {
       return false;
     }
 
-    // MT2 stddev scaling:
-    // Single-tag: linear (d^1) - MT2 eliminates ambiguity, d^3 was way too
-    // aggressive
-    // Multi-tag: flat - MT2 multi-tag is very reliable at any reasonable distance
-    // Base 0.7 is what Limelight says
-    double xyStdev;
-    if (mt2.tagCount < 2) {
-      xyStdev = VisionConstants.DEFAULT_XY_STDDEV * avgTagDist;
-    } else {
-      xyStdev = VisionConstants.DEFAULT_XY_STDDEV;
+    // Pose-difference sanity check: reject if vision says
+    // we're suddenly far from where odometry thinks we are.
+    double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    Logger.recordOutput(logPrefix + "MT2/PoseDifference", poseDifference);
+
+    if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
+      Logger.recordOutput(logPrefix + "MT2/Status", "POSE_DIFF_REJECT");
+      totalRejected++;
+      return false;
     }
 
-    Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, VisionConstants.THETA_STDDEV);
+    // Tag area gating for single-tag: reject very small tags (too far /
+    // unreliable).
+    // Multi-tag is always accepted since the solve is robust.
+    if (mt2.tagCount == 1 && mt2.avgTagArea < VisionConstants.MIN_TAG_AREA_SINGLE_TAG) {
+      Logger.recordOutput(logPrefix + "MT2/Status", "TAG_AREA_REJECT");
+      totalRejected++;
+      return false;
+    }
+
+    // =============== STANDARD DEVIATION MODEL ===============
+    // Quadratic distance scaling, inversely linear with tag
+    // count.
+    // Formula: xyStdDev = coefficient * dist^2 / tagCount
+    // This trusts close multi-tag observations strongly while being
+    // appropriately uncertain for distant single-tag observations.
+    double xyStdev =
+        VisionConstants.XY_STDDEV_COEFFICIENT * Math.pow(avgTagDist, 2.0) / mt2.tagCount;
+    xyStdev = Math.max(xyStdev, VisionConstants.XY_STDDEV_FLOOR);
+
+    // Theta: trust multi-tag heading to gently correct gyro drift.
+    // Single-tag: ignore heading (gyro is more reliable).
+    // This is a key improvement - our old code used THETA_STDDEV=9999999 for
+    // everything, meaning the gyro NEVER got corrected by vision. After collisions
+    // or Pigeon drift, heading would diverge permanently.
+    double thetaStdDev;
+    if (mt2.tagCount >= 2) {
+      thetaStdDev = VisionConstants.MULTI_TAG_THETA_STDDEV;
+    } else {
+      thetaStdDev = VisionConstants.SINGLE_TAG_THETA_STDDEV;
+    }
+
+    Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, thetaStdDev);
 
     drivetrain.addVisionMeasurement(pose, mt2.timestampSeconds, stdDevs);
 
@@ -157,6 +187,7 @@ public class VisionSubsystem extends SubsystemBase {
     Logger.recordOutput(logPrefix + "MT2/TagCount", mt2.tagCount);
     Logger.recordOutput(logPrefix + "MT2/AvgTagDist", avgTagDist);
     Logger.recordOutput(logPrefix + "MT2/XYStdDev", xyStdev);
+    Logger.recordOutput(logPrefix + "MT2/ThetaStdDev", thetaStdDev);
     return true;
   }
 
@@ -215,9 +246,31 @@ public class VisionSubsystem extends SubsystemBase {
       }
     }
 
-    double xyStdev =
-        VisionConstants.DEFAULT_XY_STDDEV * avgTagDist * avgTagDist / mt1.tagCount / mt1.tagCount;
-    double thetaStdDev = VisionConstants.THETA_STDDEV;
+    // Pose-difference sanity check
+    double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
+      Logger.recordOutput(logPrefix + "MT1/Status", "POSE_DIFF_REJECT");
+      totalRejected++;
+      return;
+    }
+
+    // Standard deviation: quadratic distance scaling like 6328/1678.
+    // MT1 is less reliable than MT2, so we use a higher coefficient (2x).
+    double xyStdev = VisionConstants.XY_STDDEV_COEFFICIENT
+        * 2.0
+        * Math.pow(avgTagDist, 2.0)
+        / (mt1.tagCount * mt1.tagCount);
+    xyStdev = Math.max(xyStdev, VisionConstants.XY_STDDEV_FLOOR);
+
+    // Theta: trust multi-tag MT1 heading weakly (like 254 with 6-30deg stddev).
+    // Single-tag MT1 heading is unreliable - don't trust.
+    double thetaStdDev;
+    if (mt1.tagCount >= 2) {
+      // ~0.5 rad = ~29deg
+      thetaStdDev = VisionConstants.MULTI_TAG_THETA_STDDEV;
+    } else {
+      thetaStdDev = VisionConstants.SINGLE_TAG_THETA_STDDEV;
+    }
 
     Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, thetaStdDev);
 
@@ -229,6 +282,7 @@ public class VisionSubsystem extends SubsystemBase {
     Logger.recordOutput(logPrefix + "MT1/TagCount", mt1.tagCount);
     Logger.recordOutput(logPrefix + "MT1/AvgTagDist", avgTagDist);
     Logger.recordOutput(logPrefix + "MT1/XYStdDev", xyStdev);
+    Logger.recordOutput(logPrefix + "MT1/ThetaStdDev", thetaStdDev);
   }
 
   public void updateWhileDisabled() {

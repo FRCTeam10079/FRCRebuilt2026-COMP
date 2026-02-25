@@ -5,6 +5,7 @@
 package frc.robot.subsystems.intake;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -28,15 +29,21 @@ public class PivotSubsystem extends SubsystemBase {
       new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
   private double m_pivotSetpoint;
   private final PositionVoltage m_positionVoltage = new PositionVoltage(m_pivotSetpoint);
+  private final NeutralOut m_neutralRequest = new NeutralOut();
 
   // Stall detection state (only active while stowing)
   private boolean m_isStowing = false;
   private boolean m_isStalled = false;
   private double m_stallStartTime = 0.0;
 
+  // Idle detection - switch to NeutralOut (brake mode holds mechanically)
+  // when the pivot has been at setpoint long enough. Saves power.
+  private boolean m_isIdle = false;
+  private double m_atSetpointSinceTime = 0.0;
+
   public PivotSubsystem() {
     configureMotors();
-    // Prevent pivot from moving on startup — set setpoint to current position
+    // Prevent pivot from moving on startup - set setpoint to current position
     m_pivotSetpoint = getPivotPosition();
   }
 
@@ -83,6 +90,7 @@ public class PivotSubsystem extends SubsystemBase {
   public void deployPivot() {
     m_isStowing = false;
     m_isStalled = false;
+    wakeFromIdle();
     setPivotPosition(IntakeConstants.Pivot.INTAKE_POSITION);
   }
 
@@ -91,7 +99,14 @@ public class PivotSubsystem extends SubsystemBase {
     m_isStowing = true;
     m_isStalled = false;
     m_stallStartTime = 0.0;
+    wakeFromIdle();
     setPivotPosition(IntakeConstants.Pivot.STOWED_POSITION);
+  }
+
+  /** Wake the motor from idle state so it resumes closed-loop control. */
+  private void wakeFromIdle() {
+    m_isIdle = false;
+    m_atSetpointSinceTime = 0.0;
   }
 
   /** @return true if the pivot detected a stall during stowing and is holding position. */
@@ -119,23 +134,45 @@ public class PivotSubsystem extends SubsystemBase {
           m_stallStartTime = Timer.getFPGATimestamp();
         } else if (Timer.getFPGATimestamp() - m_stallStartTime
             >= IntakeConstants.Pivot.STALL_TIME_THRESHOLD) {
-          // Stall confirmed — hold current position instead of fighting the obstruction
+          // Stall confirmed - hold current position instead of fighting the obstruction
           m_isStalled = true;
           m_pivotSetpoint = getPivotPosition();
         }
       } else {
-        // Current dropped below threshold — reset timer
+        // Current dropped below threshold - reset timer
         m_stallStartTime = 0.0;
       }
     }
 
-    // Always run closed-loop position control (no NeutralOut)
-    m_pivotMotor.setControl(m_positionVoltage.withPosition(m_pivotSetpoint));
+    // --- Idle detection: switch to NeutralOut once at setpoint for long enough ---
+    // Brake mode holds position mechanically, saving power. Inspired by 1678's
+    // approach of using brake mode + zero-output when at target, rather than
+    // continuous PID commanding (which wastes current, especially with kG=0).
+    if (!m_isIdle) {
+      if (reachedSetpoint() && !m_isStowing) {
+        if (m_atSetpointSinceTime == 0.0) {
+          m_atSetpointSinceTime = Timer.getFPGATimestamp();
+        } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime
+            >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
+          m_isIdle = true;
+        }
+      } else {
+        m_atSetpointSinceTime = 0.0;
+      }
+    }
+
+    // Send motor command: NeutralOut when idle, PositionVoltage otherwise
+    if (m_isIdle) {
+      m_pivotMotor.setControl(m_neutralRequest);
+    } else {
+      m_pivotMotor.setControl(m_positionVoltage.withPosition(m_pivotSetpoint));
+    }
 
     SmartDashboard.putNumber("Pivot/setpoint", m_pivotSetpoint);
     SmartDashboard.putNumber("Pivot/position", getPivotPosition());
     SmartDashboard.putBoolean("Pivot/reachedSetpoint?", reachedSetpoint());
     SmartDashboard.putBoolean("Pivot/isStalled", m_isStalled);
+    SmartDashboard.putBoolean("Pivot/isIdle", m_isIdle);
     SmartDashboard.putNumber(
         "Pivot/statorCurrent", m_pivotMotor.getStatorCurrent().getValueAsDouble());
   }

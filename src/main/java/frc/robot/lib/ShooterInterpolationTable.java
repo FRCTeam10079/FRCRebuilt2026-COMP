@@ -86,6 +86,34 @@ public final class ShooterInterpolationTable {
     return RPM.of(rpmTable.get(distance.in(Meters)));
   }
 
+  // ==================== TIME OF FLIGHT TABLE ====================
+  // Maps distance (meters) -> time of flight (seconds)
+  // Time from ball leaving the shooter to arriving at the hub.
+  // CRITICAL for shoot-on-the-move - determines lookahead offset.
+  private static final InterpolatingTreeMap<Double, Double> tofTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+
+  static {
+    // -------------------------------------------------------
+    // TODO: MUST BE MEASURED ON REAL ROBOT!
+    // Use slow-motion video (240fps phone camera) from the side.
+    // Time from ball exit to hub entry at each distance.
+    // These are ESTIMATED placeholders based on physics:
+    // - Hub height delta ~1.33m, pivot angles 60-80deg
+    // - At 60deg launch, v~15m/s, horizontal component ~7.5m/s
+    // - TOF ~ distance / horizontal_velocity (rough)
+    // -------------------------------------------------------
+    tofTable.put(1.0, 0.25); // very close - short flight
+    tofTable.put(1.5, 0.30); // TODO: TUNE - placeholder estimate
+    tofTable.put(2.0, 0.35); // TODO: TUNE - placeholder estimate
+    tofTable.put(2.5, 0.40); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.0, 0.45); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.0, 0.55); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
+    tofTable.put(5.0, 0.65); // TODO: TUNE - placeholder estimate
+  }
+
   /**
    * Get the interpolated pivot angle for a given distance.
    *
@@ -94,5 +122,18 @@ public final class ShooterInterpolationTable {
    */
   public static Angle getAngle(Distance distance) {
     return Degrees.of(angleTable.get(distance.in(Meters)));
+  }
+
+  /**
+   * Get the interpolated time-of-flight for a given distance.
+   *
+   * <p>This is used by the LaunchCalculator for velocity-compensated lookahead. The ball's flight
+   * time determines how much the robot's velocity offsets the effective aim point.
+   *
+   * @param distanceMeters horizontal distance to hub in meters
+   * @return estimated time of flight in seconds
+   */
+  public static double getTimeOfFlight(double distanceMeters) {
+    return tofTable.get(distanceMeters);
   }
 }

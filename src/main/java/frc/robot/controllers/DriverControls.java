@@ -15,7 +15,6 @@ import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
-import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.GameState;
@@ -92,21 +91,16 @@ public final class DriverControls {
                 intake)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
-    // ==================== SHOOTING (DISTANCE-BASED) ====================
-    // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
-    // angle
-    // The driver controls translation while the drivetrain auto-rotates toward the
-    // hub.
+    // ==================== SHOOTING (SHOOT-ON-THE-MOVE) ====================
+    // Right Bumper - Hold to engage shoot-on-the-move heading lock + pre-spin.
+    // The drivetrain automatically rotates toward the predicted launch angle
+    // (accounting for robot velocity + time-of-flight) while the driver retains
+    // full translational control. Flywheel and pivot track LaunchCalculator output.
     controller
         .rightBumper()
-        .whileTrue(ShooterFactory.aimAtHub(
-                drivetrain,
-                controller::getLeftY,
-                controller::getLeftX,
-                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
-            .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
+        .whileTrue(drivetrain
+            .shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX)
+            .alongWith(ShooterFactory.aimAndSpinUpFromLauncher(shooter, shooterPivot))
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
               if (stateMachine.getGameState() == GameState.SCORING) {
@@ -114,17 +108,14 @@ public final class DriverControls {
               }
             }));
 
-    // Right Trigger - Hold to shoot (waits for on-target, then auto-feeds)
-    // Assumes aim-at-hub is engaged via right bumper, OR driver is manually aiming.
+    // Right Trigger - Hold to fire (waits for launch conditions, then auto-feeds).
+    // Uses LaunchCalculator-based setpoints and the wider heading tolerance (10
+    // deg)
+    // designed for shooting while moving.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(ShooterFactory.shoot(setpointSupplier, shooter, shooterPivot, indexer, () -> {
-              // Heading is "on target" when we're close to the hub bearing
-              Angle targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
-              Angle currentHeading = drivetrain.getState().Pose.getRotation().getMeasure();
-              return Constants.angleDistance(currentHeading, targetHeading)
-                  .lte(Constants.ShooterConstants.HEADING_TOLERANCE);
-            })
+        .whileTrue(ShooterFactory.shootOnTheMove(
+                setpointSupplier, shooter, shooterPivot, indexer, drivetrain)
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
               if (stateMachine.getGameState() == GameState.SCORING) {

@@ -54,5 +54,29 @@ public class DrivetrainConstants {
   public static final double ALIGN_OFFSET_X_CENTER = -0.50;
   public static final double ALIGN_OFFSET_Y_CENTER = 0.0;
 
+  // ==================== SHOOT-ON-THE-MOVE ====================
+  /**
+   * Maximum polar velocity of the ball at the hub (rad/s) during shoot-on-the-move. If the driver's
+   * translation would cause the ball to sweep past the hub opening faster than this rate,
+   * translation is clamped.
+   *
+   * <p>MA (6328) uses 0.5 rad/s. Start there and adjust: - Increase if driver feels too constrained
+   * - Decrease if shots miss at speed
+   */
+  // TODO: TUNE ON THE ROBOT
+  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.5;
+
+  /**
+   * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
+   * driver-controllable max speed; the velocity limiter may further reduce it.
+   */
+  public static final double MAX_SHOOTING_SPEED_MPS = 6.0;
+
+  /**
+   * Maximum angular velocity (rad/s) while in shoot-on-the-move mode. This is the cap on the
+   * heading controller output.
+   */
+  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0;
+
   protected DrivetrainConstants() {}
 }

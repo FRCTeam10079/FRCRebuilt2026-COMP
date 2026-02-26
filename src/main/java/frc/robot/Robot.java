@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.lib.LaunchCalculator;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 
@@ -47,6 +48,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
+    // Clear shoot-on-the-move parameters at the start of each cycle.
+    // They will be re-populated by the shootOnTheMoveDriveCommand if active.
+    LaunchCalculator.getInstance().clearParameters();
+
     // Update master state machine
     m_stateMachine.periodic();
 

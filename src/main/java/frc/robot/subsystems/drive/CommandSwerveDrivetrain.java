@@ -22,6 +22,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -30,11 +31,15 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.lib.LaunchCalculator;
+import frc.robot.lib.LaunchCalculator.LaunchParameters;
+import frc.robot.lib.ShooterMath;
 import frc.robot.subsystems.drive.SwerveHeadingController.HeadingControllerState;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
@@ -740,6 +745,140 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     return headingLockedDriveCommand(
         xInputSupplier, yInputSupplier, () -> fixedTargetHeading, maxVelocity, maxAngularVelocity);
+  }
+
+  // ==================== SHOOT-ON-THE-MOVE DRIVING ====================
+
+  /**
+   * Creates a command for driving while shooting on the move.
+   *
+   * <p>This is the core shoot-on-the-move driving command, adapted from Mechanical Advantage
+   * (6328). The driver retains full translational control while the robot's heading is
+   * automatically locked to the launch angle computed by {@link LaunchCalculator}.
+   *
+   * <p>Heading control uses a PD + feedforward controller (NOT the SNAP/MAINTAIN PID): omega =
+   * driveVelocityFF + kP * headingError + kD * (driveVelocityFF - measuredOmega)
+   *
+   * <p>Velocity limiting (law of sines) prevents the driver from moving so fast that the ball's
+   * polar velocity at the hub exceeds a configurable threshold.
+   *
+   * @param xInputSupplier Supplier for X joystick input (forward/back)
+   * @param yInputSupplier Supplier for Y joystick input (left/right)
+   * @return Command that applies shoot-on-the-move driving
+   */
+  public Command shootOnTheMoveDriveCommand(
+      DoubleSupplier xInputSupplier, DoubleSupplier yInputSupplier) {
+
+    return run(() -> {
+          // Ensure LaunchCalculator is updated this cycle
+          LaunchCalculator calc = LaunchCalculator.getInstance();
+          Pose2d currentPose = getState().Pose;
+          ChassisSpeeds currentSpeeds = getState().Speeds;
+          Rotation2d currentHeading = currentPose.getRotation();
+
+          // Update the calculator with the latest drivetrain state
+          calc.update(currentPose, currentSpeeds, currentHeading);
+
+          LaunchParameters params = calc.getParameters();
+
+          // If no parameters available, fall back to normal heading lock
+          if (params == null) {
+            driveFieldCentricSmooth(
+                xInputSupplier.getAsDouble(),
+                yInputSupplier.getAsDouble(),
+                0.0, // no rotation
+                Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS,
+                Constants.DrivetrainConstants.MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC);
+            return;
+          }
+
+          // ---- PD + Feedforward heading controller ----
+          // Output = FF + P * error + D * (FF - measured omega)
+          double headingErrorRad = params.driveAngle().minus(currentHeading).getRadians();
+          double measuredOmega = currentSpeeds.omegaRadiansPerSecond;
+
+          double omegaOutput = params.driveVelocityRadPerSec()
+              + Constants.HeadingControllerConstants.LAUNCH_KP * headingErrorRad
+              + Constants.HeadingControllerConstants.LAUNCH_KD
+                  * (params.driveVelocityRadPerSec() - measuredOmega);
+
+          // ---- Translation from joystick ----
+          double xMagnitude = MathUtil.applyDeadband(
+              xInputSupplier.getAsDouble(), Constants.DrivetrainConstants.DEADBAND_PERCENT);
+          double yMagnitude = MathUtil.applyDeadband(
+              yInputSupplier.getAsDouble(), Constants.DrivetrainConstants.DEADBAND_PERCENT);
+
+          // Convert joystick to field-relative velocities
+          double xVelocity = -xMagnitude
+              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
+              * teleopVelocityCoefficient;
+          double yVelocity = -yMagnitude
+              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
+              * teleopVelocityCoefficient;
+
+          // ---- Velocity limiting (law of sines) ----
+          // Prevents the ball from sweeping past the hub too fast.
+          // Computes the maximum linear speed that keeps the ball's angular velocity
+          // at the hub below MAX_POLAR_VELOCITY_RAD_PER_SEC.
+          Translation2d velocityVector = new Translation2d(xVelocity, yVelocity);
+          double linearSpeed = velocityVector.getNorm();
+
+          if (linearSpeed > 0.01) { // avoid division by zero
+            Translation2d hubPos = ShooterMath.getHubPosition();
+            Rotation2d hubDirection = hubPos.minus(currentPose.getTranslation()).getAngle();
+            Rotation2d velocityDirection = velocityVector.getAngle();
+
+            double robotAngle = Math.abs(hubDirection.minus(velocityDirection).getRadians());
+            double rawDistance = params.rawDistance();
+            double naiveTOF = calc.getNaiveTOF(rawDistance);
+
+            double hubAngle =
+                Constants.DrivetrainConstants.MAX_POLAR_VELOCITY_RAD_PER_SEC * naiveTOF;
+            double lookaheadAngle = Math.PI - robotAngle - hubAngle;
+
+            if (lookaheadAngle > 0) {
+              double robotLookaheadDist =
+                  rawDistance * Math.sin(hubAngle) / Math.sin(lookaheadAngle);
+              double maxLinearSpeed = robotLookaheadDist / naiveTOF;
+
+              if (linearSpeed > maxLinearSpeed) {
+                double scale = maxLinearSpeed / linearSpeed;
+                xVelocity *= scale;
+                yVelocity *= scale;
+              }
+            }
+          }
+
+          // ---- Apply skew compensation and drive ----
+          ChassisSpeeds compensatedSpeeds =
+              calculateSpeedsWithSkewCompensation(xVelocity, yVelocity, omegaOutput);
+
+          setControl(m_fieldCentricRequest.withSpeeds(compensatedSpeeds));
+
+          // ---- Telemetry ----
+          SmartDashboard.putNumber("ShootOnMove/HeadingErrorDeg", Math.toDegrees(headingErrorRad));
+          SmartDashboard.putNumber("ShootOnMove/OmegaOutput", omegaOutput);
+          SmartDashboard.putBoolean("ShootOnMove/IsValid", params.isValid());
+        })
+        .finallyDo(() -> {
+          LaunchCalculator.getInstance().reset();
+        })
+        .withName("ShootOnTheMove Drive");
+  }
+
+  /**
+   * Check if the robot heading is within launch tolerance of the target. Uses the wider launch-mode
+   * tolerance (not the static 3 deg tolerance).
+   *
+   * @return true if heading is close enough to launch target to fire
+   */
+  public boolean isAtLaunchHeadingGoal() {
+    LaunchParameters params = LaunchCalculator.getInstance().getParameters();
+    if (params == null) return false;
+
+    double errorDeg =
+        Math.abs(params.driveAngle().minus(getState().Pose.getRotation()).getDegrees());
+    return errorDeg <= Constants.ShooterConstants.LAUNCH_HEADING_TOLERANCE_DEGREES;
   }
 
   // ==================== PATHFINDING COMMANDS ====================

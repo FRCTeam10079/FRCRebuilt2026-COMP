@@ -39,8 +39,15 @@ public class ShooterConstants {
   public static final double AUTO_SHOOT_TIMEOUT = 3.0;
 
   // ==================== HEADING ALIGNMENT ====================
-  /** Heading tolerance for "aligned to hub" in degrees. */
+  /** Heading tolerance for "aligned to hub" in degrees (static/stop-and-shoot). */
   public static final double HEADING_TOLERANCE_DEGREES = 3.0;
+
+  /**
+   * Heading tolerance for shoot-on-the-move in degrees. Wider than static because the heading
+   * continuously tracks a moving target.
+   */
+  // TODO: TUNE ON THE ROBOT - start at 10 deg, tighten as confidence grows
+  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 10.0;
 
   protected ShooterConstants() {}
 }

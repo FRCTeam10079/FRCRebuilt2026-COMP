@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.ShooterPivotConstants;
+import frc.robot.lib.LaunchCalculator;
+import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
@@ -180,7 +182,7 @@ public final class ShooterFactory {
 
   /**
    * Force-shoot override: spins up the flywheel and tracks the pivot angle, but feeds as soon as
-   * the flywheel is at speed — bypassing setpoint validity, heading alignment, and pivot angle
+   * the flywheel is at speed - bypassing setpoint validity, heading alignment, and pivot angle
    * checks.
    *
    * <p>This is an operator safety-override for situations where the normal on-target gating is too
@@ -236,5 +238,100 @@ public final class ShooterFactory {
     return drivetrain
         .headingLockedDriveCommand(xInput, yInput, headingSupplier, maxVelocity, maxAngularVelocity)
         .withName("ShooterFactory AimAtHub");
+  }
+
+  // ==================== SHOOT-ON-THE-MOVE COMMANDS ====================
+
+  /**
+   * Spin up the flywheel and move the pivot based on {@link LaunchCalculator} predictions.
+   *
+   * <p>Instead of using the static distance-based setpoint (which assumes the robot is stationary),
+   * this reads RPM, pivot angle, and pivot feedforward velocity from the LaunchCalculator, which
+   * accounts for the robot's velocity and time-of-flight.
+   *
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @return command that tracks the launch setpoint continuously
+   */
+  public static Command aimAndSpinUpFromLauncher(
+      ShooterSubsystem shooter, ShooterPivotSubsystem shooterPivot) {
+
+    LaunchCalculator calc = LaunchCalculator.getInstance();
+
+    return shooter
+        .holdRPMCommand(() -> {
+          LaunchParameters params = calc.getParameters();
+          return (params != null && params.isValid()) ? params.flywheelRPM() : 0.0;
+        })
+        .alongWith(shooterPivot.trackAngleCommand(() -> {
+          LaunchParameters params = calc.getParameters();
+          return (params != null && params.isValid())
+              ? params.pivotAngleDegrees()
+              : ShooterPivotConstants.MIN_ANGLE_DEGREES;
+        }))
+        .withName("ShooterFactory AimAndSpinUp (Launch)");
+  }
+
+  /**
+   * Full shoot-on-the-move sequence.
+   *
+   * <p>Simultaneously: - Spins up flywheel to LaunchCalculator's predicted RPM - Tracks pivot angle
+   * from LaunchCalculator - Waits until all on-target conditions are met, then feeds the indexer
+   *
+   * <p>The heading check uses the drivetrain's {@code isAtLaunchHeadingGoal()} which compares the
+   * actual heading against the LaunchCalculator's predicted drive angle using the wider launch
+   * tolerance (most likely 10 deg instead of the static 3 deg).
+   *
+   * @param setpointSupplier fallback static setpoint (used for isOnTarget RPM/angle checks)
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem
+   * @param drivetrain for heading check
+   * @return command that fires when the launch conditions are met
+   */
+  public static Command shootOnTheMove(
+      Supplier<ShooterSetpoint> setpointSupplier,
+      ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
+      IndexerSubsystem indexer,
+      CommandSwerveDrivetrain drivetrain) {
+
+    LaunchCalculator calc = LaunchCalculator.getInstance();
+
+    // Build a ShooterSetpoint supplier from LaunchCalculator for the on-target
+    // check
+    Supplier<ShooterSetpoint> launchSetpoint =
+        calc.createLaunchSetpointSupplier(() -> drivetrain.getState().Pose);
+
+    return aimAndSpinUpFromLauncher(shooter, shooterPivot)
+        .alongWith(Commands.waitUntil(() -> isOnTarget(
+                launchSetpoint, shooter, shooterPivot, drivetrain::isAtLaunchHeadingGoal))
+            .andThen(indexer.feedCommand()))
+        .withName("ShooterFactory ShootOnTheMove");
+  }
+
+  /**
+   * Autonomous shoot-on-the-move with timeout.
+   *
+   * <p>Same as {@link #shootOnTheMove} but with a timeout for autonomous routines. In auto, the
+   * trajectory should be providing the motion, so the heading check uses the launch heading goal.
+   *
+   * @param setpointSupplier fallback static setpoint
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem
+   * @param drivetrain swerve drivetrain
+   * @return command with timeout
+   */
+  public static Command autoShootOnTheMove(
+      Supplier<ShooterSetpoint> setpointSupplier,
+      ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
+      IndexerSubsystem indexer,
+      CommandSwerveDrivetrain drivetrain) {
+
+    return shootOnTheMove(setpointSupplier, shooter, shooterPivot, indexer, drivetrain)
+        .withTimeout(ShooterConstants.AUTO_SHOOT_TIMEOUT)
+        .withName("ShooterFactory AutoShootOnTheMove");
   }
 }

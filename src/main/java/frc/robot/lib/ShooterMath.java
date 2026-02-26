@@ -1,7 +1,9 @@
 package frc.robot.lib;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constants.GameConstants;
@@ -51,6 +53,17 @@ public final class ShooterMath {
     double dx = hubPosition.getX() - robotPose.getX();
     double dy = hubPosition.getY() - robotPose.getY();
     return Math.toDegrees(Math.atan2(dy, dx));
+  }
+
+  /**
+   * Convert robot-relative ChassisSpeeds to field-relative ChassisSpeeds.
+   *
+   * @param robotRelative robot-relative chassis speeds
+   * @param heading current robot heading
+   * @return field-relative chassis speeds
+   */
+  public static ChassisSpeeds toFieldRelative(ChassisSpeeds robotRelative, Rotation2d heading) {
+    return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelative, heading);
   }
 
   /**

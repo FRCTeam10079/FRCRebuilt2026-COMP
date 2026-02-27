@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
+import frc.robot.lib.ShooterInterpolationTable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -341,6 +343,8 @@ public class RobotStateMachine extends SubsystemBase {
     // Cycle stats
     SmartDashboard.putNumber("Total Fuel Scored", getTotalFuelScored());
     SmartDashboard.putNumber("Fastest Cycle Time", getFastestCycleTime());
+
+    SmartDashboard.putNumber("tofTable", ShooterInterpolationTable.getTimeOfFlight(1.0));
   }
 
   // ==================== GETTERS ====================

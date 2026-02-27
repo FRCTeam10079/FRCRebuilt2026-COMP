@@ -11,6 +11,7 @@ import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTableListener;
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
  * Simplifies usage of doubles in NT
@@ -19,29 +20,27 @@ import java.util.EnumSet;
  * I didn't realize til after making this but NetworkTableEntry might work better here
  */
 public class NetworkedDouble {
-  private DoubleTopic doubleTopic;
-  private DoublePublisher doublePublisher;
-  private DoubleSubscriber doubleSubscriber;
+  private final DoublePublisher doublePublisher;
+  private final DoubleSubscriber doubleSubscriber;
 
-  private NetworkTableListener doubleListener;
+  private final NetworkTableListener doubleListener;
 
   // this value is read and written to from multiple threads
-  private volatile boolean newData = false;
+  private final AtomicBoolean newData = new AtomicBoolean(false);
 
   /**
    * Creates a networkedDouble object
    *
-   * @param topic_string the name of the topic
-   * @param default_value the default double value to set the topic to
+   * @param topicString the name of the topic
+   * @param defaultValue the default double value to set the topic to
    */
-  public NetworkedDouble(String topic_string, double default_value) {
-    NetworkTableInstance defaultNT = NetworkTableInstance.getDefault();
-    this.doubleTopic = defaultNT.getDoubleTopic(topic_string);
+  public NetworkedDouble(String topicString, double defaultValue) {
+    DoubleTopic doubleTopic = NetworkTableInstance.getDefault().getDoubleTopic(topicString);
 
-    this.doublePublisher = doubleTopic.publish();
-    this.doubleSubscriber = doubleTopic.subscribe(default_value);
+    doublePublisher = doubleTopic.publish();
+    doubleSubscriber = doubleTopic.subscribe(defaultValue);
 
-    this.doublePublisher.set(default_value);
+    doublePublisher.set(defaultValue);
 
     // ONLY detects REMOTE value updates
     // not designed to detect local code changes
@@ -49,23 +48,19 @@ public class NetworkedDouble {
         doubleTopic, EnumSet.of(NetworkTableEvent.Kind.kValueRemote), (NetworkTableEvent event) -> {
           // legit just a lambda to make newData true
           // hopefully thread safe ♥
-          this.newData = true;
+          newData.set(true);
         });
   }
 
   /**
-   * Returns whether or not new data is available
+   * Returns whether new data is available
    *
    * <p>Once this function returns true, it will not return true until new data is found
    *
    * @return
    */
   public boolean available() {
-    if (!this.newData) {
-      return false;
-    }
-    this.newData = false;
-    return true;
+    return newData.getAndSet(false);
   }
 
   /** Closes active listeners */
@@ -79,15 +74,15 @@ public class NetworkedDouble {
    * @param value the value to set
    */
   public void set(double value) {
-    this.doublePublisher.set(value);
+    doublePublisher.set(value);
   }
 
   /**
    * Gets the value from the subscriber
    *
-   * @return the value recieved from the subscriber
+   * @return the value received from the subscriber
    */
   public double get() {
-    return this.doubleSubscriber.get();
+    return doubleSubscriber.get();
   }
 }

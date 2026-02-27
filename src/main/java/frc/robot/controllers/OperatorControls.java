@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.FuelState;
@@ -95,6 +96,24 @@ public final class OperatorControls {
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator.x().onTrue(shooterPivot.homeCommand());
+
+    operator.y().onTrue(
+        Commands.runOnce( () ->
+            ShooterInterpolationTable.hotSwapTofValues(
+                1.0, 
+                ShooterInterpolationTable.getTimeOfFlight(1.0) + 0.1
+            )
+        )
+    );
+    operator.a().onTrue(
+        Commands.runOnce( () ->
+            ShooterInterpolationTable.hotSwapTofValues(
+                1.0, 
+                ShooterInterpolationTable.getTimeOfFlight(1.0) - 0.1
+            )
+        )
+    );
+
 
     // ==================== FORCE SHOOT OVERRIDE ====================
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.

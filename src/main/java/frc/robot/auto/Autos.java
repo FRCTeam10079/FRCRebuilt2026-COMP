@@ -8,6 +8,8 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import com.pathplanner.lib.auto.AutoBuilder;
+
+import edu.wpi.first.wpilibj.AnalogTrigger;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -59,6 +61,8 @@ public class Autos {
     choreoChooser.addOption("MS_Depot_Climb", "MS_Depot_Climb");
     choreoChooser.addOption("None", "");
     choreoChooser.addOption("Right_OutPost", "Right_OutPost");
+    choreoChooser.addOption("LeftSideDepot", "LeftSideDepot");
+
   }
 
   // ==================== AUTO COMMAND SELECTION ====================
@@ -120,8 +124,8 @@ public class Autos {
    * Right-side depot auto: drive to outpost, deploy pivot, score, return to
    * neutral.
    */
-  public AutoRoutine RightSideDepot() {
-    AutoRoutine routine = choreoAutoFactory.newRoutine("RS_Depot");
+  public AutoRoutine RightSideOp() {
+    AutoRoutine routine = choreoAutoFactory.newRoutine("RighSideOp");
     // Load the routine's trajectories
     AutoTrajectory rStartToOp = routine.trajectory("rStartToOp");
     AutoTrajectory OpToRScore = routine.trajectory("OpToRScore");
@@ -146,4 +150,39 @@ public class Autos {
             RScoreToNeutral.cmd().withTimeout(4.0).andThen(autoCommands.intake())));
     return routine;
   }
+
+  public AutoRoutine LeftSideDepot() {
+    AutoRoutine routine = choreoAutoFactory.newRoutine("LeftSideDepot");
+    // Load the routine's trajectories
+    AutoTrajectory lStartToNeutral = routine.trajectory("lStartToNeutral");
+    AutoTrajectory LneutralToLscore = routine.trajectory("LneutralToLscore");
+    AutoTrajectory LscoreToDepot = routine.trajectory("LscoreToDepot");
+    AutoTrajectory DepotToLscore = routine.trajectory("DepotToLscore");
+    routine.active().onTrue(
+        Commands.sequence(
+            lStartToNeutral.resetOdometry(),
+
+            Commands.parallel(
+                lStartToNeutral.cmd(),
+                autoCommands.deployPivot()),
+
+            Commands.parallel(
+                LneutralToLscore.cmd(),
+                autoCommands.spinUpShooter()),
+
+            Commands.parallel(
+                autoCommands.runIndexer(),
+                autoCommands.shoot().withTimeout(5.0)),
+
+            Commands.sequence(
+                LscoreToDepot.cmd(),
+                DepotToLscore.cmd(),
+                autoCommands.spinUpShooter(),
+                autoCommands.runIndexer(),
+                autoCommands.shoot())));
+
+    // DepotToLscore.cmd().withTimeout(4.0).andThen(autoCommands.intake())));
+    return routine;
+  }
+
 }

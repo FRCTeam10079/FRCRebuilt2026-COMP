@@ -273,13 +273,13 @@ public final class ShooterFactory {
     return shooter
         .holdRPMCommand(() -> {
           LaunchParameters params = calc.getParameters();
-          return (params != null && params.isValid()) ? params.flywheelRPM() : 0.0;
+          return RPM.of((params != null && params.isValid()) ? params.flywheelRPM() : 0.0);
         })
         .alongWith(shooterPivot.trackAngleCommand(() -> {
           LaunchParameters params = calc.getParameters();
           return (params != null && params.isValid())
-              ? params.pivotAngleDegrees()
-              : ShooterPivotConstants.MIN_ANGLE_DEGREES;
+              ? Degrees.of(params.pivotAngleDegrees())
+              : ShooterPivotConstants.MIN_ANGLE;
         }))
         .withName("ShooterFactory AimAndSpinUp (Launch)");
   }

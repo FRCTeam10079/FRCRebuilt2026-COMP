@@ -25,15 +25,16 @@ import frc.robot.Constants.IntakeConstants;
 import frc.robot.lib.networked.NetworkedTalonFX;
 
 /**
- * Intake pivot arm subsystem. Controls the angular position of the intake mechanism between a
- * stowed position and a deployed (intake) position using closed-loop position control.
+ * Intake pivot arm subsystem. Controls the angular position of the intake
+ * mechanism between a
+ * stowed position and a deployed (intake) position using closed-loop position
+ * control.
  */
 public class PivotSubsystem extends SubsystemBase {
 
-  private final NetworkedTalonFX m_pivotMotor =
-      new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
+  private final NetworkedTalonFX m_pivotMotor = new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
   private Angle m_pivotSetpoint;
-  private final PositionVoltage m_positionVoltage = new PositionVoltage(m_pivotSetpoint);
+  private final PositionVoltage m_positionVoltage = new PositionVoltage(0);
 
   // Stall detection state (only active while stowing)
   private boolean m_isStowing = false;
@@ -48,7 +49,9 @@ public class PivotSubsystem extends SubsystemBase {
     m_pivotSetpoint = getPivotPosition();
   }
 
-  /** Configure the pivot motor with PID gains, current limits, and soft limits. */
+  /**
+   * Configure the pivot motor with PID gains, current limits, and soft limits.
+   */
   private void configureMotors() {
     TalonFXConfiguration config = new TalonFXConfiguration();
     config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -102,7 +105,10 @@ public class PivotSubsystem extends SubsystemBase {
     setPivotSetpoint(IntakeConstants.Pivot.STOWED_POSITION);
   }
 
-  /** @return true if the pivot detected a stall during stowing and is holding position. */
+  /**
+   * @return true if the pivot detected a stall during stowing and is holding
+   *         position.
+   */
   public boolean isStalled() {
     return m_isStalled;
   }

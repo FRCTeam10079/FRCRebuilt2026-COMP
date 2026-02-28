@@ -17,11 +17,14 @@ import java.util.function.Supplier;
 /**
  * Math utilities for the shooter system.
  *
- * <p>Computes the distance from the robot to the hub and provides memoized setpoint suppliers.
+ * <p>
+ * Computes the distance from the robot to the hub and provides memoized
+ * setpoint suppliers.
  */
 public final class ShooterMath {
 
-  private ShooterMath() {} // Static utility class
+  private ShooterMath() {
+  } // Static utility class
 
   /**
    * Compute the 2D horizontal distance from the robot to its alliance hub.
@@ -47,7 +50,9 @@ public final class ShooterMath {
   /**
    * Compute the heading (degrees, field-relative) from the robot to the hub.
    *
-   * <p>This is the angle the robot should face to be pointed at the hub. Uses atan2 to compute the
+   * <p>
+   * This is the angle the robot should face to be pointed at the hub. Uses atan2
+   * to compute the
    * field-frame angle.
    *
    * @param robotPose current field-relative robot pose
@@ -64,7 +69,7 @@ public final class ShooterMath {
    * Convert robot-relative ChassisSpeeds to field-relative ChassisSpeeds.
    *
    * @param robotRelative robot-relative chassis speeds
-   * @param heading current robot heading
+   * @param heading       current robot heading
    * @return field-relative chassis speeds
    */
   public static ChassisSpeeds toFieldRelative(ChassisSpeeds robotRelative, Rotation2d heading) {
@@ -74,7 +79,9 @@ public final class ShooterMath {
   /**
    * Create a memoized setpoint supplier that recomputes only once per robot loop.
    *
-   * <p>Multiple commands can read from the same supplier without triggering redundant calculations.
+   * <p>
+   * Multiple commands can read from the same supplier without triggering
+   * redundant calculations.
    *
    * @param poseSupplier supplier for the current robot pose
    * @return a supplier that yields the current ShooterSetpoint
@@ -84,7 +91,8 @@ public final class ShooterMath {
   }
 
   /**
-   * Memoized supplier that caches the setpoint and only recomputes when the pose timestamp changes
+   * Memoized supplier that caches the setpoint and only recomputes when the pose
+   * timestamp changes
    * (i.e., once per robot loop iteration).
    */
   private static class MemoizedSetpointSupplier implements Supplier<ShooterSetpoint> {

@@ -13,16 +13,25 @@ import java.util.function.Supplier;
 /**
  * Core shoot-on-the-move calculator, adapted from Mechanical Advantage (6328).
  *
- * <p>This class computes velocity-compensated launch parameters so the robot can shoot while
- * moving. Instead of aiming where the hub IS, it computes where to aim based on where the robot's
+ * <p>
+ * This class computes velocity-compensated launch parameters so the robot can
+ * shoot while
+ * moving. Instead of aiming where the hub IS, it computes where to aim based on
+ * where the robot's
  * velocity would carry the ball during its flight time.
  *
- * <p>Algorithm overview: 1. Project the robot pose forward by a phase delay (latency compensation)
- * 2. Iteratively solve for a self-consistent (distance, TOF) pair using the robot's field-relative
- * velocity - the "lookahead" 3. Look up RPM, pivot angle, and heading from the lookahead distance
+ * <p>
+ * Algorithm overview: 1. Project the robot pose forward by a phase delay
+ * (latency compensation)
+ * 2. Iteratively solve for a self-consistent (distance, TOF) pair using the
+ * robot's field-relative
+ * velocity - the "lookahead" 3. Look up RPM, pivot angle, and heading from the
+ * lookahead distance
  * 4. Compute angular velocity feedforward for smooth heading and pivot tracking
  *
- * <p>Usage: Call {@link #update(Pose2d, ChassisSpeeds, Rotation2d)} once per robot loop, then read
+ * <p>
+ * Usage: Call {@link #update(Pose2d, ChassisSpeeds, Rotation2d)} once per robot
+ * loop, then read
  * the latest {@link LaunchParameters} via {@link #getParameters()}.
  */
 public class LaunchCalculator {
@@ -40,15 +49,19 @@ public class LaunchCalculator {
   // ==================== TUNING CONSTANTS ====================
 
   /**
-   * Phase delay in seconds - compensates for latency between sensing and actuation. Projection
+   * Phase delay in seconds - compensates for latency between sensing and
+   * actuation. Projection
    * forward along current velocity by this amount.
    *
-   * <p>TODO: TUNE ON THE ROBOT - start at 0.03 (30ms) and adjust if shots consistently lead/lag.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - start at 0.03 (30ms) and adjust if shots
+   * consistently lead/lag.
    */
   private static final double PHASE_DELAY_SECONDS = 0.03;
 
   /**
-   * Number of iterations for the lookahead convergence loop. 20 is more than enough for convergence
+   * Number of iterations for the lookahead convergence loop. 20 is more than
+   * enough for convergence
    * - MA uses 20.
    */
   private static final int LOOKAHEAD_ITERATIONS = 20;
@@ -57,43 +70,56 @@ public class LaunchCalculator {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
 
   /**
-   * Moving average filter window for pivot angle velocity feedforward. Smooths out the derivative
+   * Moving average filter window for pivot angle velocity feedforward. Smooths
+   * out the derivative
    * to prevent jitter.
    *
-   * <p>0.4s window = 20 samples at 50Hz (same as MA).
+   * <p>
+   * 0.4s window = 20 samples at 50Hz (same as MA).
    */
   private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
 
   /**
-   * Moving average filter window for drive heading velocity feedforward. Wider window = smoother
+   * Moving average filter window for drive heading velocity feedforward. Wider
+   * window = smoother
    * but more lag.
    *
-   * <p>1.5s window = 75 samples at 50Hz (same as MA).
+   * <p>
+   * 1.5s window = 75 samples at 50Hz (same as MA).
    */
   private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 1.5;
 
   /**
-   * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the robot is too
+   * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the
+   * robot is too
    * close for the system to work well.
    *
-   * <p>TODO: TUNE ON THE ROBOT - should match the closest distance in the interp tables.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - should match the closest distance in the interp
+   * tables.
    */
   private static final double MIN_VALID_DISTANCE = 0.8;
 
   /**
    * Maximum distance (meters) at which shoot-on-the-move is valid.
    *
-   * <p>TODO: TUNE ON THE ROBOT - should match the farthest distance in the interp tables.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - should match the farthest distance in the interp
+   * tables.
    */
   private static final double MAX_VALID_DISTANCE = 5.0;
 
   /**
    * Shooter offset from robot center as (x, y) in robot frame.
    *
-   * <p>x = forward/back from center (positive = forward) y = left/right from center (positive =
+   * <p>
+   * x = forward/back from center (positive = forward) y = left/right from center
+   * (positive =
    * left)
    *
-   * <p>TODO: MEASURE ON THE ROBOT - set to (0, 0) if shooter is roughly centered. If lateral offset
+   * <p>
+   * TODO: MEASURE ON THE ROBOT - set to (0, 0) if shooter is roughly centered. If
+   * lateral offset
    * is > ~5cm, measure and set it for accurate heading compensation.
    */
   private static final double SHOOTER_OFFSET_X = 0.0; // meters, placeholder
@@ -102,11 +128,17 @@ public class LaunchCalculator {
 
   // ==================== FILTERS ====================
 
-  private final LinearFilter pivotAngleFilter =
-      LinearFilter.movingAverage((int) (PIVOT_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
+  private final LinearFilter pivotAngleFilter = LinearFilter
+      .movingAverage((int) (PIVOT_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
 
-  private final LinearFilter driveAngleFilter =
-      LinearFilter.movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
+  private final LinearFilter driveAngleFilter = LinearFilter
+      .movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
+
+  // new code: Low pass filters for velocities to prevent noise-induced
+  // oscillation loop
+  private final LinearFilter vxFilter = LinearFilter.movingAverage(10);
+  private final LinearFilter vyFilter = LinearFilter.movingAverage(10);
+  private final LinearFilter omegaFilter = LinearFilter.movingAverage(10);
 
   // ==================== STATE ====================
 
@@ -119,15 +151,22 @@ public class LaunchCalculator {
   /**
    * Complete set of launch parameters computed each cycle.
    *
-   * @param isValid whether all conditions are met to shoot from this location/distance
-   * @param driveAngle the field-relative heading the robot should face (Rotation2d)
-   * @param driveVelocityRadPerSec angular velocity feedforward for heading tracking (rad/s)
-   * @param pivotAngleDegrees target pivotangle for the shooter (degrees)
-   * @param pivotVelocityDegPerSec angular velocity feedforward for pivot tracking (deg/s)
-   * @param flywheelRPM target flywheel RPM from interpolation table
-   * @param lookaheadDistance the velocity-compensated effective distance (meters)
-   * @param rawDistance the static distance to hub with no velocity compensation (meters)
-   * @param timeOfFlight estimated time for the ball to reach the hub (seconds)
+   * @param isValid                whether all conditions are met to shoot from
+   *                               this location/distance
+   * @param driveAngle             the field-relative heading the robot should
+   *                               face (Rotation2d)
+   * @param driveVelocityRadPerSec angular velocity feedforward for heading
+   *                               tracking (rad/s)
+   * @param pivotAngleDegrees      target pivotangle for the shooter (degrees)
+   * @param pivotVelocityDegPerSec angular velocity feedforward for pivot tracking
+   *                               (deg/s)
+   * @param flywheelRPM            target flywheel RPM from interpolation table
+   * @param lookaheadDistance      the velocity-compensated effective distance
+   *                               (meters)
+   * @param rawDistance            the static distance to hub with no velocity
+   *                               compensation (meters)
+   * @param timeOfFlight           estimated time for the ball to reach the hub
+   *                               (seconds)
    */
   public record LaunchParameters(
       boolean isValid,
@@ -138,27 +177,43 @@ public class LaunchCalculator {
       double flywheelRPM,
       double lookaheadDistance,
       double rawDistance,
-      double timeOfFlight) {}
+      double timeOfFlight) {
+  }
 
   // ==================== CORE UPDATE ====================
 
   /**
    * Compute all launch parameters for the current robot state.
    *
-   * <p>Call this ONCE per robot loop (typically from robotPeriodic or the drive command). The
-   * result is cached and returned by {@link #getParameters()} until {@link #clearParameters()} is
+   * <p>
+   * Call this ONCE per robot loop (typically from robotPeriodic or the drive
+   * command). The
+   * result is cached and returned by {@link #getParameters()} until
+   * {@link #clearParameters()} is
    * called.
    *
-   * @param robotPose current field-relative robot pose from drivetrain odometry
-   * @param robotRelativeVelocity current robot-relative ChassisSpeeds from drivetrain
-   * @param robotHeading current robot heading (for field-relative velocity conversion)
+   * @param robotPose             current field-relative robot pose from
+   *                              drivetrain odometry
+   * @param robotRelativeVelocity current robot-relative ChassisSpeeds from
+   *                              drivetrain
+   * @param robotHeading          current robot heading (for field-relative
+   *                              velocity conversion)
    */
   public void update(
-      Pose2d robotPose, ChassisSpeeds robotRelativeVelocity, Rotation2d robotHeading) {
+      Pose2d robotPose, ChassisSpeeds rawRobotRelativeVelocity, Rotation2d robotHeading) {
     if (latestParameters != null) {
       // Already computed this cycle - skip
       return;
     }
+
+    // new code: Filter the raw drivetrain velocity to prevent a massive noisy
+    // positive feedback loop
+    // Noisy odometry causes lookahead to shake, which causes target angle to shake,
+    // which yanks modules, which adds more noise!
+    double smoothedVx = vxFilter.calculate(rawRobotRelativeVelocity.vxMetersPerSecond);
+    double smoothedVy = vyFilter.calculate(rawRobotRelativeVelocity.vyMetersPerSecond);
+    double smoothedOmega = omegaFilter.calculate(rawRobotRelativeVelocity.omegaRadiansPerSecond);
+    ChassisSpeeds robotRelativeVelocity = new ChassisSpeeds(smoothedVx, smoothedVy, smoothedOmega);
 
     // ---- Step 1: Phase delay compensation ----
     // Project the robot pose forward by the phase delay to compensate for system
@@ -171,17 +226,14 @@ public class LaunchCalculator {
     // ---- Step 2: Determine target ----
     Translation2d target = ShooterMath.getHubPosition();
 
-    // Compute shooter position on the field (applying robot-frame offset)
-    Translation2d shooterFieldPos = estimatedPose
-        .getTranslation()
-        .plus(new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y)
-            .rotateBy(estimatedPose.getRotation()));
+    // new code: Use robot center for lookahead math to avoid double-dipping the
+    // offset when rotating
+    Translation2d robotCenterFieldPos = estimatedPose.getTranslation();
 
-    double rawDistance = target.getDistance(shooterFieldPos);
+    double rawDistance = target.getDistance(robotCenterFieldPos);
 
     // ---- Step 3: Field-relative velocity ----
-    ChassisSpeeds fieldVelocity =
-        ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
     double fieldVelX = fieldVelocity.vxMetersPerSecond;
     double fieldVelY = fieldVelocity.vyMetersPerSecond;
 
@@ -192,30 +244,31 @@ public class LaunchCalculator {
     // - TOF determines how far the robot's velocity offsets the effective aim point
     // - the new aim point changes the distance, which changes TOF, etc.
     double timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(rawDistance);
-    Translation2d lookaheadPos = shooterFieldPos;
+    Translation2d lookaheadPos = robotCenterFieldPos; // new code
     double lookaheadDistance = rawDistance;
 
     for (int i = 0; i < LOOKAHEAD_ITERATIONS; i++) {
       timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(lookaheadDistance);
       double offsetX = fieldVelX * timeOfFlight;
       double offsetY = fieldVelY * timeOfFlight;
-      lookaheadPos = shooterFieldPos.plus(new Translation2d(offsetX, offsetY));
+      lookaheadPos = robotCenterFieldPos.plus(new Translation2d(offsetX, offsetY)); // new code
       lookaheadDistance = target.getDistance(lookaheadPos);
     }
 
     // ---- Step 5: Compute drive heading angle ----
     // The robot should face from the lookahead position toward the target
     Rotation2d driveAngle = target.minus(lookaheadPos).getAngle();
-
+    // NEW!!!!
+    driveAngle = driveAngle.plus(Rotation2d.fromDegrees(180)); // Face toward the target
     // If the shooter has a significant lateral offset, apply asin correction
     // (similar to MA's getDriveAngleWithLauncherOffset)
     if (Math.abs(SHOOTER_OFFSET_Y) > 0.01) {
-      double distForOffset = target.getDistance(estimatedPose.getTranslation());
-      double offsetAngleRad =
-          Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / distForOffset, -1.0, 1.0));
-      driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
-      // Rotate 180 deg if the shooter fires backwards (like MA's launcher)
-      // Our shooter fires forward, so no rotation needed
+      // new code: Compute offset using lookaheadDistance instead of static raw
+      // distance, and subtract it since a physical +Y offset means the ball will miss
+      // left if not corrected right.
+      double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / lookaheadDistance, -1.0, 1.0));
+      driveAngle = driveAngle.minus(Rotation2d.fromRadians(offsetAngleRad)); // new code: subtract to aim right for a
+                                                                             // left offset
     }
 
     // ---- Step 6: Compute setpoints from lookahead distance ----
@@ -237,6 +290,9 @@ public class LaunchCalculator {
       // First cycle - reset filters
       pivotAngleFilter.reset();
       driveAngleFilter.reset();
+      vxFilter.reset(); // new code
+      vyFilter.reset(); // new code
+      omegaFilter.reset(); // new code
     }
 
     lastPivotAngleDegrees = pivotAngleDegrees;
@@ -276,10 +332,12 @@ public class LaunchCalculator {
   /**
    * Get the latest computed launch parameters.
    *
-   * <p>Returns null if {@link #update} has not been called this cycle (i.e., if
+   * <p>
+   * Returns null if {@link #update} has not been called this cycle (i.e., if
    * {@link #clearParameters()} was called and update hasn't been called yet).
    *
-   * <p>If null, callers should fall back to static/stop-and-shoot behavior.
+   * <p>
+   * If null, callers should fall back to static/stop-and-shoot behavior.
    *
    * @return the latest LaunchParameters, or null
    */
@@ -288,7 +346,8 @@ public class LaunchCalculator {
   }
 
   /**
-   * Clear the cached parameters. Call this at the START of each robot periodic loop so that
+   * Clear the cached parameters. Call this at the START of each robot periodic
+   * loop so that
    * parameters are recomputed fresh each cycle.
    */
   public void clearParameters() {
@@ -296,7 +355,8 @@ public class LaunchCalculator {
   }
 
   /**
-   * Get the raw (non-velocity-compensated) time of flight for a given distance. Useful for velocity
+   * Get the raw (non-velocity-compensated) time of flight for a given distance.
+   * Useful for velocity
    * limiting calculations.
    *
    * @param distanceMeters distance to hub in meters
@@ -307,14 +367,18 @@ public class LaunchCalculator {
   }
 
   /**
-   * Create a ShooterSetpoint supplier backed by the LaunchCalculator. This returns setpoints
+   * Create a ShooterSetpoint supplier backed by the LaunchCalculator. This
+   * returns setpoints
    * computed from the velocity-compensated lookahead distance.
    *
-   * <p>When the calculator has no valid parameters (e.g., first cycle), falls back to the static
+   * <p>
+   * When the calculator has no valid parameters (e.g., first cycle), falls back
+   * to the static
    * distance-based setpoint from the provided pose supplier.
    *
-   * @param poseFallbackSupplier supplier for robot pose (used as fallback when LaunchCalc has no
-   *     data)
+   * @param poseFallbackSupplier supplier for robot pose (used as fallback when
+   *                             LaunchCalc has no
+   *                             data)
    * @return a supplier producing velocity-compensated ShooterSetpoints
    */
   public Supplier<ShooterSetpoint> createLaunchSetpointSupplier(
@@ -332,12 +396,16 @@ public class LaunchCalculator {
   }
 
   /**
-   * Reset all internal state (filters, last angles). Call when the robot is disabled or the
+   * Reset all internal state (filters, last angles). Call when the robot is
+   * disabled or the
    * shooting system is not active, to prevent stale filter data.
    */
   public void reset() {
     pivotAngleFilter.reset();
     driveAngleFilter.reset();
+    vxFilter.reset(); // new code
+    vyFilter.reset(); // new code
+    omegaFilter.reset(); // new code
     lastPivotAngleDegrees = Double.NaN;
     lastDriveAngle = null;
     latestParameters = null;

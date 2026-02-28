@@ -14,12 +14,16 @@ import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.EndIntakingCommand;
 import frc.robot.commands.IntakeFuelCommand;
+import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.ShooterSetpoint;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import java.util.function.Supplier;
 
 /**
  * Factory for autonomous command compositions. Each method returns a <b>new</b> Command instance so
@@ -35,22 +39,28 @@ public class AutoCommands {
   private final PivotSubsystem pivot;
   private final IndexerSubsystem indexer;
   private final ShooterSubsystem shooter;
+  private final ShooterPivotSubsystem shooterPivot;
   private final CommandSwerveDrivetrain drivetrain;
   private final VisionSubsystem vision;
+  private final Supplier<ShooterSetpoint> setpointSupplier;
 
   public AutoCommands(
       IntakeWheelsSubsystem intake,
       PivotSubsystem pivot,
       IndexerSubsystem indexer,
       ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
       CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision) {
+      VisionSubsystem vision,
+      Supplier<ShooterSetpoint> setpointSupplier) {
     this.intake = intake;
     this.pivot = pivot;
     this.indexer = indexer;
     this.shooter = shooter;
+    this.shooterPivot = shooterPivot;
     this.drivetrain = drivetrain;
     this.vision = vision;
+    this.setpointSupplier = setpointSupplier;
   }
 
   // ==================== INTAKE WHEELS ====================
@@ -113,7 +123,7 @@ public class AutoCommands {
 
   /** Spin up flywheel to target RPM and hold. */
   public Command spinUpShooter() {
-    return shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM);
+    return shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_SPEED);
   }
 
   /** Stop shooter immediately. */
@@ -121,13 +131,17 @@ public class AutoCommands {
     return shooter.stopCommand();
   }
 
-  /** Spin up shooter, wait until ready, then feed with indexer. */
+  /**
+   * Distance-based auto shoot: spin up + track pivot + feed when on-target. In auto, heading is
+   * assumed correct from the trajectory, so heading check is always true.
+   */
   public Command shoot() {
-    return shooter
-        .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-        .alongWith(Commands.waitUntil(shooter::isReady)
-            .andThen(
-                indexer.feedCommand().withTimeout(Constants.ShooterConstants.SHOOT_FEED_TIMEOUT)));
+    return ShooterFactory.autoShoot(setpointSupplier, shooter, shooterPivot, indexer);
+  }
+
+  /** Fixed fender shot for close-range scoring positions in auto. */
+  public Command fenderShot() {
+    return ShooterFactory.fenderShot(shooter, shooterPivot, indexer);
   }
 
   // ==================== VISION ALIGNMENT ====================
@@ -191,6 +205,7 @@ public class AutoCommands {
     NamedCommands.registerCommand("spinUpShooter", spinUpShooter());
     NamedCommands.registerCommand("stopShooter", stopShooter());
     NamedCommands.registerCommand("shoot", shoot());
+    NamedCommands.registerCommand("fenderShot", fenderShot());
 
     // Vision alignment
     NamedCommands.registerCommand("alignCenter", alignCenter());
@@ -233,6 +248,7 @@ public class AutoCommands {
         .bind("spinUpShooter", spinUpShooter())
         .bind("stopShooter", stopShooter())
         .bind("shoot", shoot())
+        .bind("fenderShot", fenderShot())
         // Vision alignment
         .bind("alignCenter", alignCenter())
         .bind("alignLeft", alignLeft())

@@ -7,6 +7,8 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 
 import choreo.auto.AutoFactory;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -16,6 +18,8 @@ import frc.robot.controllers.DriverControls;
 import frc.robot.controllers.OperatorControls;
 import frc.robot.controllers.TestingBindings;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.ShooterMath;
+import frc.robot.lib.ShooterSetpoint;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
@@ -26,9 +30,11 @@ import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import java.util.function.Supplier;
 
 /**
- * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
+ * RobotContainer for FRC 2026 REBUILT season This class is where the robot's
+ * subsystems, commands,
  * and button bindings are defined.
  */
 public class RobotContainer {
@@ -61,13 +67,16 @@ public class RobotContainer {
   // Climber (stub — hardware not wired yet)
   private final ClimberSubsystem climber = new ClimberSubsystem();
 
-  private final Telemetry m_telemetry =
-      new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+  private final Telemetry m_telemetry = new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
   // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
   private final AutoCommands autoCommands;
   private final Autos autos;
+
+  // ==================== DISTANCE-BASED SHOOTING ====================
+  /** Memoized setpoint supplier that caches by robot pose. */
+  private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
   public RobotContainer() {
     // Create vision subsystem (needs drivetrain reference for pose injection)
@@ -75,8 +84,21 @@ public class RobotContainer {
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 
+    // Create the memoized setpoint supplier (caches by pose X/Y/theta)
+    m_setpointSupplier = ShooterMath.createSetpointSupplier(() -> drivetrain.getState().Pose);
+
     // Register controllers with state machine for haptic feedback
     m_stateMachine.registerControllers(m_driverController, m_operatorController);
+
+    // Wire subsystem state into the state machine so isReadyToFire() works
+    m_stateMachine.registerShooterSuppliers(shooter::isReady, () -> {
+      // Heading is "aligned" when robot faces the hub within tolerance
+      double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+      double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
+      Angle error = Radians.of(
+          Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
+      return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
+    });
 
     // Initialize the pathfinding system
     initializePathfinding();
@@ -89,22 +111,24 @@ public class RobotContainer {
         drivetrain);
 
     // ==================== REGISTER NAMED COMMANDS ====================
-    // AutoCommands provides DRY factory methods used by both PathPlanner and
+    // AutoCommands provides factory methods used by both PathPlanner and
     // Choreo.
     // Must be registered BEFORE any PathPlanner autos/paths are created.
-    autoCommands = new AutoCommands(intake, pivot, indexer, shooter, drivetrain, vision);
+    autoCommands = new AutoCommands(
+        intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
-    autos = new Autos(drivetrain, choreoAutoFactory);
+    autos = new Autos(drivetrain, choreoAutoFactory, autoCommands);
 
     // Configure button bindings
     configureBindings();
   }
 
   /**
-   * Initialize the pathfinding system. This loads the navgrid and starts the background AD*
+   * Initialize the pathfinding system. This loads the navgrid and starts the
+   * background AD*
    * planning thread.
    */
   private void initializePathfinding() {
@@ -114,14 +138,32 @@ public class RobotContainer {
   }
 
   /**
-   * Configure button bindings for driver and operator controllers. Delegates to dedicated binding
+   * Configure button bindings for driver and operator controllers. Delegates to
+   * dedicated binding
    * classes for clean separation.
    */
   private void configureBindings() {
     DriverControls.configure(
-        m_driverController, drivetrain, vision, intake, pivot, shooter, indexer, m_stateMachine);
+        m_driverController,
+        drivetrain,
+        vision,
+        intake,
+        pivot,
+        shooter,
+        shooterPivot,
+        indexer,
+        m_stateMachine,
+        m_setpointSupplier);
     OperatorControls.configure(
-        m_operatorController, intake, pivot, indexer, climber, shooterPivot, m_stateMachine);
+        m_operatorController,
+        intake,
+        pivot,
+        indexer,
+        climber,
+        shooter,
+        shooterPivot,
+        m_stateMachine,
+        m_setpointSupplier);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }

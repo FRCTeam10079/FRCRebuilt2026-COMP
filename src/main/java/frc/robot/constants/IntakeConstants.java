@@ -1,16 +1,29 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Seconds;
+
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Time;
+
 public class IntakeConstants {
   public static class Pivot {
     public static final int MOTOR_ID = 24;
 
-    public static final double INTAKE_POSITION = 0;
-    public static final double STOWED_POSITION = -6.5;
+    public static final Angle INTAKE_POSITION = Rotations.of(0);
+    public static final Angle STOWED_POSITION = Rotations.of(-6.25);
 
     public static final int SUPPLY_CURRENT_LIMIT = 40;
     public static final int STATOR_CURRENT_LIMIT = 80;
 
-    public static final double DEPLOY_TOLERANCE = 0.05;
+    /** Stator current (amps) above which the pivot is considered stalling. */
+    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(35.0);
+    /** How long (seconds) current must exceed the threshold before declaring a stall. */
+    public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.25);
+
+    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.05);
 
     public static final double KA = 0;
     public static final double KS = 0.4;
@@ -29,7 +42,7 @@ public class IntakeConstants {
     public static final int SUPPLY_CURRENT_LIMIT = 40;
     public static final int STATOR_CURRENT_LIMIT = 80;
 
-    public static final double INTAKE_IN_RPM = 2200;
+    public static final double INTAKE_IN_RPM = 2600;
     public static final double INTAKE_OUT_RPM = -2200;
 
     public static final double KA = 0;

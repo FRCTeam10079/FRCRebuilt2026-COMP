@@ -11,6 +11,8 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -69,6 +71,9 @@ public class AlignToAprilTag extends Command {
   // Target AprilTag info
   private int targetTagID;
   private boolean tagDetected = false;
+
+  // Timeout duration (seconds) - prevents indefinite alignment attempts
+  private static final double ALIGN_TIMEOUT_SECONDS = 3.0;
 
   /**
    * Creates a new AlignToAprilTag command
@@ -135,12 +140,18 @@ public class AlignToAprilTag extends Command {
       return;
     }
 
-    // Find the closest AprilTag using odometry
+    // Determine which tags to search based on alliance
+    // Prevents aligning to opponent's tags across the field
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    int[] allianceTags = isRed ? AprilTagMaps.RED_SIDE_TAGS : AprilTagMaps.BLUE_SIDE_TAGS;
+
+    // Find the closest AprilTag within our alliance's tags
     double minDistance = Double.MAX_VALUE;
     targetTagID = -1;
 
-    for (int id : AprilTagMaps.aprilTagMap.keySet()) {
+    for (int id : allianceTags) {
       double[] tagData = AprilTagMaps.aprilTagMap.get(id);
+      if (tagData == null) continue;
       Pose2d tagPose = new Pose2d(
           tagData[0] * Constants.INCHES_TO_METERS,
           tagData[1] * Constants.INCHES_TO_METERS,
@@ -162,7 +173,8 @@ public class AlignToAprilTag extends Command {
 
     DataLogManager.log("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
 
-    // Check if Limelight sees a valid tag - prefer it over odometry
+    // Check if Limelight sees a valid tag - prefer it over odometry,
+    // but only if it's on our alliance side
     int limelightTagID = 0;
     for (String name : VisionConstants.LIMELIGHT_NAMES) {
       int fid = (int) LimelightHelpers.getFiducialID(name);
@@ -171,7 +183,9 @@ public class AlignToAprilTag extends Command {
         break;
       }
     }
-    if (limelightTagID != 0 && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)) {
+    if (limelightTagID != 0
+        && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)
+        && Constants.contains(allianceTags, limelightTagID)) {
       targetTagID = limelightTagID;
       DataLogManager.log("[AlignToAprilTag] Using Limelight tag: " + targetTagID);
     } else if (limelightTagID == 0) {
@@ -180,7 +194,7 @@ public class AlignToAprilTag extends Command {
     } else {
       DataLogManager.log("[AlignToAprilTag] Limelight tag "
           + limelightTagID
-          + " not in map, using odometry: "
+          + " not valid for alliance, using odometry: "
           + targetTagID);
     }
 
@@ -333,11 +347,19 @@ public class AlignToAprilTag extends Command {
     boolean positionReached = distance <= positionTolerance;
     boolean yawReached = yawError <= yawTolerance;
 
+    // Timeout after ALIGN_TIMEOUT_SECONDS to prevent indefinite alignment attempts
+    boolean timedOut = timer.hasElapsed(ALIGN_TIMEOUT_SECONDS);
+    if (timedOut) {
+      DataLogManager.log("[AlignToAprilTag] Timed out after " + ALIGN_TIMEOUT_SECONDS + "s"
+          + " (distance=" + String.format("%.3f", distance)
+          + "m, yawError=" + String.format("%.1f", Math.toDegrees(yawError)) + "°)");
+    }
+
     SmartDashboard.putNumber("AlignToAprilTag/Distance", distance);
     SmartDashboard.putBoolean("AlignToAprilTag/PositionReached", positionReached);
     SmartDashboard.putBoolean("AlignToAprilTag/YawReached", yawReached);
 
-    return positionReached && yawReached;
+    return (positionReached && yawReached) || timedOut;
   }
 
   @Override

@@ -5,6 +5,7 @@
 package frc.robot.controllers;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -13,6 +14,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
+import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.ShooterMath;
+import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
@@ -20,8 +24,10 @@ import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import java.util.function.Supplier;
 
 /**
  * Driver controller bindings (Port 0). All driver button->command mappings live here so
@@ -40,8 +46,10 @@ public final class DriverControls {
    * @param intake intake wheels subsystem
    * @param pivot intake pivot subsystem
    * @param shooter shooter subsystem
+   * @param shooterPivot shooter pivot subsystem
    * @param indexer indexer subsystem
    * @param stateMachine global robot state machine
+   * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
       CommandXboxController controller,
@@ -50,8 +58,10 @@ public final class DriverControls {
       IntakeWheelsSubsystem intake,
       PivotSubsystem pivot,
       ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
-      RobotStateMachine stateMachine) {
+      RobotStateMachine stateMachine,
+      Supplier<ShooterSetpoint> setpointSupplier) {
 
     // ==================== DEFAULT DRIVE ====================
     drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
@@ -62,7 +72,9 @@ public final class DriverControls {
         Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
 
     // ==================== INTAKE ====================
-    // Left Trigger - Hold to run intake (deploy + wheels)
+    // Left Trigger - Hold to deploy pivot + run intake wheels
+    // Release stops wheels but pivot stays deployed so balls
+    // aren't disturbed. Press X to stow pivot when ready.
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(Commands.startEnd(
@@ -73,22 +85,46 @@ public final class DriverControls {
                 },
                 () -> {
                   intake.stop();
-                  pivot.stowPivot();
                   if (stateMachine.getGameState() == GameState.COLLECTING) {
                     stateMachine.setGameState(GameState.IDLE);
                   }
                 },
-                intake,
-                pivot)
+                intake)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
-    // ==================== SHOOTING ====================
-    // Right Trigger - Hold to spin up, wait for ready, then feed
+    // ==================== SHOOTING (DISTANCE-BASED) ====================
+    // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
+    // angle
+    // The driver controls translation while the drivetrain auto-rotates toward the
+    // hub.
+    controller
+        .rightBumper()
+        .whileTrue(ShooterFactory.aimAtHub(
+                drivetrain,
+                controller::getLeftY,
+                controller::getLeftX,
+                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
+            .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
+            .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
+            .finallyDo(() -> {
+              if (stateMachine.getGameState() == GameState.SCORING) {
+                stateMachine.setGameState(GameState.IDLE);
+              }
+            }));
+
+    // Right Trigger - Hold to shoot (waits for on-target, then auto-feeds)
+    // Assumes aim-at-hub is engaged via right bumper, OR driver is manually aiming.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(shooter
-            .holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM)
-            .alongWith(Commands.waitUntil(shooter::isReady).andThen(indexer.feedCommand()))
+        .whileTrue(ShooterFactory.shoot(setpointSupplier, shooter, shooterPivot, indexer, () -> {
+              // Heading is "on target" when we're close to the hub bearing
+              Angle targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
+              Angle currentHeading = drivetrain.getState().Pose.getRotation().getMeasure();
+              return Constants.angleDistance(currentHeading, targetHeading)
+                  .lte(Constants.ShooterConstants.HEADING_TOLERANCE);
+            })
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
               if (stateMachine.getGameState() == GameState.SCORING) {
@@ -109,6 +145,12 @@ public final class DriverControls {
     // ==================== VISION ALIGNMENT ====================
     // A - Align to AprilTag (CENTER)
     controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
+
+    controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
+
+    // ==================== STOW PIVOT ====================
+    // D-pad Down - Stow intake pivot
+    controller.povDown().onTrue(pivot.stowCommand());
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock

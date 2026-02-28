@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 /**
  * MASTER ROBOT STATE MACHINE - FRC 2026 REBUILT
@@ -70,6 +71,10 @@ public class RobotStateMachine extends SubsystemBase {
   private CommandXboxController operatorController;
   private double rumbleEndTime = 0;
   private boolean hasFiredCriticalTimeWarning = false;
+
+  // ===== SUBSYSTEM POLLING =====
+  private BooleanSupplier shooterReadySupplier = () -> false;
+  private BooleanSupplier headingAlignedSupplier = () -> false;
 
   // Telemetry throttle — publish at ~5 Hz (every 10th cycle at 50 Hz)
   private static final int TELEMETRY_DIVISOR = 10;
@@ -254,6 +259,7 @@ public class RobotStateMachine extends SubsystemBase {
   @Override
   public void periodic() {
     checkPeriodTransitions();
+    pollSubsystemState();
     updateRumble();
 
     // Throttle telemetry to ~5 Hz (every TELEMETRY_DIVISOR cycles)
@@ -261,6 +267,15 @@ public class RobotStateMachine extends SubsystemBase {
       telemetryCycleCount = 0;
       updateTelemetry();
     }
+  }
+
+  /**
+   * Poll registered subsystem suppliers to keep isShooterAtRPM and isAlignedToTarget in sync every
+   * cycle. This fixes the original bug where these were never set from actual hardware state.
+   */
+  private void pollSubsystemState() {
+    isShooterAtRPM = shooterReadySupplier.getAsBoolean();
+    isAlignedToTarget = headingAlignedSupplier.getAsBoolean();
   }
 
   /** Detect endgame / transition periods automatically from match time. */
@@ -489,6 +504,19 @@ public class RobotStateMachine extends SubsystemBase {
   public void registerControllers(CommandXboxController driver, CommandXboxController operator) {
     this.driverController = driver;
     this.operatorController = operator;
+  }
+
+  /**
+   * Register subsystem suppliers so the state machine can poll shooter/alignment status each cycle.
+   * This replaces the old approach where isShooterAtRPM was never set from anywhere.
+   *
+   * @param shooterReady supplier from ShooterSubsystem.isReady()
+   * @param headingAligned supplier that returns true when drivetrain heading is on target
+   */
+  public void registerShooterSuppliers(
+      BooleanSupplier shooterReady, BooleanSupplier headingAligned) {
+    this.shooterReadySupplier = shooterReady;
+    this.headingAlignedSupplier = headingAligned;
   }
 
   public void rumbleDriver(double intensity, double durationSeconds) {

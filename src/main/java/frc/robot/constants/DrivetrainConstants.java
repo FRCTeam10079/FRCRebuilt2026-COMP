@@ -1,8 +1,18 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
+
 public class DrivetrainConstants {
   public static final double MAX_SPEED_MPS = 10.0;
   public static final double MAX_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0;
+
+  public static final LinearVelocity MAX_ALIGNING_SPEED_MPS = MetersPerSecond.of(4.0);
+  public static final AngularVelocity MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC =
+      RadiansPerSecond.of(Math.PI);
 
   public static final double NORMAL_SPEED_COEFFICIENT = 1.0;
   public static final double SLOW_MODE_COEFFICIENT = 0.7;

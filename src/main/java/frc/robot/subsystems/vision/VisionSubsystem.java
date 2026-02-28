@@ -68,12 +68,12 @@ public class VisionSubsystem extends SubsystemBase {
 
     String logPrefix = "Vision/" + cameraName + "/";
 
-    // Reject entire frame if rotating too fast
-    if (Math.abs(angularVelocityDegPerSec) > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
-      Logger.recordOutput(logPrefix + "Status", "ANGULAR_VEL_REJECT");
-      totalRejected++;
-      return;
-    }
+    // SAFETY REMOVED: Accept even while rotating fast
+    // if (Math.abs(angularVelocityDegPerSec) > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
+    //   Logger.recordOutput(logPrefix + "Status", "ANGULAR_VEL_REJECT");
+    //   totalRejected++;
+    //   return;
+    // }
 
     LimelightHelpers.SetRobotOrientation(
         cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
@@ -100,60 +100,58 @@ public class VisionSubsystem extends SubsystemBase {
 
     Pose2d pose = mt2.pose;
 
-    if (pose.equals(new Pose2d())) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "EMPTY_POSE");
-      totalRejected++;
-      return false;
-    }
+    // SAFETY REMOVED: Accept all poses unconditionally
+    // if (pose.equals(new Pose2d())) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "EMPTY_POSE");
+    //   totalRejected++;
+    //   return false;
+    // }
 
-    double x = pose.getX();
-    double y = pose.getY();
-    if (x < -FIELD_MARGIN
-        || x > FIELD_LENGTH + FIELD_MARGIN
-        || y < -FIELD_MARGIN
-        || y > FIELD_WIDTH + FIELD_MARGIN) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "OUT_OF_BOUNDS");
-      totalRejected++;
-      return false;
-    }
+    // double x = pose.getX();
+    // double y = pose.getY();
+    // if (x < -FIELD_MARGIN
+    //     || x > FIELD_LENGTH + FIELD_MARGIN
+    //     || y < -FIELD_MARGIN
+    //     || y > FIELD_WIDTH + FIELD_MARGIN) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "OUT_OF_BOUNDS");
+    //   totalRejected++;
+    //   return false;
+    // }
 
-    double headingDivergenceDeg =
-        Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
-    Logger.recordOutput(logPrefix + "MT2/HeadingDivergenceDeg", headingDivergenceDeg);
+    // double headingDivergenceDeg =
+    //     Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
+    // Logger.recordOutput(logPrefix + "MT2/HeadingDivergenceDeg", headingDivergenceDeg);
 
-    if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "HEADING_DIVERGE");
-      totalRejected++;
-      return false;
-    }
+    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "HEADING_DIVERGE");
+    //   totalRejected++;
+    //   return false;
+    // }
 
     double avgTagDist = mt2.avgTagDist;
 
-    if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "DISTANCE_REJECT");
-      totalRejected++;
-      return false;
-    }
+    // if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "DISTANCE_REJECT");
+    //   totalRejected++;
+    //   return false;
+    // }
 
-    // Pose-difference sanity check: reject if vision says
-    // we're suddenly far from where odometry thinks we are.
-    double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
-    Logger.recordOutput(logPrefix + "MT2/PoseDifference", poseDifference);
+    // Pose-difference sanity check removed
+    // double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    // Logger.recordOutput(logPrefix + "MT2/PoseDifference", poseDifference);
 
-    if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "POSE_DIFF_REJECT");
-      totalRejected++;
-      return false;
-    }
+    // if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "POSE_DIFF_REJECT");
+    //   totalRejected++;
+    //   return false;
+    // }
 
-    // Tag area gating for single-tag: reject very small tags (too far /
-    // unreliable).
-    // Multi-tag is always accepted since the solve is robust.
-    if (mt2.tagCount == 1 && mt2.avgTagArea < VisionConstants.MIN_TAG_AREA_SINGLE_TAG) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "TAG_AREA_REJECT");
-      totalRejected++;
-      return false;
-    }
+    // Tag area gating removed
+    // if (mt2.tagCount == 1 && mt2.avgTagArea < VisionConstants.MIN_TAG_AREA_SINGLE_TAG) {
+    //   Logger.recordOutput(logPrefix + "MT2/Status", "TAG_AREA_REJECT");
+    //   totalRejected++;
+    //   return false;
+    // }
 
     // =============== STANDARD DEVIATION MODEL ===============
     // Quadratic distance scaling, inversely linear with tag
@@ -201,58 +199,58 @@ public class VisionSubsystem extends SubsystemBase {
 
     Pose2d pose = mt1.pose;
 
-    if (pose.equals(new Pose2d())) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "EMPTY_POSE");
-      totalRejected++;
-      return;
-    }
+    // SAFETY REMOVED: Accept all MT1 poses unconditionally
+    // if (pose.equals(new Pose2d())) {
+    //   Logger.recordOutput(logPrefix + "MT1/Status", "EMPTY_POSE");
+    //   totalRejected++;
+    //   return;
+    // }
 
-    double x = pose.getX();
-    double y = pose.getY();
-    if (x < -FIELD_MARGIN
-        || x > FIELD_LENGTH + FIELD_MARGIN
-        || y < -FIELD_MARGIN
-        || y > FIELD_WIDTH + FIELD_MARGIN) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "OUT_OF_BOUNDS");
-      totalRejected++;
-      return;
-    }
+    // double x = pose.getX();
+    // double y = pose.getY();
+    // if (x < -FIELD_MARGIN
+    //     || x > FIELD_LENGTH + FIELD_MARGIN
+    //     || y < -FIELD_MARGIN
+    //     || y > FIELD_WIDTH + FIELD_MARGIN) {
+    //   Logger.recordOutput(logPrefix + "MT1/Status", "OUT_OF_BOUNDS");
+    //   totalRejected++;
+    //   return;
+    // }
 
-    double headingDivergenceDeg =
-        Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
-    if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "HEADING_DIVERGE");
-      totalRejected++;
-      return;
-    }
+    // double headingDivergenceDeg =
+    //     Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
+    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
+    //   Logger.recordOutput(logPrefix + "MT1/Status", "HEADING_DIVERGE");
+    //   totalRejected++;
+    //   return;
+    // }
 
     double avgTagDist = mt1.avgTagDist;
 
-    if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "DISTANCE_REJECT");
-      totalRejected++;
-      return;
-    }
+    // if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
+    //   Logger.recordOutput(logPrefix + "MT1/Status", "DISTANCE_REJECT");
+    //   totalRejected++;
+    //   return;
+    // }
 
-    // Reject single-tag MT1 with high ambiguity (pose flip uncertainty).
-    // MT1 is susceptible to ambiguity - 6328 uses 0.4 threshold.
-    if (mt1.tagCount == 1 && mt1.rawFiducials.length > 0) {
-      double ambiguity = mt1.rawFiducials[0].ambiguity;
-      Logger.recordOutput(logPrefix + "MT1/Ambiguity", ambiguity);
-      if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
-        Logger.recordOutput(logPrefix + "MT1/Status", "AMBIGUITY_REJECT");
-        totalRejected++;
-        return;
-      }
-    }
+    // Ambiguity check removed
+    // if (mt1.tagCount == 1 && mt1.rawFiducials.length > 0) {
+    //   double ambiguity = mt1.rawFiducials[0].ambiguity;
+    //   Logger.recordOutput(logPrefix + "MT1/Ambiguity", ambiguity);
+    //   if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+    //     Logger.recordOutput(logPrefix + "MT1/Status", "AMBIGUITY_REJECT");
+    //     totalRejected++;
+    //     return;
+    //   }
+    // }
 
-    // Pose-difference sanity check
-    double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
-    if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "POSE_DIFF_REJECT");
-      totalRejected++;
-      return;
-    }
+    // Pose-difference sanity check removed
+    // double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    // if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
+    //   Logger.recordOutput(logPrefix + "MT1/Status", "POSE_DIFF_REJECT");
+    //   totalRejected++;
+    //   return;
+    // }
 
     // Standard deviation: quadratic distance scaling like 6328/1678.
     // MT1 is less reliable than MT2, so we use a higher coefficient (2x).

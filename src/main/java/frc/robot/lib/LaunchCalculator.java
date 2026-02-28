@@ -7,7 +7,15 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.RPM;
+
 import java.util.function.Supplier;
 
 /**
@@ -226,11 +234,15 @@ public class LaunchCalculator {
     // ---- Step 2: Determine target ----
     Translation2d target = ShooterMath.getHubPosition();
 
-    // new code: Use robot center for lookahead math to avoid double-dipping the
-    // offset when rotating
     Translation2d robotCenterFieldPos = estimatedPose.getTranslation();
-
     double rawDistance = target.getDistance(robotCenterFieldPos);
+    // Compute shooter position on the field (applying robot-frame offset)
+    //Translation2d shooterFieldPos = estimatedPose
+       // .getTranslation()
+       // .plus(new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y)
+       //     .rotateBy(estimatedPose.getRotation()));
+
+    
 
     // ---- Step 3: Field-relative velocity ----
     ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
@@ -244,37 +256,39 @@ public class LaunchCalculator {
     // - TOF determines how far the robot's velocity offsets the effective aim point
     // - the new aim point changes the distance, which changes TOF, etc.
     double timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(rawDistance);
-    Translation2d lookaheadPos = robotCenterFieldPos; // new code
+    Translation2d lookaheadPos = robotCenterFieldPos;
     double lookaheadDistance = rawDistance;
 
     for (int i = 0; i < LOOKAHEAD_ITERATIONS; i++) {
       timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(lookaheadDistance);
       double offsetX = fieldVelX * timeOfFlight;
       double offsetY = fieldVelY * timeOfFlight;
-      lookaheadPos = robotCenterFieldPos.plus(new Translation2d(offsetX, offsetY)); // new code
+      lookaheadPos = robotCenterFieldPos.plus(new Translation2d(offsetX, offsetY));
       lookaheadDistance = target.getDistance(lookaheadPos);
     }
 
     // ---- Step 5: Compute drive heading angle ----
     // The robot should face from the lookahead position toward the target
     Rotation2d driveAngle = target.minus(lookaheadPos).getAngle();
-    // NEW!!!!
-    driveAngle = driveAngle.plus(Rotation2d.fromDegrees(180)); // Face toward the target
+
+    driveAngle = driveAngle.plus(Rotation2d.fromDegrees(180));
     // If the shooter has a significant lateral offset, apply asin correction
     // (similar to MA's getDriveAngleWithLauncherOffset)
     if (Math.abs(SHOOTER_OFFSET_Y) > 0.01) {
-      // new code: Compute offset using lookaheadDistance instead of static raw
-      // distance, and subtract it since a physical +Y offset means the ball will miss
-      // left if not corrected right.
+
       double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / lookaheadDistance, -1.0, 1.0));
-      driveAngle = driveAngle.minus(Rotation2d.fromRadians(offsetAngleRad)); // new code: subtract to aim right for a
-                                                                             // left offset
+      driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
+      //double distForOffset = target.getDistance(estimatedPose.getTranslation());
+      //double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / distForOffset, -1.0, 1.0));
+      //driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
+      // Rotate 180 deg if the shooter fires backwards (like MA's launcher)
+      // Our shooter fires forward, so no rotation needed
     }
 
     // ---- Step 6: Compute setpoints from lookahead distance ----
-    ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(lookaheadDistance);
-    double pivotAngleDegrees = setpoint.getPivotAngleDegrees();
-    double flywheelRPM = setpoint.getFlywheelRPM();
+    ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
+    double pivotAngleDegrees = setpoint.pivotAngle().in(Degrees);
+    double flywheelRPM = setpoint.flywheelRPM().in(RPM);
 
     // ---- Step 7: Compute angular velocity feedforwards via derivative + filter
     // ----
@@ -387,10 +401,10 @@ public class LaunchCalculator {
       LaunchParameters params = getParameters();
       if (params != null) {
         return new ShooterSetpoint(
-            params.flywheelRPM(), params.pivotAngleDegrees(), params.isValid());
+            RPM.of(params.flywheelRPM()), Degrees.of(params.pivotAngleDegrees()), params.isValid());
       }
       // Fallback: static distance-based setpoint
-      double distance = ShooterMath.getDistanceToHub(poseFallbackSupplier.get());
+      Distance distance = ShooterMath.getDistanceToHub(poseFallbackSupplier.get());
       return ShooterSetpoint.fromDistance(distance);
     };
   }

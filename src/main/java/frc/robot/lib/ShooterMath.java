@@ -1,8 +1,8 @@
 package frc.robot.lib;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Radians;
-
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -62,8 +62,10 @@ public final class ShooterMath {
     Translation2d hubPosition = getHubPosition();
     double dx = hubPosition.getX() - robotPose.getX();
     double dy = hubPosition.getY() - robotPose.getY();
-    return Radians.of(Math.atan2(dy, dx));
-  }
+
+    double forwardHeading = Math.toDegrees(Math.atan2(dy, dx));
+    return Degrees.of(MathUtil.inputModulus(forwardHeading + 180, -180, 180));
+  } 
 
   /**
    * Convert robot-relative ChassisSpeeds to field-relative ChassisSpeeds.

@@ -4,12 +4,18 @@
 
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Rotations;
+
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -34,7 +40,9 @@ public class PivotSubsystem extends SubsystemBase {
   // Stall detection state (only active while stowing)
   private boolean m_isStowing = false;
   private boolean m_isStalled = false;
-  private double m_stallStartTime = 0.0;
+  private final Timer m_stallTimer = new Timer();
+  StatusSignal<Current> statorCurrentSignal = m_pivotMotor.getStatorCurrent();
+  StatusSignal<Angle> rotorPositionSignal = m_pivotMotor.getRotorPosition();
 
   // Idle detection - switch to NeutralOut (brake mode holds mechanically)
   // when the pivot has been at setpoint long enough. Saves power.
@@ -67,10 +75,10 @@ public class PivotSubsystem extends SubsystemBase {
     config.CurrentLimits.StatorCurrentLimit = IntakeConstants.Pivot.STATOR_CURRENT_LIMIT;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
 
-    config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = IntakeConstants.Pivot.INTAKE_POSITION;
+    config.SoftwareLimitSwitch.withForwardSoftLimitThreshold(IntakeConstants.Pivot.INTAKE_POSITION);
     config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
 
-    config.SoftwareLimitSwitch.ReverseSoftLimitThreshold = IntakeConstants.Pivot.STOWED_POSITION;
+    config.SoftwareLimitSwitch.withReverseSoftLimitThreshold(IntakeConstants.Pivot.STOWED_POSITION);
     config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
 
     m_pivotMotor.applyConfiguration(config);
@@ -81,7 +89,7 @@ public class PivotSubsystem extends SubsystemBase {
    *
    * @param position target position in rotor rotations
    */
-  private void setPivotPosition(double position) {
+  private void setPivotSetpoint(Angle position) {
     m_pivotSetpoint = position;
     m_positionVoltage.withPosition(m_pivotSetpoint);
   }
@@ -115,11 +123,11 @@ public class PivotSubsystem extends SubsystemBase {
   }
 
   public boolean reachedSetpoint() {
-    return Math.abs(getPivotPosition() - m_pivotSetpoint) < IntakeConstants.Pivot.DEPLOY_TOLERANCE;
+    return getPivotPosition().isNear(m_pivotSetpoint, IntakeConstants.Pivot.DEPLOY_TOLERANCE);
   }
 
-  public double getPivotPosition() {
-    return m_pivotMotor.getRotorPosition().getValueAsDouble();
+  public Angle getPivotPosition() {
+    return rotorPositionSignal.getValue();
   }
 
   @Override
@@ -143,6 +151,7 @@ public class PivotSubsystem extends SubsystemBase {
         m_stallStartTime = 0.0;
       }
     }
+    detectStall();
 
     // --- Idle detection: switch to NeutralOut once at setpoint for long enough ---
     // Brake mode holds position mechanically, saving power. Inspired by 1678's
@@ -168,13 +177,32 @@ public class PivotSubsystem extends SubsystemBase {
       m_pivotMotor.setControl(m_positionVoltage.withPosition(m_pivotSetpoint));
     }
 
-    SmartDashboard.putNumber("Pivot/setpoint", m_pivotSetpoint);
-    SmartDashboard.putNumber("Pivot/position", getPivotPosition());
+    SmartDashboard.putNumber("Pivot/setpoint", m_pivotSetpoint.in(Rotations));
+    SmartDashboard.putNumber("Pivot/position", getPivotPosition().in(Rotations));
     SmartDashboard.putBoolean("Pivot/reachedSetpoint?", reachedSetpoint());
     SmartDashboard.putBoolean("Pivot/isStalled", m_isStalled);
     SmartDashboard.putBoolean("Pivot/isIdle", m_isIdle);
     SmartDashboard.putNumber(
-        "Pivot/statorCurrent", m_pivotMotor.getStatorCurrent().getValueAsDouble());
+        "Pivot/statorCurrent", statorCurrentSignal.getValue().in(Amps));
+  }
+
+  private void detectStall() {
+    if (!m_isStowing || m_isStalled || reachedSetpoint()) {
+      return;
+    }
+
+    var statorCurrent = statorCurrentSignal.getValue();
+    if (statorCurrent.lte(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD)) {
+      // Current dropped below threshold — reset timer
+      m_stallTimer.restart();
+      return;
+    }
+
+    if (m_stallTimer.hasElapsed(IntakeConstants.Pivot.STALL_TIME_THRESHOLD)) {
+      // Stall confirmed — hold current position instead of fighting the obstruction
+      m_isStalled = true;
+      m_pivotSetpoint = getPivotPosition();
+    }
   }
 
   // ==================== COMMAND FACTORIES ====================

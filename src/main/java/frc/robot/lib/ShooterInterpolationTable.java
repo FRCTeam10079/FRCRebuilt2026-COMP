@@ -1,10 +1,17 @@
 package frc.robot.lib;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.RPM;
+
 import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
 import edu.wpi.first.math.interpolation.Interpolator;
 import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.
@@ -82,11 +89,11 @@ public final class ShooterInterpolationTable {
   /**
    * Get the interpolated flywheel RPM for a given distance.
    *
-   * @param distanceMeters horizontal distance to hub in meters
+   * @param distance horizontal distance to hub in meters
    * @return target flywheel RPM
    */
-  public static double getRPM(double distanceMeters) {
-    return rpmTable.get(distanceMeters);
+  public static AngularVelocity getRPM(Distance distance) {
+    return RPM.of(rpmTable.get(distance.in(Meters)));
   }
 
   // ==================== TIME OF FLIGHT TABLE ====================
@@ -120,11 +127,11 @@ public final class ShooterInterpolationTable {
   /**
    * Get the interpolated pivot angle for a given distance.
    *
-   * @param distanceMeters horizontal distance to hub in meters
+   * @param distance horizontal distance to hub in meters
    * @return target pivot angle in degrees from horizontal
    */
-  public static double getAngleDegrees(double distanceMeters) {
-    return angleTable.get(distanceMeters);
+  public static Angle getAngle(Distance distance) {
+    return Degrees.of(angleTable.get(distance.in(Meters)));
   }
 
   /**

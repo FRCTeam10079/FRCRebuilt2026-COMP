@@ -1,32 +1,32 @@
 package frc.robot.lib;
 
+import static edu.wpi.first.units.Units.RPM;
+
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import frc.robot.Constants;
+import frc.robot.constants.ShooterConstants;
+import frc.robot.constants.ShooterPivotConstants;
+
 /**
- * Represents a complete shooter setpoint: flywheel RPM and pivot angle.
- *
- * <p>The setpoint is computed from the distance to the hub using interpolation tables.
+ * Represents a complete shooter setpoint: flywheel RPM and pivot angle. <br>
+ * The setpoint is computed from the distance to the hub using interpolation tables.
  *
  * @see ShooterInterpolationTable
  */
-public class ShooterSetpoint {
-
-  private final double flywheelRPM;
-  private final double pivotAngleDegrees;
-  private final boolean isValid;
+public record ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngle, boolean isValid) {
 
   /**
    * Create a new ShooterSetpoint.
    *
    * @param flywheelRPM target flywheel RPM
-   * @param pivotAngleDegrees target pivot angle in degrees
+   * @param pivotAngle target pivot angle in degrees
    * @param isValid whether this setpoint is achievable by the hardware
    */
-  public ShooterSetpoint(double flywheelRPM, double pivotAngleDegrees, boolean isValid) {
-    this.flywheelRPM = flywheelRPM;
-    this.pivotAngleDegrees = pivotAngleDegrees;
-    this.isValid = isValid;
-  }
+  public ShooterSetpoint {}
 
-  public ShooterSetpoint(double flywheelRPM, double pivotAngleDegrees) {
+  public ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngleDegrees) {
     this(flywheelRPM, pivotAngleDegrees, true);
   }
 
@@ -39,57 +39,50 @@ public class ShooterSetpoint {
    * @param distanceMeters 2D distance from robot to hub center (meters)
    * @return a ShooterSetpoint with the appropriate RPM and angle
    */
-  public static ShooterSetpoint fromDistance(double distanceMeters) {
-    double rpm = ShooterInterpolationTable.getRPM(distanceMeters);
-    double angle = ShooterInterpolationTable.getAngleDegrees(distanceMeters);
+  public static ShooterSetpoint fromDistance(Distance distanceMeters) {
+    AngularVelocity rpm = ShooterInterpolationTable.getRPM(distanceMeters);
+    Angle angle = ShooterInterpolationTable.getAngle(distanceMeters);
 
     // Validate that the angle is within the pivot's physical range
-    boolean valid = angle >= frc.robot.constants.ShooterPivotConstants.MIN_ANGLE_DEGREES
-        && angle <= frc.robot.constants.ShooterPivotConstants.MAX_ANGLE_DEGREES;
+    boolean valid =
+        angle.gte(ShooterPivotConstants.MIN_ANGLE) && angle.lte(ShooterPivotConstants.MAX_ANGLE);
 
     // Clamp to safe range even if invalid (so motor doesn't go crazy)
-    angle = Math.max(
-        frc.robot.constants.ShooterPivotConstants.MIN_ANGLE_DEGREES,
-        Math.min(angle, frc.robot.constants.ShooterPivotConstants.MAX_ANGLE_DEGREES));
+    angle =
+        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
 
     return new ShooterSetpoint(rpm, angle, valid);
   }
 
   /** @return the target flywheel RPM */
-  public double getFlywheelRPM() {
+  @Override
+  public AngularVelocity flywheelRPM() {
     return flywheelRPM;
   }
 
   /** @return the target pivot angle in degrees */
-  public double getPivotAngleDegrees() {
-    return pivotAngleDegrees;
+  @Override
+  public Angle pivotAngle() {
+    return pivotAngle;
   }
 
   /**
    * Whether this setpoint is valid (achievable by the hardware). If the setpoint exceeds hardware
    * limits, it's marked invalid and the robot should NOT fire.
    */
+  @Override
   public boolean isValid() {
     return isValid;
   }
 
   /** A "stowed" setpoint - pivot at minimum angle, no flywheel spin. */
   public static final ShooterSetpoint STOWED =
-      new ShooterSetpoint(0.0, frc.robot.constants.ShooterPivotConstants.MIN_ANGLE_DEGREES, true);
+      new ShooterSetpoint(RPM.zero(), ShooterPivotConstants.MIN_ANGLE, true);
 
   /**
    * A fixed "fender shot" setpoint for shooting while pressed up against the hub. These values
    * bypass distance-based interpolation for a known reliable shot.
    */
   public static final ShooterSetpoint FENDER_SHOT = new ShooterSetpoint(
-      frc.robot.constants.ShooterConstants.FENDER_SHOT_RPM,
-      frc.robot.constants.ShooterConstants.FENDER_SHOT_PIVOT_DEGREES,
-      true);
-
-  @Override
-  public String toString() {
-    return String.format(
-        "ShooterSetpoint[RPM=%.0f, Angle=%.1fdeg, valid=%b]",
-        flywheelRPM, pivotAngleDegrees, isValid);
-  }
+      ShooterConstants.FENDER_SHOT_SPEED, ShooterConstants.FENDER_SHOT_PIVOT_ANGLE, true);
 }

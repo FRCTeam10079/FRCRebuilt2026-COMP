@@ -123,7 +123,7 @@ public class AutoCommands {
 
   /** Spin up flywheel to target RPM and hold. */
   public Command spinUpShooter() {
-    return shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_RPM);
+    return shooter.holdRPMCommand(Constants.ShooterConstants.SHOOTER_SPINUP_SPEED);
   }
 
   /** Stop shooter immediately. */

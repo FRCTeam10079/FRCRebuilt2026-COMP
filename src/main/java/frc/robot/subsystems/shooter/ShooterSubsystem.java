@@ -4,9 +4,11 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -18,12 +20,14 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
-import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 /**
  * This subsystem contains: - Debounced "isReady()" check to ensure flywheel stability before
@@ -39,17 +43,19 @@ import java.util.function.DoubleSupplier;
  */
 public class ShooterSubsystem extends SubsystemBase {
 
-  private final TalonFX m_masterMotor;
   // DUAL MOTOR: Uncomment for 2-motor setup
-  private final TalonFX m_slaveMotor;
+  private final TalonFX m_masterMotor = new TalonFX(ShooterConstants.MASTER_MOTOR_ID);
+  // DUAL MOTOR: Uncomment for 2-motor setup
+  private final TalonFX m_slaveMotor = new TalonFX(ShooterConstants.SLAVE_MOTOR_ID);
 
   private final VelocityVoltage m_velocityRequest =
       new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
   // DUAL MOTOR: Uncomment for 2-motor setup
   private final Follower m_followerRequest;
+  StatusSignal<AngularVelocity> velocitySignal = m_masterMotor.getVelocity();
 
-  private double m_targetRPM = 0.0;
+  private AngularVelocity m_targetRPM = RPM.zero();
   private boolean m_isEnabled = false;
 
   // Stability tracking with debouncing
@@ -66,10 +72,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
   /** Creates a new ShooterSubsystem */
   public ShooterSubsystem() {
-    m_masterMotor = new TalonFX(ShooterConstants.MASTER_MOTOR_ID);
-    // DUAL MOTOR: Uncomment for 2-motor setup
-    m_slaveMotor = new TalonFX(ShooterConstants.SLAVE_MOTOR_ID);
-
     m_sysIdRoutine = new SysIdRoutine(
         new SysIdRoutine.Config(
             null, // Use default ramp rate (1 V/s)
@@ -145,13 +147,12 @@ public class ShooterSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // Read current velocity from motor
-    double currentRPS = m_masterMotor.getVelocity().getValueAsDouble();
-    double currentRPM = currentRPS * 60.0;
+    AngularVelocity currentRPM = m_masterMotor.getVelocity().getValue();
 
     // Update stability counter (debouncing logic)
-    if (m_isEnabled && m_targetRPM > 0) {
-      double error = Math.abs(m_targetRPM - currentRPM);
-      if (error <= ShooterConstants.SHOOTER_RPM_TOLERANCE) {
+    boolean isTargetPositive = m_targetRPM.gt(RPM.zero());
+    if (m_isEnabled && isTargetPositive) {
+      if (currentRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
         // Within tolerance - increment counter (capped at required cycles)
         m_stabilityCounter =
             Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
@@ -165,10 +166,9 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     // Apply control to motors
-    if (m_isEnabled && m_targetRPM > 0) {
+    if (m_isEnabled && isTargetPositive) {
       // Convert RPM to RPS for Phoenix 6
-      double targetRPS = m_targetRPM / 60.0;
-      m_masterMotor.setControl(m_velocityRequest.withVelocity(targetRPS));
+      m_masterMotor.setControl(m_velocityRequest.withVelocity(m_targetRPM));
       // DUAL MOTOR: Uncomment for 2-motor setup
       m_slaveMotor.setControl(m_followerRequest);
     } else {
@@ -179,9 +179,9 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     // Telemetry
-    SmartDashboard.putNumber("Shooter/TargetRPM", m_targetRPM);
-    SmartDashboard.putNumber("Shooter/CurrentRPM", currentRPM);
-    SmartDashboard.putNumber("Shooter/ErrorRPM", m_targetRPM - currentRPM);
+    SmartDashboard.putNumber("Shooter/TargetRPM", m_targetRPM.in(RPM));
+    SmartDashboard.putNumber("Shooter/CurrentRPM", currentRPM.in(RPM));
+    SmartDashboard.putNumber("Shooter/ErrorRPM", m_targetRPM.minus(currentRPM).in(RPM));
     SmartDashboard.putBoolean("Shooter/IsEnabled", m_isEnabled);
     SmartDashboard.putBoolean("Shooter/IsReady", isReady());
     SmartDashboard.putNumber("Shooter/StabilityCounter", m_stabilityCounter);
@@ -201,26 +201,27 @@ public class ShooterSubsystem extends SubsystemBase {
    *
    * @param rpm Target velocity in rotations per minute
    */
-  private void setTargetRPM(double rpm) {
-    double clampedRPM = Math.max(0, Math.min(rpm, ShooterConstants.SHOOTER_MAX_RPM));
+  private void setTargetRPM(AngularVelocity rpm) {
+    AngularVelocity clampedRPM =
+        Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_SPEED);
 
     // Reset stability counter when setpoint changes significantly
-    if (Math.abs(clampedRPM - m_targetRPM) > ShooterConstants.SHOOTER_RPM_TOLERANCE) {
+    if (clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
       m_stabilityCounter = 0;
     }
 
     m_targetRPM = clampedRPM;
-    m_isEnabled = clampedRPM > 0;
+    m_isEnabled = clampedRPM.gt(RPM.zero());
   }
 
   /** Enable the shooter at the pre-configured spin-up RPM */
   private void spinUp() {
-    setTargetRPM(ShooterConstants.SHOOTER_SPINUP_RPM);
+    setTargetRPM(ShooterConstants.SHOOTER_SPINUP_SPEED);
   }
 
   /** Stop the shooter (coast to stop) */
   public void stop() {
-    m_targetRPM = 0;
+    m_targetRPM = RPM.zero();
     m_isEnabled = false;
     m_stabilityCounter = 0;
   }
@@ -238,7 +239,7 @@ public class ShooterSubsystem extends SubsystemBase {
    */
   public boolean isReady() {
     return m_isEnabled
-        && m_targetRPM > 0
+        && m_targetRPM.gt(RPM.zero())
         && m_stabilityCounter >= ShooterConstants.STABILITY_CYCLES_REQUIRED;
   }
 
@@ -249,20 +250,19 @@ public class ShooterSubsystem extends SubsystemBase {
    * @return true if current RPM is within tolerance of target
    */
   public boolean isAtSetpoint() {
-    if (!m_isEnabled || m_targetRPM <= 0) {
+    if (!m_isEnabled || m_targetRPM.lt(RPM.zero())) {
       return false;
     }
-    double currentRPM = m_masterMotor.getVelocity().getValueAsDouble() * 60.0;
-    return Math.abs(m_targetRPM - currentRPM) <= ShooterConstants.SHOOTER_RPM_TOLERANCE;
+    return m_targetRPM.isNear(velocitySignal.getValue(), ShooterConstants.SHOOTER_SPEED_TOLERANCE);
   }
 
   /** @return Current flywheel velocity in RPM */
-  public double getCurrentRPM() {
-    return m_masterMotor.getVelocity().getValueAsDouble() * 60.0;
+  public AngularVelocity getCurrentRPM() {
+    return m_masterMotor.getVelocity().getValue();
   }
 
   /** @return Target flywheel velocity in RPM */
-  public double getTargetRPM() {
+  public AngularVelocity getTargetRPM() {
     return m_targetRPM;
   }
 
@@ -296,7 +296,7 @@ public class ShooterSubsystem extends SubsystemBase {
    *
    * @param rpm Target RPM to maintain
    */
-  public Command holdRPMCommand(double rpm) {
+  public Command holdRPMCommand(AngularVelocity rpm) {
     return startEnd(() -> setTargetRPM(rpm), this::stop).withName("Shooter Hold " + rpm + " RPM");
   }
 
@@ -308,8 +308,8 @@ public class ShooterSubsystem extends SubsystemBase {
    * @param rpmSupplier supplier that provides the target RPM each loop
    * @return a command that continuously updates the target RPM
    */
-  public Command holdRPMCommand(DoubleSupplier rpmSupplier) {
-    return run(() -> setTargetRPM(rpmSupplier.getAsDouble()))
+  public Command holdRPMCommand(Supplier<AngularVelocity> rpmSupplier) {
+    return run(() -> setTargetRPM(rpmSupplier.get()))
         .finallyDo(interrupted -> stop())
         .withName("Shooter Dynamic RPM");
   }
@@ -318,14 +318,12 @@ public class ShooterSubsystem extends SubsystemBase {
    * Check if the shooter is within a percentage tolerance of a given target RPM. Used for on-target
    * gating in the shoot command.
    *
-   * @param targetRPM the target RPM to check against
+   * @param target the target RPM to check against
    * @return true if current RPM is within ON_TARGET_RPM_PERCENT of target
    */
-  public boolean isAtRPM(double targetRPM) {
-    if (targetRPM <= 0) return false;
-    double currentRPM = getCurrentRPM();
-    double percentError = Math.abs(currentRPM - targetRPM) / targetRPM;
-    return percentError <= ShooterConstants.ON_TARGET_RPM_PERCENT;
+  public boolean isAt(AngularVelocity target) {
+    if (target.lt(RPM.zero())) return false;
+    return getCurrentRPM().isNear(target, ShooterConstants.ON_TARGET_RPM_PERCENT);
   }
 
   public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {

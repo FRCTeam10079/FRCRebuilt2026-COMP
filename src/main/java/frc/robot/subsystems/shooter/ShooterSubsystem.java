@@ -206,7 +206,7 @@ public class ShooterSubsystem extends SubsystemBase {
         Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_SPEED);
 
     // Reset stability counter when setpoint changes significantly
-    if (clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
+    if (!clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
       m_stabilityCounter = 0;
     }
 

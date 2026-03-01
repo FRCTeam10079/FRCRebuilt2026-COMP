@@ -57,7 +57,7 @@ public final class OperatorControls {
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
     operator
         .y()
-        .toggleOnTrue(Commands.runOnce(() -> stateMachine.setFuelState(
+        .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
             stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
     // ==================== HUB OVERRIDES ====================
@@ -96,23 +96,14 @@ public final class OperatorControls {
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator.x().onTrue(shooterPivot.homeCommand());
 
-    operator.y().onTrue(
-        Commands.runOnce( () ->
-            ShooterInterpolationTable.hotSwapTofValues(
-                1.0, 
-                ShooterInterpolationTable.getTimeOfFlight(1.0) + 0.1
-            )
-        )
-    );
-    operator.a().onTrue(
-        Commands.runOnce( () ->
-            ShooterInterpolationTable.hotSwapTofValues(
-                1.0, 
-                ShooterInterpolationTable.getTimeOfFlight(1.0) - 0.1
-            )
-        )
-    );
-
+    operator
+        .povLeft()
+        .onTrue(Commands.runOnce(() -> ShooterInterpolationTable.hotSwapTofValues(
+            1.0, ShooterInterpolationTable.getTimeOfFlight(1.0) + 0.1)));
+    operator
+        .povRight()
+        .onTrue(Commands.runOnce(() -> ShooterInterpolationTable.hotSwapTofValues(
+            1.0, ShooterInterpolationTable.getTimeOfFlight(1.0) - 0.1)));
 
     // ==================== FORCE SHOOT OVERRIDE ====================
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.

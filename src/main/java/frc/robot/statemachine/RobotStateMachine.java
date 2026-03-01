@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import frc.robot.lib.ShooterInterpolationTable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -282,10 +281,10 @@ public class RobotStateMachine extends SubsystemBase {
 
   /** Detect endgame / transition periods automatically from match time. */
   private void checkPeriodTransitions() {
-    if (matchState == MatchState.TELEOP_RUNNING) {
+    if (matchState == MatchState.TELEOP_RUNNING || matchState == MatchState.TRANSITION_SHIFT) {
       if (isEndgamePeriod()) {
         setMatchState(MatchState.ENDGAME);
-      } else if (isTransitionPeriod()) {
+      } else if (matchState == MatchState.TELEOP_RUNNING && isTransitionPeriod()) {
         setMatchState(MatchState.TRANSITION_SHIFT);
       }
     }

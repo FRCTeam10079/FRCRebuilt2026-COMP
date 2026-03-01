@@ -116,10 +116,7 @@ public class PivotSubsystem extends SubsystemBase {
     m_atSetpointSinceTime = 0.0;
   }
 
-  /**
-   * @return true if the pivot detected a stall during stowing and is holding
-   *         position.
-   */
+  /** @return true if the pivot detected a stall during stowing and is holding position. */
   public boolean isStalled() {
     return m_isStalled;
   }

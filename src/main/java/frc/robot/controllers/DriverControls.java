@@ -5,7 +5,6 @@
 package frc.robot.controllers;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -31,27 +30,25 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * Driver controller bindings (Port 0). All driver button->command mappings live
- * here so
+ * Driver controller bindings (Port 0). All driver button->command mappings live here so
  * RobotContainer stays lean.
  */
 public final class DriverControls {
 
-  private DriverControls() {
-  } // Static utility class
+  private DriverControls() {} // Static utility class
 
   /**
    * Bind all driver controls.
    *
-   * @param controller       the driver's Xbox controller
-   * @param drivetrain       swerve drivetrain subsystem
-   * @param vision           vision subsystem (for alignment commands)
-   * @param intake           intake wheels subsystem
-   * @param pivot            intake pivot subsystem
-   * @param shooter          shooter subsystem
-   * @param shooterPivot     shooter pivot subsystem
-   * @param indexer          indexer subsystem
-   * @param stateMachine     global robot state machine
+   * @param controller the driver's Xbox controller
+   * @param drivetrain swerve drivetrain subsystem
+   * @param vision vision subsystem (for alignment commands)
+   * @param intake intake wheels subsystem
+   * @param pivot intake pivot subsystem
+   * @param shooter shooter subsystem
+   * @param shooterPivot shooter pivot subsystem
+   * @param indexer indexer subsystem
+   * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
@@ -81,18 +78,17 @@ public final class DriverControls {
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(Commands.startEnd(
-            () -> {
-              pivot.deployPivot();
-              intake.intakeIn();
-              stateMachine.setGameState(GameState.COLLECTING);
-            },
-            () -> {
-              intake.stop();
-              if (stateMachine.getGameState() == GameState.COLLECTING) {
-                stateMachine.setGameState(GameState.IDLE);
-              }
-            },
-            intake)
+                () -> {
+                  intake.intakeIn();
+                  stateMachine.setGameState(GameState.COLLECTING);
+                },
+                () -> {
+                  intake.stop();
+                  if (stateMachine.getGameState() == GameState.COLLECTING) {
+                    stateMachine.setGameState(GameState.IDLE);
+                  }
+                },
+                intake)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
@@ -103,12 +99,12 @@ public final class DriverControls {
     controller
         .rightBumper()
         .whileTrue(ShooterFactory.aimAtHub(
-            drivetrain,
-            controller::getLeftY,
-            controller::getLeftX,
-            () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-            Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-            Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
+                drivetrain,
+                controller::getLeftY,
+                controller::getLeftX,
+                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
             .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
@@ -157,11 +153,16 @@ public final class DriverControls {
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot
-    controller.povDown().toggleOnTrue(new StartEndCommand(() -> {
-      pivot.deployPivot();
-    }, () -> {
-      pivot.stowPivot();
-    }, pivot));
+    controller
+        .povDown()
+        .toggleOnTrue(new StartEndCommand(
+            () -> {
+              pivot.deployPivot();
+            },
+            () -> {
+              pivot.stowPivot();
+            },
+            pivot));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock

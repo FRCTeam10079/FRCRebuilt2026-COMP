@@ -75,10 +75,11 @@ public final class DriverControls {
     // Left Trigger - Hold to deploy pivot + run intake wheels
     // Release stops wheels but pivot stays deployed so balls
     // aren't disturbed. Press X to stow pivot when ready.
-    controller
+     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .whileTrue(Commands.startEnd(
                 () -> {
+                  pivot.deployPivot();
                   intake.intakeIn();
                   stateMachine.setGameState(GameState.COLLECTING);
                 },
@@ -89,7 +90,10 @@ public final class DriverControls {
                   }
                 },
                 intake)
-            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
+            // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
+          );
+
+        
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
@@ -153,16 +157,7 @@ public final class DriverControls {
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot
-    controller
-        .povDown()
-        .toggleOnTrue(new StartEndCommand(
-            () -> {
-              pivot.deployPivot();
-            },
-            () -> {
-              pivot.stowPivot();
-            },
-            pivot));
+   controller.povDown().whileTrue(pivot.stowCommand());
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock

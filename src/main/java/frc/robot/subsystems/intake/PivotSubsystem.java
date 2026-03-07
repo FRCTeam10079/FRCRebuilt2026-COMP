@@ -27,8 +27,7 @@ import frc.robot.lib.networked.NetworkedTalonFX;
 
 public class PivotSubsystem extends SubsystemBase {
 
-  private final NetworkedTalonFX m_pivotMotor =
-      new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
+  private final NetworkedTalonFX m_pivotMotor = new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
 
   private Angle m_pivotSetpoint;
   private final MotionMagicVoltage m_motionMagicVoltage = new MotionMagicVoltage(0);
@@ -51,7 +50,9 @@ public class PivotSubsystem extends SubsystemBase {
     m_pivotSetpoint = getPivotPosition();
   }
 
-  /** Configure the pivot motor with PID gains, current limits, and soft limits. */
+  /**
+   * Configure the pivot motor with PID gains, current limits, and soft limits.
+   */
   private void configureMotors() {
 
     TalonFXConfiguration config = new TalonFXConfiguration();
@@ -140,8 +141,7 @@ public class PivotSubsystem extends SubsystemBase {
 
           if (m_atSetpointSinceTime == 0.0) {
             m_atSetpointSinceTime = Timer.getFPGATimestamp();
-          } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime
-              >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
+          } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
             m_isIdle = true;
           }
 
@@ -205,7 +205,7 @@ public class PivotSubsystem extends SubsystemBase {
   }
 
   public Command stowCommand() {
-
+    // System.err.println("PIVOT IS STOWING 😊😊😊😊😊😊😊");
     return runOnce(this::stowPivot)
         .andThen(Commands.waitUntil(this::reachedSetpoint))
         .withName("Pivot Stow");

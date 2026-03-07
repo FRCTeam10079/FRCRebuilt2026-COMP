@@ -84,7 +84,8 @@ public class RobotContainer {
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 
-    // Create the memoized setpoint supplier (caches by pose X/Y/theta)
+    // Create the memoized \[]
+    // setpoint supplier (caches by pose X/Y/theta)
     m_setpointSupplier = ShooterMath.createSetpointSupplier(() -> drivetrain.getState().Pose);
 
     // Register controllers with state machine for haptic feedback

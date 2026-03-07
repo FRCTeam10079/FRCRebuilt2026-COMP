@@ -28,7 +28,9 @@ public class ShooterConstants {
   // ==================== TOLERANCES ====================
   public static final AngularVelocity SHOOTER_SPEED_TOLERANCE = RPM.of(150);
   public static final int STABILITY_CYCLES_REQUIRED = 5;
-  /** Percentage tolerance for on-target check (inspired by 254's 4% tolerance). */
+  /**
+   * Percentage tolerance for on-target check (inspired by 254's 4% tolerance).
+   */
   public static final double ON_TARGET_RPM_PERCENT = 0.04;
 
   // ==================== PID GAINS (Slot 0) ====================
@@ -48,14 +50,16 @@ public class ShooterConstants {
 
   // ==================== HEADING ALIGNMENT ====================
   /** Heading tolerance for "aligned to hub" in degrees. */
-  public static final Angle HEADING_TOLERANCE = Degrees.of(3.0);
+  public static final Angle HEADING_TOLERANCE = Degrees.of(15.0);
 
   /**
-   * Heading tolerance for shoot-on-the-move in degrees. Wider than static because the heading
+   * Heading tolerance for shoot-on-the-move in degrees. Wider than static because
+   * the heading
    * continuously tracks a moving target.
    */
   // TODO: TUNE ON THE ROBOT - start at 10 deg, tighten as confidence grows
   public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 10.0;
 
-  protected ShooterConstants() {}
+  protected ShooterConstants() {
+  }
 }

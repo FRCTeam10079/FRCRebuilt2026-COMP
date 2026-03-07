@@ -40,10 +40,14 @@ public class PivotSubsystem extends SubsystemBase {
 
   StatusSignal<Current> statorCurrentSignal = m_pivotMotor.getStatorCurrent();
   StatusSignal<Angle> rotorPositionSignal = m_pivotMotor.getRotorPosition();
-  // Idle detection - switch to NeutralOut (brake mode holds mechanically)
-  // when the pivot has been at setpoint long enough. Saves power.
+  /**
+   * Idle detection - switch to NeutralOut (brake mode holds mechanically) when the pivot has been
+   * at setpoint long enough. Saves power. <br>
+   * TODO: This never gets set to false, is this wrong?
+   */
   private boolean m_isIdle = false;
-  private double m_atSetpointSinceTime = 0.0;
+
+  private final Timer m_atSetpointTimer = new Timer();
 
   public PivotSubsystem() {
     configureMotors();
@@ -68,11 +72,11 @@ public class PivotSubsystem extends SubsystemBase {
         .withKI(IntakeConstants.Pivot.KI)
         .withKP(IntakeConstants.Pivot.KP);
     // MotionMagic profile configuration for smooth trapezoidal motion
-    config.MotionMagic.MotionMagicCruiseVelocity = IntakeConstants.Pivot.MM_CRUISE_VELOCITY;
+    config.MotionMagic.withMotionMagicCruiseVelocity(IntakeConstants.Pivot.MM_CRUISE_VELOCITY);
 
-    config.MotionMagic.MotionMagicAcceleration = IntakeConstants.Pivot.DEPLOYMM_ACCELERATION;
+    config.MotionMagic.withMotionMagicAcceleration(IntakeConstants.Pivot.MM_ACCELERATION);
 
-    config.MotionMagic.MotionMagicJerk = IntakeConstants.Pivot.MM_JERK;
+    config.MotionMagic.withMotionMagicJerk(IntakeConstants.Pivot.MM_JERK);
 
     config.CurrentLimits.SupplyCurrentLimit = IntakeConstants.Pivot.SUPPLY_CURRENT_LIMIT;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
@@ -110,7 +114,7 @@ public class PivotSubsystem extends SubsystemBase {
 
   private void wakeFromIdle() {
     m_isIdle = false;
-    m_atSetpointSinceTime = 0.0;
+    m_atSetpointTimer.stop();
   }
 
   public boolean isStalled() {
@@ -132,24 +136,7 @@ public class PivotSubsystem extends SubsystemBase {
 
     detectStall();
     // --- Idle detection: switch to NeutralOut once at setpoint for long enough ---
-    if (!m_isStowing) {
-
-      if (!m_isIdle) {
-
-        if (reachedSetpoint()) {
-
-          if (m_atSetpointSinceTime == 0.0) {
-            m_atSetpointSinceTime = Timer.getFPGATimestamp();
-          } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime
-              >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
-            m_isIdle = true;
-          }
-
-        } else {
-          m_atSetpointSinceTime = 0.0;
-        }
-      }
-    }
+    detectAtSetpoint();
 
     if (!m_isStowing && m_isIdle) {
       m_pivotMotor.setControl(m_neutralRequest);
@@ -169,6 +156,21 @@ public class PivotSubsystem extends SubsystemBase {
 
     SmartDashboard.putNumber(
         "Pivot/statorCurrent", statorCurrentSignal.getValue().in(Amps));
+  }
+
+  private void detectAtSetpoint() {
+    if (m_isStowing || m_isIdle) {
+      return;
+    }
+
+    if (!reachedSetpoint()) {
+      m_atSetpointTimer.restart();
+      return;
+    }
+
+    if (m_atSetpointTimer.hasElapsed(IntakeConstants.Pivot.IDLE_DEBOUNCE_TIME)) {
+      m_isIdle = true;
+    }
   }
 
   private void detectStall() {

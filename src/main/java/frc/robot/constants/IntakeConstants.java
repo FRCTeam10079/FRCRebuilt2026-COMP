@@ -2,11 +2,18 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 
+import edu.wpi.first.units.AngularAccelerationUnit;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.units.measure.Velocity;
 
 public class IntakeConstants {
   public static class Pivot {
@@ -29,7 +36,7 @@ public class IntakeConstants {
      * How long (seconds) the pivot must be at setpoint before switching to idle (NeutralOut). Brake
      * mode holds position mechanically once the motor is off.
      */
-    public static final double IDLE_DEBOUNCE_SECONDS = 0.5;
+    public static final Time IDLE_DEBOUNCE_TIME = Seconds.of(0.5);
 
     public static final double KA = 0;
     public static final double KS = 0.4;
@@ -58,13 +65,13 @@ public class IntakeConstants {
     // ShooterPivot (heavier) uses cruise=40, accel=80, jerk=400 for comparison.
 
     /** Cruise velocity for MotionMagic (rotations per second). */
-    public static final double MM_CRUISE_VELOCITY = 80.0;
+    public static final AngularVelocity MM_CRUISE_VELOCITY = RotationsPerSecond.of(80.0);
     /** Acceleration for MotionMagic (rotations per second^2). */
-    public static final double DEPLOYMM_ACCELERATION = 50.0;
+    public static final AngularAcceleration MM_ACCELERATION = RotationsPerSecondPerSecond.of(50.0);
 
-    public static final double STOWMM_ACCELERATION = 40.0;
     /** Jerk for MotionMagic (rotations per second^3). Limits snap in acceleration. */
-    public static final double MM_JERK = 1200.0;
+    public static final Velocity<AngularAccelerationUnit> MM_JERK =
+        RotationsPerSecondPerSecond.per(Second).of(1200.0);
 
     protected Pivot() {}
   }
@@ -72,8 +79,8 @@ public class IntakeConstants {
   public static class Wheels {
     public static final int MOTOR_ID = 19;
 
-    public static final int SUPPLY_CURRENT_LIMIT = 50;
-    public static final int STATOR_CURRENT_LIMIT = 100;
+    public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(50);
+    public static final Current STATOR_CURRENT_LIMIT = Amps.of(100);
 
     public static final double INTAKE_IN_RPM = 2600;
     public static final double INTAKE_OUT_RPM = -2200;

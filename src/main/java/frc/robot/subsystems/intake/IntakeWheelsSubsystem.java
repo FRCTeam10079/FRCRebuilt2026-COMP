@@ -39,9 +39,9 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
     config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
-    config.CurrentLimits.SupplyCurrentLimit = IntakeConstants.Wheels.SUPPLY_CURRENT_LIMIT;
+    config.CurrentLimits.withSupplyCurrentLimit(IntakeConstants.Wheels.SUPPLY_CURRENT_LIMIT);
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
-    config.CurrentLimits.StatorCurrentLimit = IntakeConstants.Wheels.STATOR_CURRENT_LIMIT;
+    config.CurrentLimits.withStatorCurrentLimit(IntakeConstants.Wheels.STATOR_CURRENT_LIMIT);
     config.CurrentLimits.StatorCurrentLimitEnable = true;
 
     config.Slot0.withKA(IntakeConstants.Wheels.KA)

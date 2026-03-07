@@ -48,7 +48,7 @@ public class ShooterConstants {
 
   // ==================== HEADING ALIGNMENT ====================
   /** Heading tolerance for "aligned to hub" in degrees. */
-  public static final Angle HEADING_TOLERANCE = Degrees.of(3.0);
+  public static final Angle HEADING_TOLERANCE = Degrees.of(15.0);
 
   /**
    * Heading tolerance for shoot-on-the-move in degrees. Wider than static because the heading

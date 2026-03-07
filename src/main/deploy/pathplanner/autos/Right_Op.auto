@@ -24,52 +24,21 @@
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 3.0
+            "pathName": "OpTorScore"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "OpToRScore"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Shoot"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 4.0
-          }
-        },
-        {
-          "type": "parallel",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "RScoreToNeutral"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
-                }
-              }
-            ]
+            "pathName": "rScoreTorNeutral"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "NeutralToRScore"
+            "pathName": "rNeutralToRscore"
           }
         }
       ]
@@ -77,5 +46,5 @@
   },
   "resetOdom": true,
   "folder": "Right Autons",
-  "choreoAuto": true
+  "choreoAuto": false
 }

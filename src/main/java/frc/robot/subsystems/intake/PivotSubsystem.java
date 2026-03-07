@@ -9,8 +9,8 @@ import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -25,25 +25,21 @@ import frc.robot.Constants;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.lib.networked.NetworkedTalonFX;
 
-/**
- * Intake pivot arm subsystem. Controls the angular position of the intake mechanism between a
- * stowed position and a deployed (intake) position using closed-loop position control.
- */
 public class PivotSubsystem extends SubsystemBase {
 
   private final NetworkedTalonFX m_pivotMotor =
       new NetworkedTalonFX(IntakeConstants.Pivot.MOTOR_ID, Constants.kCANBus);
-  private Angle m_pivotSetpoint;
-  private final PositionVoltage m_positionVoltage = new PositionVoltage(0);
-  private final NeutralOut m_neutralRequest = new NeutralOut();
 
+  private Angle m_pivotSetpoint;
+  private final MotionMagicVoltage m_motionMagicVoltage = new MotionMagicVoltage(0);
+  private final NeutralOut m_neutralRequest = new NeutralOut();
   // Stall detection state (only active while stowing)
   private boolean m_isStowing = false;
   private boolean m_isStalled = false;
   private final Timer m_stallTimer = new Timer();
+
   StatusSignal<Current> statorCurrentSignal = m_pivotMotor.getStatorCurrent();
   StatusSignal<Angle> rotorPositionSignal = m_pivotMotor.getRotorPosition();
-
   // Idle detection - switch to NeutralOut (brake mode holds mechanically)
   // when the pivot has been at setpoint long enough. Saves power.
   private boolean m_isIdle = false;
@@ -57,7 +53,9 @@ public class PivotSubsystem extends SubsystemBase {
 
   /** Configure the pivot motor with PID gains, current limits, and soft limits. */
   private void configureMotors() {
+
     TalonFXConfiguration config = new TalonFXConfiguration();
+
     config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     // PID constants
@@ -69,9 +67,16 @@ public class PivotSubsystem extends SubsystemBase {
         .withKS(IntakeConstants.Pivot.KS)
         .withKI(IntakeConstants.Pivot.KI)
         .withKP(IntakeConstants.Pivot.KP);
+    // MotionMagic profile configuration for smooth trapezoidal motion
+    config.MotionMagic.MotionMagicCruiseVelocity = IntakeConstants.Pivot.MM_CRUISE_VELOCITY;
+
+    config.MotionMagic.MotionMagicAcceleration = IntakeConstants.Pivot.DEPLOYMM_ACCELERATION;
+
+    config.MotionMagic.MotionMagicJerk = IntakeConstants.Pivot.MM_JERK;
 
     config.CurrentLimits.SupplyCurrentLimit = IntakeConstants.Pivot.SUPPLY_CURRENT_LIMIT;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
+
     config.CurrentLimits.StatorCurrentLimit = IntakeConstants.Pivot.STATOR_CURRENT_LIMIT;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
 
@@ -84,17 +89,10 @@ public class PivotSubsystem extends SubsystemBase {
     m_pivotMotor.applyConfiguration(config);
   }
 
-  /**
-   * Set the pivot arm target position.
-   *
-   * @param position target position in rotor rotations
-   */
   private void setPivotSetpoint(Angle position) {
     m_pivotSetpoint = position;
-    m_positionVoltage.withPosition(m_pivotSetpoint);
   }
 
-  /** Deploy the pivot arm to the intake (pickup) position. */
   public void deployPivot() {
     m_isStowing = false;
     m_isStalled = false;
@@ -102,21 +100,19 @@ public class PivotSubsystem extends SubsystemBase {
     setPivotSetpoint(IntakeConstants.Pivot.INTAKE_POSITION);
   }
 
-  /** Stow the pivot arm to the retracted position. */
   public void stowPivot() {
     m_isStowing = true;
     m_isStalled = false;
     m_stallTimer.stop();
+    m_stallTimer.reset(); // Stall detection runs fresh
     setPivotSetpoint(IntakeConstants.Pivot.STOWED_POSITION);
   }
 
-  /** Wake the motor from idle state so it resumes closed-loop control. */
   private void wakeFromIdle() {
     m_isIdle = false;
     m_atSetpointSinceTime = 0.0;
   }
 
-  /** @return true if the pivot detected a stall during stowing and is holding position. */
   public boolean isStalled() {
     return m_isStalled;
   }
@@ -131,81 +127,85 @@ public class PivotSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+
     m_pivotMotor.periodic();
 
     detectStall();
-
     // --- Idle detection: switch to NeutralOut once at setpoint for long enough ---
-    // Brake mode holds position mechanically, saving power. Inspired by 1678's
-    // approach of using brake mode + zero-output when at target, rather than
-    // continuous PID commanding (which wastes current, especially with kG=0).
-    if (!m_isIdle) {
-      if (reachedSetpoint() && !m_isStowing) {
-        if (m_atSetpointSinceTime == 0.0) {
-          m_atSetpointSinceTime = Timer.getFPGATimestamp();
-        } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime
-            >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
-          m_isIdle = true;
+    if (!m_isStowing) {
+
+      if (!m_isIdle) {
+
+        if (reachedSetpoint()) {
+
+          if (m_atSetpointSinceTime == 0.0) {
+            m_atSetpointSinceTime = Timer.getFPGATimestamp();
+          } else if (Timer.getFPGATimestamp() - m_atSetpointSinceTime
+              >= IntakeConstants.Pivot.IDLE_DEBOUNCE_SECONDS) {
+            m_isIdle = true;
+          }
+
+        } else {
+          m_atSetpointSinceTime = 0.0;
         }
-      } else {
-        m_atSetpointSinceTime = 0.0;
       }
     }
 
-    // Send motor command: NeutralOut when idle, PositionVoltage otherwise
-    if (m_isIdle) {
+    if (!m_isStowing && m_isIdle) {
       m_pivotMotor.setControl(m_neutralRequest);
     } else {
-      m_pivotMotor.setControl(m_positionVoltage.withPosition(m_pivotSetpoint));
+      m_pivotMotor.setControl(m_motionMagicVoltage.withPosition(m_pivotSetpoint));
     }
 
     SmartDashboard.putNumber("Pivot/setpoint", m_pivotSetpoint.in(Rotations));
+
     SmartDashboard.putNumber("Pivot/position", getPivotPosition().in(Rotations));
+
     SmartDashboard.putBoolean("Pivot/reachedSetpoint?", reachedSetpoint());
+
     SmartDashboard.putBoolean("Pivot/isStalled", m_isStalled);
+
     SmartDashboard.putBoolean("Pivot/isIdle", m_isIdle);
+
     SmartDashboard.putNumber(
         "Pivot/statorCurrent", statorCurrentSignal.getValue().in(Amps));
   }
 
   private void detectStall() {
+
     if (!m_isStowing || m_isStalled || reachedSetpoint()) {
       return;
     }
 
     var statorCurrent = statorCurrentSignal.getValue();
+
     if (statorCurrent.lte(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD)) {
-      // Current dropped below threshold — reset timer
-      m_stallTimer.restart();
+
+      m_stallTimer.stop();
+      m_stallTimer.reset();
       return;
     }
 
+    if (!m_stallTimer.isRunning()) {
+      m_stallTimer.start();
+    }
+
     if (m_stallTimer.hasElapsed(IntakeConstants.Pivot.STALL_TIME_THRESHOLD)) {
-      // Stall confirmed — hold current position instead of fighting the obstruction
+
       m_isStalled = true;
       m_pivotSetpoint = getPivotPosition();
     }
   }
 
-  // ==================== COMMAND FACTORIES ====================
-
-  /**
-   * Command to deploy the pivot arm and wait until it reaches the setpoint.
-   *
-   * @return a deploy command that requires this subsystem
-   */
   public Command deployCommand() {
+
     return runOnce(this::deployPivot)
         .andThen(Commands.waitUntil(this::reachedSetpoint))
         .withName("Pivot Deploy");
   }
 
-  /**
-   * Command to stow the pivot arm and wait until it reaches the setpoint.
-   *
-   * @return a stow command that requires this subsystem
-   */
   public Command stowCommand() {
+
     return runOnce(this::stowPivot)
         .andThen(Commands.waitUntil(this::reachedSetpoint))
         .withName("Pivot Stow");

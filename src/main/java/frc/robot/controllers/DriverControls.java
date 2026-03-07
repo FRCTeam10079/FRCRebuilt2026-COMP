@@ -8,7 +8,6 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
@@ -75,9 +74,10 @@ public final class DriverControls {
     // Left Trigger - Hold to deploy pivot + run intake wheels
     // Release stops wheels but pivot stays deployed so balls
     // aren't disturbed. Press X to stow pivot when ready.
-     controller
+    controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(Commands.startEnd(
+        .whileTrue(
+            Commands.startEnd(
                 () -> {
                   pivot.deployPivot();
                   intake.intakeIn();
@@ -91,9 +91,7 @@ public final class DriverControls {
                 },
                 intake)
             // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
-          );
-
-        
+            );
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
@@ -157,7 +155,7 @@ public final class DriverControls {
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot
-   controller.povDown().whileTrue(pivot.stowCommand());
+    controller.povDown().whileTrue(pivot.stowCommand());
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock

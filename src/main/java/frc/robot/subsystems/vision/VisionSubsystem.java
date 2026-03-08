@@ -69,17 +69,17 @@ public class VisionSubsystem extends SubsystemBase {
     String logPrefix = "Vision/" + cameraName + "/";
 
     // SAFETY REMOVED: Accept even while rotating fast
-    // if (Math.abs(angularVelocityDegPerSec) > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
-    //   Logger.recordOutput(logPrefix + "Status", "ANGULAR_VEL_REJECT");
-    //   totalRejected++;
-    //   return;
+    // if (Math.abs(angularVelocityDegPerSec) >
+    // VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
+    // Logger.recordOutput(logPrefix + "Status", "ANGULAR_VEL_REJECT");
+    // totalRejected++;
+    // return;
     // }
-    
-    LimelightHelpers.SetRobotOrientation(cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
 
-    LimelightHelpers.PoseEstimate mt2 =
-        // LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
-        LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
+    LimelightHelpers.SetRobotOrientation(
+        cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
+
+    LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
 
     boolean mt2Accepted = tryAcceptMT2(mt2, odoPose, logPrefix);
 
@@ -102,55 +102,59 @@ public class VisionSubsystem extends SubsystemBase {
 
     // SAFETY REMOVED: Accept all poses unconditionally
     // if (pose.equals(new Pose2d())) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "EMPTY_POSE");
-    //   totalRejected++;
-    //   return false;
+    // Logger.recordOutput(logPrefix + "MT2/Status", "EMPTY_POSE");
+    // totalRejected++;
+    // return false;
     // }
 
     // double x = pose.getX();
     // double y = pose.getY();
     // if (x < -FIELD_MARGIN
-    //     || x > FIELD_LENGTH + FIELD_MARGIN
-    //     || y < -FIELD_MARGIN
-    //     || y > FIELD_WIDTH + FIELD_MARGIN) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "OUT_OF_BOUNDS");
-    //   totalRejected++;
-    //   return false;
+    // || x > FIELD_LENGTH + FIELD_MARGIN
+    // || y < -FIELD_MARGIN
+    // || y > FIELD_WIDTH + FIELD_MARGIN) {
+    // Logger.recordOutput(logPrefix + "MT2/Status", "OUT_OF_BOUNDS");
+    // totalRejected++;
+    // return false;
     // }
 
     // double headingDivergenceDeg =
-    //     Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
-    // Logger.recordOutput(logPrefix + "MT2/HeadingDivergenceDeg", headingDivergenceDeg);
+    // Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
+    // Logger.recordOutput(logPrefix + "MT2/HeadingDivergenceDeg",
+    // headingDivergenceDeg);
 
-    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "HEADING_DIVERGE");
-    //   totalRejected++;
-    //   return false;
+    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG)
+    // {
+    // Logger.recordOutput(logPrefix + "MT2/Status", "HEADING_DIVERGE");
+    // totalRejected++;
+    // return false;
     // }
 
     double avgTagDist = mt2.avgTagDist;
 
     // if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "DISTANCE_REJECT");
-    //   totalRejected++;
-    //   return false;
+    // Logger.recordOutput(logPrefix + "MT2/Status", "DISTANCE_REJECT");
+    // totalRejected++;
+    // return false;
     // }
 
     // Pose-difference sanity check removed
-    // double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    // double poseDifference =
+    // odoPose.getTranslation().getDistance(pose.getTranslation());
     // Logger.recordOutput(logPrefix + "MT2/PoseDifference", poseDifference);
 
     // if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "POSE_DIFF_REJECT");
-    //   totalRejected++;
-    //   return false;
+    // Logger.recordOutput(logPrefix + "MT2/Status", "POSE_DIFF_REJECT");
+    // totalRejected++;
+    // return false;
     // }
 
     // Tag area gating removed
-    // if (mt2.tagCount == 1 && mt2.avgTagArea < VisionConstants.MIN_TAG_AREA_SINGLE_TAG) {
-    //   Logger.recordOutput(logPrefix + "MT2/Status", "TAG_AREA_REJECT");
-    //   totalRejected++;
-    //   return false;
+    // if (mt2.tagCount == 1 && mt2.avgTagArea <
+    // VisionConstants.MIN_TAG_AREA_SINGLE_TAG) {
+    // Logger.recordOutput(logPrefix + "MT2/Status", "TAG_AREA_REJECT");
+    // totalRejected++;
+    // return false;
     // }
 
     // =============== STANDARD DEVIATION MODEL ===============
@@ -201,55 +205,57 @@ public class VisionSubsystem extends SubsystemBase {
 
     // SAFETY REMOVED: Accept all MT1 poses unconditionally
     // if (pose.equals(new Pose2d())) {
-    //   Logger.recordOutput(logPrefix + "MT1/Status", "EMPTY_POSE");
-    //   totalRejected++;
-    //   return;
+    // Logger.recordOutput(logPrefix + "MT1/Status", "EMPTY_POSE");
+    // totalRejected++;
+    // return;
     // }
 
     // double x = pose.getX();
     // double y = pose.getY();
     // if (x < -FIELD_MARGIN
-    //     || x > FIELD_LENGTH + FIELD_MARGIN
-    //     || y < -FIELD_MARGIN
-    //     || y > FIELD_WIDTH + FIELD_MARGIN) {
-    //   Logger.recordOutput(logPrefix + "MT1/Status", "OUT_OF_BOUNDS");
-    //   totalRejected++;
-    //   return;
+    // || x > FIELD_LENGTH + FIELD_MARGIN
+    // || y < -FIELD_MARGIN
+    // || y > FIELD_WIDTH + FIELD_MARGIN) {
+    // Logger.recordOutput(logPrefix + "MT1/Status", "OUT_OF_BOUNDS");
+    // totalRejected++;
+    // return;
     // }
 
     // double headingDivergenceDeg =
-    //     Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
-    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG) {
-    //   Logger.recordOutput(logPrefix + "MT1/Status", "HEADING_DIVERGE");
-    //   totalRejected++;
-    //   return;
+    // Math.abs(odoPose.getRotation().minus(pose.getRotation()).getDegrees());
+    // if (headingDivergenceDeg > VisionConstants.HEADING_DIVERGENCE_THRESHOLD_DEG)
+    // {
+    // Logger.recordOutput(logPrefix + "MT1/Status", "HEADING_DIVERGE");
+    // totalRejected++;
+    // return;
     // }
 
     double avgTagDist = mt1.avgTagDist;
 
     // if (avgTagDist > VisionConstants.MAX_TAG_DISTANCE_METERS) {
-    //   Logger.recordOutput(logPrefix + "MT1/Status", "DISTANCE_REJECT");
-    //   totalRejected++;
-    //   return;
+    // Logger.recordOutput(logPrefix + "MT1/Status", "DISTANCE_REJECT");
+    // totalRejected++;
+    // return;
     // }
 
     // Ambiguity check removed
     // if (mt1.tagCount == 1 && mt1.rawFiducials.length > 0) {
-    //   double ambiguity = mt1.rawFiducials[0].ambiguity;
-    //   Logger.recordOutput(logPrefix + "MT1/Ambiguity", ambiguity);
-    //   if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
-    //     Logger.recordOutput(logPrefix + "MT1/Status", "AMBIGUITY_REJECT");
-    //     totalRejected++;
-    //     return;
-    //   }
+    // double ambiguity = mt1.rawFiducials[0].ambiguity;
+    // Logger.recordOutput(logPrefix + "MT1/Ambiguity", ambiguity);
+    // if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+    // Logger.recordOutput(logPrefix + "MT1/Status", "AMBIGUITY_REJECT");
+    // totalRejected++;
+    // return;
+    // }
     // }
 
     // Pose-difference sanity check removed
-    // double poseDifference = odoPose.getTranslation().getDistance(pose.getTranslation());
+    // double poseDifference =
+    // odoPose.getTranslation().getDistance(pose.getTranslation());
     // if (poseDifference > VisionConstants.MAX_POSE_DIFFERENCE_METERS) {
-    //   Logger.recordOutput(logPrefix + "MT1/Status", "POSE_DIFF_REJECT");
-    //   totalRejected++;
-    //   return;
+    // Logger.recordOutput(logPrefix + "MT1/Status", "POSE_DIFF_REJECT");
+    // totalRejected++;
+    // return;
     // }
 
     // Standard deviation: quadratic distance scaling like 6328/1678.

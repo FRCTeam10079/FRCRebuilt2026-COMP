@@ -11,23 +11,15 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.HeadingControllerConstants;
 
 /**
- * This class controls the rotational heading of the drivetrain seperately from
- * translation control.
+ * This class controls the rotational heading of the drivetrain seperately from translation control.
  *
- * <p>
- * Some features I added: 1. State Machine: SNAP (high gains to quickly reach
- * target) vs MAINTAIN
- * (low gains to hold) 2. Automatic state transitions: After snapping to target,
- * automatically
- * switches to maintain 3. Separate from drivetrain: Can be used with any
- * translation source (driver
+ * <p>Some features I added: 1. State Machine: SNAP (high gains to quickly reach target) vs MAINTAIN
+ * (low gains to hold) 2. Automatic state transitions: After snapping to target, automatically
+ * switches to maintain 3. Separate from drivetrain: Can be used with any translation source (driver
  * input, auto path)
  *
- * <p>
- * Usage: - Call setGoal() to set target heading in degrees (field-relative) -
- * Call update() each
- * loop with current heading to get rotation output - The output is a normalized
- * value (-1 to 1)
+ * <p>Usage: - Call setGoal() to set target heading in degrees (field-relative) - Call update() each
+ * loop with current heading to get rotation output - The output is a normalized value (-1 to 1)
  * representing rotational velocity demand
  */
 public class SwerveHeadingController {
@@ -107,15 +99,11 @@ public class SwerveHeadingController {
   /**
    * Update the heading controller and calculate rotation output.
    *
-   * <p>
-   * This should be called every robot loop with the current heading. The output
-   * is a normalized
-   * rotation demand (-1 to 1) that should be multiplied by max angular velocity
-   * before applying to
+   * <p>This should be called every robot loop with the current heading. The output is a normalized
+   * rotation demand (-1 to 1) that should be multiplied by max angular velocity before applying to
    * the drivetrain.
    *
-   * @param currentHeadingDegrees Current robot heading in degrees
-   *                              (field-relative)
+   * @param currentHeadingDegrees Current robot heading in degrees (field-relative)
    * @return Rotation output (-1 to 1), where positive is counter-clockwise
    */
   public double update(double currentHeadingDegrees) {
@@ -211,20 +199,14 @@ public class SwerveHeadingController {
     SmartDashboard.putNumber("HeadingController/ActiveKP", m_pidController.getP());
   }
 
-  /**
-   * Reset the heading controller Clears accumulated integral error and resets
-   * state
-   */
+  /** Reset the heading controller Clears accumulated integral error and resets state */
   public void reset() {
     m_pidController.reset();
     m_state = HeadingControllerState.OFF;
     m_goalDegrees = 0.0;
   }
 
-  /**
-   * Set context values needed for CSV logging. Call each loop from
-   * driveWithHeadingLock.
-   */
+  /** Set context values needed for CSV logging. Call each loop from driveWithHeadingLock. */
   public void setLoggingContext(double maxAngularVelocity, double measuredOmegaRadPerSec) {
     m_loggingMaxAngularVelocity = maxAngularVelocity;
     m_loggingMeasuredOmega = measuredOmegaRadPerSec;
@@ -272,10 +254,7 @@ public class SwerveHeadingController {
     m_lastTimestamp = now;
   }
 
-  /**
-   * Log telemetry data to SmartDashboard Call this from a subsystem's periodic()
-   * method
-   */
+  /** Log telemetry data to SmartDashboard Call this from a subsystem's periodic() method */
   public void logTelemetry(double currentHeadingDegrees) {
     SmartDashboard.putString("HeadingController/State", m_state.toString());
     SmartDashboard.putNumber("HeadingController/GoalDeg", m_goalDegrees);

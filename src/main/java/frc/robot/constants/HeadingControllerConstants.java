@@ -42,29 +42,21 @@ public class HeadingControllerConstants {
   // MA (6328) uses kP=8.0, kD=0.5 with radians. We use the same as a starting
   // point.
 
-  /**
-   * P gain for launch-mode heading control (rad/s output per radian of error).
-   */
+  /** P gain for launch-mode heading control (rad/s output per radian of error). */
   // TODO: TUNE ON THE ROBOT - start with 8.0 (same as MA), adjust for
   // overshoot/oscillation
   public static final double LAUNCH_KP = 1.0;
 
-  /**
-   * D gain for launch-mode heading control (rad/s output per rad/s velocity
-   * error).
-   */
+  /** D gain for launch-mode heading control (rad/s output per rad/s velocity error). */
   // TODO: TUNE ON THE ROBOT - start with 0.5 (same as MA)
   public static final double LAUNCH_KD = 6.0;
 
   /**
-   * Heading tolerance (degrees) for "on target" during shoot-on-the-move. Wider
-   * than static
-   * shooting (3 deg) because the heading is continuously tracking a moving
-   * target.
+   * Heading tolerance (degrees) for "on target" during shoot-on-the-move. Wider than static
+   * shooting (3 deg) because the heading is continuously tracking a moving target.
    */
   // TODO: TUNE ON THE ROBOT - start at 10 deg, tighten as you gain confidence
   public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 45.0;
 
-  protected HeadingControllerConstants() {
-  }
+  protected HeadingControllerConstants() {}
 }

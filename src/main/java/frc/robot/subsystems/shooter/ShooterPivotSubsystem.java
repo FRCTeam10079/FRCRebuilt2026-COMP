@@ -98,7 +98,6 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withReverseSoftLimitThreshold(0.0);
 
     m_pivotMotor.getConfigurator().apply(config);
-
   }
 
   // ==================== POSITION CONTROL ====================

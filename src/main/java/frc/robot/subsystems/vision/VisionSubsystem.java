@@ -27,8 +27,7 @@ public class VisionSubsystem extends SubsystemBase {
 
   private final CommandSwerveDrivetrain drivetrain;
 
-  private int totalMt2Accepted = 0;
-  private int totalMt1Accepted = 0;
+  private int totalAccepted = 0;
   private int totalRejected = 0;
   private int headingCorrections = 0;
 
@@ -48,127 +47,80 @@ public class VisionSubsystem extends SubsystemBase {
   public void periodic() {
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;
-    double fusedHeadingDeg = odoPose.getRotation().getDegrees();
-    double angularVelocityDegPerSec =
-        drivetrain.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
 
     for (String name : names) {
-      processCamera(name, odoPose, fusedHeadingDeg, angularVelocityDegPerSec);
+      processCamera(name, odoPose);
     }
 
-    Logger.recordOutput("Vision/TotalMT2Accepted", totalMt2Accepted);
-    Logger.recordOutput("Vision/TotalMT1Accepted", totalMt1Accepted);
+    Logger.recordOutput("Vision/TotalAccepted", totalAccepted);
     Logger.recordOutput("Vision/TotalRejected", totalRejected);
     Logger.recordOutput("Vision/HeadingCorrections", headingCorrections);
-    Logger.recordOutput("Vision/FusedHeadingDeg", fusedHeadingDeg);
   }
 
-  private void processCamera(
-      String cameraName, Pose2d odoPose, double fusedHeadingDeg, double angularVelocityDegPerSec) {
-
+  private void processCamera(String cameraName, Pose2d odoPose) {
     String logPrefix = "Vision/" + cameraName + "/";
 
-    LimelightHelpers.SetRobotOrientation(
-        cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
-
-    LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
-
-    boolean mt2Accepted = tryAcceptMT2(mt2, odoPose, logPrefix);
-
-    // Only fetch MT1 if MT2 was rejected (lazy-fetch saves bandwidth)
-    if (!mt2Accepted) {
-      LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
-      tryAcceptMT1(mt1, odoPose, logPrefix);
-    }
-  }
-
-  private boolean tryAcceptMT2(
-      LimelightHelpers.PoseEstimate mt2, Pose2d odoPose, String logPrefix) {
-
-    if (mt2 == null || mt2.timestampSeconds == 0 || mt2.tagCount == 0) {
-      Logger.recordOutput(logPrefix + "MT2/Status", "NO_DATA");
-      return false;
-    }
-
-    Pose2d pose = mt2.pose;
-    double avgTagDist = mt2.avgTagDist;
-
-    // =============== STANDARD DEVIATION MODEL ===============
-    // Quadratic distance scaling, inversely linear with tag
-    // count.
-    // Formula: xyStdDev = coefficient * dist^2 / tagCount
-    // This trusts close multi-tag observations strongly while being
-    // appropriately uncertain for distant single-tag observations.
-    double xyStdev =
-        VisionConstants.XY_STDDEV_COEFFICIENT * Math.pow(avgTagDist, 2.0) / mt2.tagCount;
-    xyStdev = Math.max(xyStdev, VisionConstants.XY_STDDEV_FLOOR);
-
-    // Theta: trust multi-tag heading to gently correct gyro drift.
-    // Single-tag: ignore heading (gyro is more reliable).
-    // This is a key improvement - our old code used THETA_STDDEV=9999999 for
-    // everything, meaning the gyro NEVER got corrected by vision. After collisions
-    // or Pigeon drift, heading would diverge permanently.
-    double thetaStdDev;
-    if (mt2.tagCount >= 2) {
-      thetaStdDev = VisionConstants.MULTI_TAG_THETA_STDDEV;
-    } else {
-      thetaStdDev = VisionConstants.SINGLE_TAG_THETA_STDDEV;
-    }
-
-    Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, thetaStdDev);
-
-    drivetrain.addVisionMeasurement(pose, mt2.timestampSeconds, stdDevs);
-
-    totalMt2Accepted++;
-    Logger.recordOutput(logPrefix + "MT2/Status", "ACCEPTED");
-    Logger.recordOutput(logPrefix + "MT2/Pose", pose);
-    Logger.recordOutput(logPrefix + "MT2/TagCount", mt2.tagCount);
-    Logger.recordOutput(logPrefix + "MT2/AvgTagDist", avgTagDist);
-    Logger.recordOutput(logPrefix + "MT2/XYStdDev", xyStdev);
-    Logger.recordOutput(logPrefix + "MT2/ThetaStdDev", thetaStdDev);
-    return true;
-  }
-
-  private void tryAcceptMT1(LimelightHelpers.PoseEstimate mt1, Pose2d odoPose, String logPrefix) {
+    // MT1 does not use SetRobotOrientation cuz it computes heading from vision
+    // alone.
+    LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
 
     if (mt1 == null || mt1.timestampSeconds == 0 || mt1.tagCount == 0) {
-      Logger.recordOutput(logPrefix + "MT1/Status", "NO_DATA");
-      totalRejected++;
+      Logger.recordOutput(logPrefix + "Status", "NO_DATA");
       return;
     }
 
     Pose2d pose = mt1.pose;
     double avgTagDist = mt1.avgTagDist;
 
-    // Standard deviation: quadratic distance scaling like 6328/1678.
-    // MT1 is less reliable than MT2, so we use a higher coefficient (2x).
-    double xyStdev = VisionConstants.XY_STDDEV_COEFFICIENT
-        * 2.0
-        * Math.pow(avgTagDist, 2.0)
-        / (mt1.tagCount * mt1.tagCount);
-    xyStdev = Math.max(xyStdev, VisionConstants.XY_STDDEV_FLOOR);
+    // ---- Rejection checks ----
 
-    // Theta: trust multi-tag MT1 heading weakly (like 254 with 6-30deg stddev).
-    // Single-tag MT1 heading is unreliable - don't trust.
+    // Pose outside field bounds (with margin) = clearly wrong
+    if (pose.getX() < -FIELD_MARGIN
+        || pose.getX() > FIELD_LENGTH + FIELD_MARGIN
+        || pose.getY() < -FIELD_MARGIN
+        || pose.getY() > FIELD_WIDTH + FIELD_MARGIN) {
+      Logger.recordOutput(logPrefix + "Status", "REJECTED_OUT_OF_FIELD");
+      totalRejected++;
+      return;
+    }
+
+    // Single-tag: reject high-ambiguity
+    if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
+      if (mt1.rawFiducials[0].ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
+        totalRejected++;
+        return;
+      }
+    }
+
+    // ---- Standard deviation model ----
+    // dist^1.2 scaling, inversely proportional to tagCount^2.
+    double xyStdev = VisionConstants.XY_STDDEV_COEFFICIENT
+        * Math.pow(avgTagDist, VisionConstants.XY_STDDEV_EXPONENT)
+        / (mt1.tagCount * mt1.tagCount);
+
+    // Heading: trust multi-tag MT1 heading to correct gyro drift.
+    // Single-tag heading is ambiguity-prone so don't trust.
     double thetaStdDev;
     if (mt1.tagCount >= 2) {
-      // ~0.5 rad = ~29deg
-      thetaStdDev = VisionConstants.MULTI_TAG_THETA_STDDEV;
+      thetaStdDev = VisionConstants.THETA_STDDEV_COEFFICIENT
+          * Math.pow(avgTagDist, VisionConstants.XY_STDDEV_EXPONENT)
+          / (mt1.tagCount * mt1.tagCount);
     } else {
-      thetaStdDev = VisionConstants.SINGLE_TAG_THETA_STDDEV;
+      thetaStdDev = Double.POSITIVE_INFINITY;
     }
 
     Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, thetaStdDev);
 
     drivetrain.addVisionMeasurement(pose, mt1.timestampSeconds, stdDevs);
 
-    totalMt1Accepted++;
-    Logger.recordOutput(logPrefix + "MT1/Status", "ACCEPTED_FALLBACK");
-    Logger.recordOutput(logPrefix + "MT1/Pose", pose);
-    Logger.recordOutput(logPrefix + "MT1/TagCount", mt1.tagCount);
-    Logger.recordOutput(logPrefix + "MT1/AvgTagDist", avgTagDist);
-    Logger.recordOutput(logPrefix + "MT1/XYStdDev", xyStdev);
-    Logger.recordOutput(logPrefix + "MT1/ThetaStdDev", thetaStdDev);
+    totalAccepted++;
+    Logger.recordOutput(logPrefix + "Status", "ACCEPTED");
+    Logger.recordOutput(logPrefix + "Pose", pose);
+    Logger.recordOutput(logPrefix + "TagCount", mt1.tagCount);
+    Logger.recordOutput(logPrefix + "AvgTagDist", avgTagDist);
+    Logger.recordOutput(logPrefix + "XYStdDev", xyStdev);
+    Logger.recordOutput(logPrefix + "ThetaStdDev", thetaStdDev);
   }
 
   public void updateWhileDisabled() {

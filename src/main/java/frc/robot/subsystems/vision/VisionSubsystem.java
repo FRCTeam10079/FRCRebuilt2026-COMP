@@ -8,6 +8,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -69,7 +70,11 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
-    Pose2d pose = mt1.pose;
+    // Apply heading offset to correct consistent 180deg MT1 heading error.
+    Pose2d rawPose = mt1.pose;
+    Pose2d pose = new Pose2d(
+        rawPose.getTranslation(),
+        rawPose.getRotation().plus(Rotation2d.fromDegrees(VisionConstants.MT1_HEADING_OFFSET_DEG)));
     double avgTagDist = mt1.avgTagDist;
 
     // ---- Rejection checks ----
@@ -137,7 +142,8 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
 
         if (mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
-          double mt1HeadingDeg = mt1.pose.getRotation().getDegrees();
+          double mt1HeadingDeg =
+              mt1.pose.getRotation().getDegrees() + VisionConstants.MT1_HEADING_OFFSET_DEG;
           double divergenceDeg =
               Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));
 
@@ -145,7 +151,8 @@ public class VisionSubsystem extends SubsystemBase {
           Logger.recordOutput("Vision/" + name + "/Disabled/HeadingDivergenceDeg", divergenceDeg);
 
           if (divergenceDeg > VisionConstants.MT1_HEADING_CORRECTION_THRESHOLD_DEG) {
-            Pose2d correctedPose = new Pose2d(currentPose.getTranslation(), mt1.pose.getRotation());
+            Pose2d correctedPose =
+                new Pose2d(currentPose.getTranslation(), Rotation2d.fromDegrees(mt1HeadingDeg));
             drivetrain.resetPose(correctedPose);
 
             headingCorrections++;

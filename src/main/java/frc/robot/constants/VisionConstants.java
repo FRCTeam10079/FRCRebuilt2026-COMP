@@ -43,6 +43,10 @@ public class VisionConstants {
   // 6328 uses 0.4; higher = more ambiguous = less trustworthy.
   public static final double MT1_AMBIGUITY_THRESHOLD = 0.4;
 
+  // MT1 heading offset (degrees). If MT1 heading is consistently 180deg off,
+  // set this to 180.0.
+  public static final double MT1_HEADING_OFFSET_DEG = 180.0;
+
   public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
   public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;
 

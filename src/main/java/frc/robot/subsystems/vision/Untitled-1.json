@@ -1,0 +1,4710 @@
+[
+    {
+        "messageType": 2,
+        "timestamp": 0,
+        "seqNumber": 7528,
+        "line": "********** Robot program starting **********"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.0267333984375,
+        "seqNumber": 7529,
+        "line": "NT: Listening on NT3 port 1735, NT4 port 5810"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.176025390625,
+        "seqNumber": 7530,
+        "line": "NT: Got a NT4 connection from 10.100.79.203 port 61922"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.187744140625,
+        "seqNumber": 7531,
+        "line": "NT: CONNECTED NT4 client 'Elastic@1' (from 10.100.79.203:61922)"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.437255859375,
+        "seqNumber": 7532,
+        "line": "DataLog: Logging to '/home/lvuser/logs/FRC_TBD_0e24f5227eb6c759.wpilog' (48.7 MiB free space)"
+    },
+    {
+        "timestamp": 0.5279541015625,
+        "seqNumber": 7533,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "DataLogManager: Log storage device has 51 MB of free space remaining! Logs will get deleted below 50 MB of free space. Consider deleting logs off the storage device.",
+        "location": "edu.wpi.first.wpilibj.DataLogManager.logMain(DataLogManager.java:346)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.5286865234375,
+        "seqNumber": 7534,
+        "line": "Warning at edu.wpi.first.wpilibj.DataLogManager.logMain(DataLogManager.java:346): DataLogManager: Log storage device has 51 MB of free space remaining! Logs will get deleted below 50 MB of free space. Consider deleting logs off the storage device."
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.5643310546875,
+        "seqNumber": 7535,
+        "line": "NT: Got a NT4 connection from 10.100.79.201 port 52476"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.5677490234375,
+        "seqNumber": 7536,
+        "line": "NT: CONNECTED NT4 client 'limelight-right@2' (from 10.100.79.201:52476)"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.58544921875,
+        "seqNumber": 7537,
+        "line": "NT: Got a NT4 connection from 10.100.79.202 port 56668"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.5869140625,
+        "seqNumber": 7538,
+        "line": "NT: CONNECTED NT4 client 'limelight-left@3' (from 10.100.79.202:56668)"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.69775390625,
+        "seqNumber": 7539,
+        "line": "NT: Got a NT4 connection from 10.100.79.203 port 55920"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 0.7098388671875,
+        "seqNumber": 7540,
+        "line": "NT: CONNECTED RTT client (from 10.100.79.203:55920)"
+    },
+    {
+        "timestamp": 1.74169921875,
+        "seqNumber": 7541,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] CANbus Connected: CANivore (can0, 92863DAF4C32435320202059280217FF)",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 1.7425537109375,
+        "seqNumber": 7542,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] CANbus Network Up: CANivore (can0, 92863DAF4C32435320202059280217FF)",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 3.809814453125,
+        "seqNumber": 7543,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (50 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 3.9696044921875,
+        "seqNumber": 7544,
+        "line": "[RobotContainer] Initializing pathfinding system..."
+    },
+    {
+        "messageType": 2,
+        "timestamp": 3.976318359375,
+        "seqNumber": 7545,
+        "line": "[Pathfinding] Initializing default LocalADStar pathfinder"
+    },
+    {
+        "timestamp": 4.4835205078125,
+        "seqNumber": 7546,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Library initialization is complete.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.51025390625,
+        "seqNumber": 7547,
+        "line": "[LocalADStar] Successfully loaded navgrid: pathplanner/navgrid.json"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.51123046875,
+        "seqNumber": 7548,
+        "line": "[LocalADStar] Grid: 83x41 nodes"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.5269775390625,
+        "seqNumber": 7549,
+        "line": "[LocalADStar] Node size: 0.2m"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.5274658203125,
+        "seqNumber": 7550,
+        "line": "[LocalADStar] Obstacles: 711 cells (from navgrid with buffer)"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.532470703125,
+        "seqNumber": 7551,
+        "line": "[RobotContainer] Pathfinding system ready"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 4.5343017578125,
+        "seqNumber": 7552,
+        "line": "[AD*] Background planning thread started!"
+    },
+    {
+        "timestamp": 4.603271484375,
+        "seqNumber": 7553,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger Started (Network: 92863DAF4C32435320202059280217FF)",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 4.604736328125,
+        "seqNumber": 7554,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger Started (Network: rio)",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.331787109375,
+        "seqNumber": 7555,
+        "line": "[AlignToAprilTag] Created for CENTER position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.338134765625,
+        "seqNumber": 7556,
+        "line": "[AlignToAprilTag] Created for LEFT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.33935546875,
+        "seqNumber": 7557,
+        "line": "[AlignToAprilTag] Created for RIGHT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.3514404296875,
+        "seqNumber": 7558,
+        "line": "[AutoCommands] Named commands registered for PathPlanner"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.3818359375,
+        "seqNumber": 7559,
+        "line": "[AlignToAprilTag] Created for CENTER position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.3822021484375,
+        "seqNumber": 7560,
+        "line": "[AlignToAprilTag] Created for LEFT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.4171142578125,
+        "seqNumber": 7561,
+        "line": "[AlignToAprilTag] Created for RIGHT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 5.42626953125,
+        "seqNumber": 7562,
+        "line": "[AutoCommands] Marker bindings registered for Choreo"
+    },
+    {
+        "timestamp": 6.55029296875,
+        "seqNumber": 7563,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix-diagnostics] Server 2026.1.1 (Jan 23 2026, 23:30:20) running on port: 1250",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 6.814208984375,
+        "seqNumber": 7564,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (50 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 6.871826171875,
+        "seqNumber": 7565,
+        "line": "[AlignToAprilTag] Created for CENTER position"
+    },
+    {
+        "timestamp": 6.9920654296875,
+        "seqNumber": 7566,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 6.9942626953125,
+        "seqNumber": 7567,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.2039794921875,
+        "seqNumber": 7568,
+        "line": "[AlignToAprilTag] Created for LEFT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.2091064453125,
+        "seqNumber": 7569,
+        "line": "[AlignToAprilTag] Created for RIGHT position"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.3018798828125,
+        "seqNumber": 7570,
+        "line": "limelight-left stream URL published to NetworkTables"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.3060302734375,
+        "seqNumber": 7571,
+        "line": "limelight-right stream URL published to NetworkTables"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.3267822265625,
+        "seqNumber": 7572,
+        "line": "********** Robot program startup complete **********"
+    },
+    {
+        "timestamp": 7.381103515625,
+        "seqNumber": 7573,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.3839111328125,
+        "seqNumber": 7574,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.384765625,
+        "seqNumber": 7575,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.4171142578125,
+        "seqNumber": 7576,
+        "line": "[Vision] Auto-corrected heading from MT1 multi-tag: -0.0° -> 152.0° (divergence: 152.0°, camera: limelight-left)"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5443115234375,
+        "seqNumber": 7577,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 7.5732421875,
+        "seqNumber": 7578,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000074s\n\tIntakeWheelsSubsystem.periodic(): 0.000037s\n\tVisionSubsystem.periodic(): 0.006492s\n\tShooterPivotSubsystem.periodic(): 0.005899s\n\tCommandSwerveDrivetrain.periodic(): 0.006956s\n\tClimberSubsystem.periodic(): 0.000390s\n\tbuttons.run(): 0.012188s\n\tRobotStateMachine.periodic(): 0.003914s\n\tShooterSubsystem.periodic(): 0.027120s\n\tPivotSubsystem.periodic(): 0.005268s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5750732421875,
+        "seqNumber": 7579,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000074s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.576904296875,
+        "seqNumber": 7580,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000037s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.577392578125,
+        "seqNumber": 7581,
+        "line": "\tVisionSubsystem.periodic(): 0.006492s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.57763671875,
+        "seqNumber": 7582,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.005899s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5784912109375,
+        "seqNumber": 7583,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.006956s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5802001953125,
+        "seqNumber": 7584,
+        "line": "\tClimberSubsystem.periodic(): 0.000390s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.58154296875,
+        "seqNumber": 7585,
+        "line": "\tbuttons.run(): 0.012188s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5841064453125,
+        "seqNumber": 7586,
+        "line": "\tRobotStateMachine.periodic(): 0.003914s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5850830078125,
+        "seqNumber": 7587,
+        "line": "\tShooterSubsystem.periodic(): 0.027120s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.58544921875,
+        "seqNumber": 7588,
+        "line": "\tPivotSubsystem.periodic(): 0.005268s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.58837890625,
+        "seqNumber": 7589,
+        "line": ""
+    },
+    {
+        "timestamp": 7.5899658203125,
+        "seqNumber": 7590,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.003358s\n\tdisabledInit(): 0.003413s\n\trobotPeriodic(): 0.147917s\n\tLiveWindow.updateValues(): 0.000111s\n\tShuffleboard.update(): 0.000074s\n\tdisabledPeriodic(): 0.091526s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5909423828125,
+        "seqNumber": 7591,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.003358s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.592041015625,
+        "seqNumber": 7592,
+        "line": "\tdisabledInit(): 0.003413s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.5958251953125,
+        "seqNumber": 7593,
+        "line": "\trobotPeriodic(): 0.147917s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.596435546875,
+        "seqNumber": 7594,
+        "line": "\tLiveWindow.updateValues(): 0.000111s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.603271484375,
+        "seqNumber": 7595,
+        "line": "\tShuffleboard.update(): 0.000074s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.6044921875,
+        "seqNumber": 7596,
+        "line": "\tdisabledPeriodic(): 0.091526s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.6060791015625,
+        "seqNumber": 7597,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.657958984375,
+        "seqNumber": 7598,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 7.8076171875,
+        "seqNumber": 7599,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 8,
+        "seqNumber": 7600,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.0029296875,
+        "seqNumber": 7601,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.0191650390625,
+        "seqNumber": 7602,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 8.4482421875,
+        "seqNumber": 7603,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.449951171875,
+        "seqNumber": 7604,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.45068359375,
+        "seqNumber": 7605,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.5819091796875,
+        "seqNumber": 7606,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 8.626953125,
+        "seqNumber": 7607,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000056s\n\tIntakeWheelsSubsystem.periodic(): 0.000037s\n\tVisionSubsystem.periodic(): 0.004545s\n\tShooterPivotSubsystem.periodic(): 0.004489s\n\tCommandSwerveDrivetrain.periodic(): 0.000185s\n\tClimberSubsystem.periodic(): 0.000037s\n\tbuttons.run(): 0.005176s\n\tRobotStateMachine.periodic(): 0.001317s\n\tShooterSubsystem.periodic(): 0.001020s\n\tPivotSubsystem.periodic(): 0.030756s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.627685546875,
+        "seqNumber": 7608,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000056s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6292724609375,
+        "seqNumber": 7609,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000037s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6295166015625,
+        "seqNumber": 7610,
+        "line": "\tVisionSubsystem.periodic(): 0.004545s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6297607421875,
+        "seqNumber": 7611,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.004489s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6302490234375,
+        "seqNumber": 7612,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000185s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6312255859375,
+        "seqNumber": 7613,
+        "line": "\tClimberSubsystem.periodic(): 0.000037s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6318359375,
+        "seqNumber": 7614,
+        "line": "\tbuttons.run(): 0.005176s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.63330078125,
+        "seqNumber": 7615,
+        "line": "\tRobotStateMachine.periodic(): 0.001317s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.6336669921875,
+        "seqNumber": 7616,
+        "line": "\tShooterSubsystem.periodic(): 0.001020s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.634521484375,
+        "seqNumber": 7617,
+        "line": "\tPivotSubsystem.periodic(): 0.030756s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.634765625,
+        "seqNumber": 7618,
+        "line": ""
+    },
+    {
+        "timestamp": 8.7060546875,
+        "seqNumber": 7619,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.006418s\n\trobotPeriodic(): 0.119240s\n\tLiveWindow.updateValues(): 0.000019s\n\tShuffleboard.update(): 0.000018s\n\tdisabledPeriodic(): 0.004637s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.708984375,
+        "seqNumber": 7620,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.006418s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.70947265625,
+        "seqNumber": 7621,
+        "line": "\trobotPeriodic(): 0.119240s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.709716796875,
+        "seqNumber": 7622,
+        "line": "\tLiveWindow.updateValues(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.7098388671875,
+        "seqNumber": 7623,
+        "line": "\tShuffleboard.update(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.7100830078125,
+        "seqNumber": 7624,
+        "line": "\tdisabledPeriodic(): 0.004637s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.710205078125,
+        "seqNumber": 7625,
+        "line": ""
+    },
+    {
+        "timestamp": 8.71630859375,
+        "seqNumber": 7626,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (49 MB) below 50 MB, deleted /home/lvuser/logs/2026-03-08_21-12-37/rio_2026-03-08_21-12-39.hoot",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.744384765625,
+        "seqNumber": 7627,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.78173828125,
+        "seqNumber": 7628,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.850830078125,
+        "seqNumber": 7629,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 8.9698486328125,
+        "seqNumber": 7630,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 9.007568359375,
+        "seqNumber": 7631,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (49 MB) below 50 MB, deleted /home/lvuser/logs/2026-03-08_21-12-37/92863DAF4C32435320202059280217FF_2026-03-08_21-12-39.hoot",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 9.04736328125,
+        "seqNumber": 7632,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 9.0491943359375,
+        "seqNumber": 7633,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 9.067138671875,
+        "seqNumber": 7634,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 9.8203125,
+        "seqNumber": 7635,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (86 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 9.9581298828125,
+        "seqNumber": 7636,
+        "line": "DataLog: Renamed log file from 'FRC_TBD_0e24f5227eb6c759.wpilog' to 'FRC_20260308_212939.wpilog'"
+    },
+    {
+        "timestamp": 10.0496826171875,
+        "seqNumber": 7637,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.05078125,
+        "seqNumber": 7638,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.0513916015625,
+        "seqNumber": 7639,
+        "line": ""
+    },
+    {
+        "timestamp": 10.0712890625,
+        "seqNumber": 7640,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.003599s\n\trobotPeriodic(): 0.012057s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000018s\n\tdisabledPeriodic(): 0.007012s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.072021484375,
+        "seqNumber": 7641,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.003599s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.072998046875,
+        "seqNumber": 7642,
+        "line": "\trobotPeriodic(): 0.012057s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.0736083984375,
+        "seqNumber": 7643,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.0738525390625,
+        "seqNumber": 7644,
+        "line": "\tShuffleboard.update(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.074462890625,
+        "seqNumber": 7645,
+        "line": "\tdisabledPeriodic(): 0.007012s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 10.07470703125,
+        "seqNumber": 7646,
+        "line": ""
+    },
+    {
+        "timestamp": 11.0650634765625,
+        "seqNumber": 7647,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.0660400390625,
+        "seqNumber": 7648,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 11.07470703125,
+        "seqNumber": 7649,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.0755615234375,
+        "seqNumber": 7650,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.076171875,
+        "seqNumber": 7651,
+        "line": ""
+    },
+    {
+        "timestamp": 11.1031494140625,
+        "seqNumber": 7652,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.007754s\n\trobotPeriodic(): 0.014673s\n\tLiveWindow.updateValues(): 0.000019s\n\tShuffleboard.update(): 0.001057s\n\tdisabledPeriodic(): 0.011686s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.103759765625,
+        "seqNumber": 7653,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.007754s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.1041259765625,
+        "seqNumber": 7654,
+        "line": "\trobotPeriodic(): 0.014673s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.1043701171875,
+        "seqNumber": 7655,
+        "line": "\tLiveWindow.updateValues(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.1051025390625,
+        "seqNumber": 7656,
+        "line": "\tShuffleboard.update(): 0.001057s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.1053466796875,
+        "seqNumber": 7657,
+        "line": "\tdisabledPeriodic(): 0.011686s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 11.1055908203125,
+        "seqNumber": 7658,
+        "line": ""
+    },
+    {
+        "timestamp": 12.07763671875,
+        "seqNumber": 7659,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 12.078369140625,
+        "seqNumber": 7660,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 12.82568359375,
+        "seqNumber": 7661,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (86 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 13.095703125,
+        "seqNumber": 7662,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.09619140625,
+        "seqNumber": 7663,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 13.14990234375,
+        "seqNumber": 7664,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.150390625,
+        "seqNumber": 7665,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.150634765625,
+        "seqNumber": 7666,
+        "line": ""
+    },
+    {
+        "timestamp": 13.17333984375,
+        "seqNumber": 7667,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.003580s\n\trobotPeriodic(): 0.017845s\n\tLiveWindow.updateValues(): 0.000018s\n\tShuffleboard.update(): 0.000019s\n\tdisabledPeriodic(): 0.014043s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.173828125,
+        "seqNumber": 7668,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.003580s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.1741943359375,
+        "seqNumber": 7669,
+        "line": "\trobotPeriodic(): 0.017845s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.1744384765625,
+        "seqNumber": 7670,
+        "line": "\tLiveWindow.updateValues(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.1748046875,
+        "seqNumber": 7671,
+        "line": "\tShuffleboard.update(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.1749267578125,
+        "seqNumber": 7672,
+        "line": "\tdisabledPeriodic(): 0.014043s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 13.1751708984375,
+        "seqNumber": 7673,
+        "line": ""
+    },
+    {
+        "timestamp": 14.1142578125,
+        "seqNumber": 7674,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 14.11474609375,
+        "seqNumber": 7675,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 15.1142578125,
+        "seqNumber": 7676,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 8 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 15.1151123046875,
+        "seqNumber": 7677,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 8 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 15.842529296875,
+        "seqNumber": 7678,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (85 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 16.1353759765625,
+        "seqNumber": 7679,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 16.1361083984375,
+        "seqNumber": 7680,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 17.1497802734375,
+        "seqNumber": 7681,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.15087890625,
+        "seqNumber": 7682,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1517333984375,
+        "seqNumber": 7683,
+        "line": ""
+    },
+    {
+        "timestamp": 17.154052734375,
+        "seqNumber": 7684,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.15478515625,
+        "seqNumber": 7685,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 17.1744384765625,
+        "seqNumber": 7686,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.000446s\n\trobotPeriodic(): 0.025691s\n\tLiveWindow.updateValues(): 0.000018s\n\tShuffleboard.update(): 0.000019s\n\tdisabledPeriodic(): 0.001447s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1763916015625,
+        "seqNumber": 7687,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.000446s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1776123046875,
+        "seqNumber": 7688,
+        "line": "\trobotPeriodic(): 0.025691s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1783447265625,
+        "seqNumber": 7689,
+        "line": "\tLiveWindow.updateValues(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1793212890625,
+        "seqNumber": 7690,
+        "line": "\tShuffleboard.update(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1796875,
+        "seqNumber": 7691,
+        "line": "\tdisabledPeriodic(): 0.001447s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 17.1802978515625,
+        "seqNumber": 7692,
+        "line": ""
+    },
+    {
+        "timestamp": 18.1549072265625,
+        "seqNumber": 7693,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 18.1556396484375,
+        "seqNumber": 7694,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 18.8468017578125,
+        "seqNumber": 7695,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (84 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 19.174072265625,
+        "seqNumber": 7696,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 19.1746826171875,
+        "seqNumber": 7697,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 20.1949462890625,
+        "seqNumber": 7698,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 20.195556640625,
+        "seqNumber": 7699,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 21.2139892578125,
+        "seqNumber": 7700,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 21.2144775390625,
+        "seqNumber": 7701,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 21.8477783203125,
+        "seqNumber": 7702,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (83 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 22.215087890625,
+        "seqNumber": 7703,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 22.2159423828125,
+        "seqNumber": 7704,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 23.2337646484375,
+        "seqNumber": 7705,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 23.2349853515625,
+        "seqNumber": 7706,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 24.8583984375,
+        "seqNumber": 7707,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (82 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 25.252197265625,
+        "seqNumber": 7708,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 25.2576904296875,
+        "seqNumber": 7709,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 26.271240234375,
+        "seqNumber": 7710,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 26.272216796875,
+        "seqNumber": 7711,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 27.277587890625,
+        "seqNumber": 7712,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 27.2783203125,
+        "seqNumber": 7713,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 27.87109375,
+        "seqNumber": 7714,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (81 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 28.2943115234375,
+        "seqNumber": 7715,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 28.295166015625,
+        "seqNumber": 7716,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 29.294921875,
+        "seqNumber": 7717,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 29.295654296875,
+        "seqNumber": 7718,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 30.31201171875,
+        "seqNumber": 7719,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.3134765625,
+        "seqNumber": 7720,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 30.710693359375,
+        "seqNumber": 7721,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.7122802734375,
+        "seqNumber": 7722,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.714111328125,
+        "seqNumber": 7723,
+        "line": ""
+    },
+    {
+        "timestamp": 30.7821044921875,
+        "seqNumber": 7724,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.000390s\n\trobotPeriodic(): 0.045800s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000018s\n\tdisabledPeriodic(): 0.004062s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.783447265625,
+        "seqNumber": 7725,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.000390s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.7838134765625,
+        "seqNumber": 7726,
+        "line": "\trobotPeriodic(): 0.045800s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.7840576171875,
+        "seqNumber": 7727,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.7855224609375,
+        "seqNumber": 7728,
+        "line": "\tShuffleboard.update(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.7861328125,
+        "seqNumber": 7729,
+        "line": "\tdisabledPeriodic(): 0.004062s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 30.787353515625,
+        "seqNumber": 7730,
+        "line": ""
+    },
+    {
+        "timestamp": 30.8804931640625,
+        "seqNumber": 7731,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (80 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 31.313720703125,
+        "seqNumber": 7732,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 31.314453125,
+        "seqNumber": 7733,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 33.3314208984375,
+        "seqNumber": 7734,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 33.33349609375,
+        "seqNumber": 7735,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 33.8946533203125,
+        "seqNumber": 7736,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (79 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 34.352783203125,
+        "seqNumber": 7737,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 34.3541259765625,
+        "seqNumber": 7738,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 35.3531494140625,
+        "seqNumber": 7739,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 35.3555908203125,
+        "seqNumber": 7740,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 36.36279296875,
+        "seqNumber": 7741,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.3636474609375,
+        "seqNumber": 7742,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 36.368896484375,
+        "seqNumber": 7743,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.36962890625,
+        "seqNumber": 7744,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.3702392578125,
+        "seqNumber": 7745,
+        "line": ""
+    },
+    {
+        "timestamp": 36.4080810546875,
+        "seqNumber": 7746,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.017493s\n\trobotPeriodic(): 0.013727s\n\tLiveWindow.updateValues(): 0.000018s\n\tShuffleboard.update(): 0.000019s\n\tdisabledPeriodic(): 0.002337s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.40966796875,
+        "seqNumber": 7747,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.017493s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.4102783203125,
+        "seqNumber": 7748,
+        "line": "\trobotPeriodic(): 0.013727s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.4105224609375,
+        "seqNumber": 7749,
+        "line": "\tLiveWindow.updateValues(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.4107666015625,
+        "seqNumber": 7750,
+        "line": "\tShuffleboard.update(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.410888671875,
+        "seqNumber": 7751,
+        "line": "\tdisabledPeriodic(): 0.002337s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 36.4111328125,
+        "seqNumber": 7752,
+        "line": ""
+    },
+    {
+        "timestamp": 36.905517578125,
+        "seqNumber": 7753,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (79 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 37.375,
+        "seqNumber": 7754,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 37.376708984375,
+        "seqNumber": 7755,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 38.393798828125,
+        "seqNumber": 7756,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 38.3944091796875,
+        "seqNumber": 7757,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 39.39404296875,
+        "seqNumber": 7758,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 39.39453125,
+        "seqNumber": 7759,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 39.9180908203125,
+        "seqNumber": 7760,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (78 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 40.395263671875,
+        "seqNumber": 7761,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 40.3958740234375,
+        "seqNumber": 7762,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 41.41259765625,
+        "seqNumber": 7763,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 41.414306640625,
+        "seqNumber": 7764,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 42.4151611328125,
+        "seqNumber": 7765,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 42.4158935546875,
+        "seqNumber": 7766,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 43.1507568359375,
+        "seqNumber": 7767,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (77 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 43.4320068359375,
+        "seqNumber": 7768,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 43.4339599609375,
+        "seqNumber": 7769,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 44.434326171875,
+        "seqNumber": 7770,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 44.4351806640625,
+        "seqNumber": 7771,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 44.528076171875,
+        "seqNumber": 7772,
+        "line": "Exiting disabled mode..."
+    },
+    {
+        "messageType": 2,
+        "timestamp": 44.531982421875,
+        "seqNumber": 7773,
+        "line": "Match State: DISABLED -> TELEOP_INIT"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 44.5361328125,
+        "seqNumber": 7774,
+        "line": "Match State: TELEOP_INIT -> TELEOP_RUNNING"
+    },
+    {
+        "timestamp": 45.45263671875,
+        "seqNumber": 7775,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 45.455078125,
+        "seqNumber": 7776,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 46.17138671875,
+        "seqNumber": 7777,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (76 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 46.4534912109375,
+        "seqNumber": 7778,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 46.4561767578125,
+        "seqNumber": 7779,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 47.4525146484375,
+        "seqNumber": 7780,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 3 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 47.45361328125,
+        "seqNumber": 7781,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 3 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 48.4716796875,
+        "seqNumber": 7782,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 48.4727783203125,
+        "seqNumber": 7783,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 49.1859130859375,
+        "seqNumber": 7784,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (75 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 49.4989013671875,
+        "seqNumber": 7785,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.501953125,
+        "seqNumber": 7786,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 49.509033203125,
+        "seqNumber": 7787,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.511474609375,
+        "seqNumber": 7788,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.5120849609375,
+        "seqNumber": 7789,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.52685546875,
+        "seqNumber": 7790,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 49.602294921875,
+        "seqNumber": 7791,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000019s\n\tIntakeWheelsSubsystem.periodic(): 0.000019s\n\tVisionSubsystem.periodic(): 0.000390s\n\tShooterPivotSubsystem.periodic(): 0.000519s\n\tCommandSwerveDrivetrain.periodic(): 0.000222s\n\tClimberSubsystem.periodic(): 0.000018s\n\tRunCommand.execute(): 0.022686s\n\tbuttons.run(): 0.009479s\n\tShooterPivot Track Angle.execute(): 0.000557s\n\tRobotStateMachine.periodic(): 0.000130s\n\tShooterSubsystem.periodic(): 0.002059s\n\tPivotSubsystem.periodic(): 0.000167s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6031494140625,
+        "seqNumber": 7792,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.603515625,
+        "seqNumber": 7793,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6036376953125,
+        "seqNumber": 7794,
+        "line": "\tVisionSubsystem.periodic(): 0.000390s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.60400390625,
+        "seqNumber": 7795,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.000519s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.604248046875,
+        "seqNumber": 7796,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000222s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6044921875,
+        "seqNumber": 7797,
+        "line": "\tClimberSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.60546875,
+        "seqNumber": 7798,
+        "line": "\tRunCommand.execute(): 0.022686s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.60693359375,
+        "seqNumber": 7799,
+        "line": "\tbuttons.run(): 0.009479s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6072998046875,
+        "seqNumber": 7800,
+        "line": "\tShooterPivot Track Angle.execute(): 0.000557s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.607666015625,
+        "seqNumber": 7801,
+        "line": "\tRobotStateMachine.periodic(): 0.000130s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6080322265625,
+        "seqNumber": 7802,
+        "line": "\tShooterSubsystem.periodic(): 0.002059s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6097412109375,
+        "seqNumber": 7803,
+        "line": "\tPivotSubsystem.periodic(): 0.000167s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.610107421875,
+        "seqNumber": 7804,
+        "line": ""
+    },
+    {
+        "timestamp": 49.642822265625,
+        "seqNumber": 7805,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000687s\n\tSmartDashboard.updateValues(): 0.000445s\n\trobotPeriodic(): 0.114323s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6435546875,
+        "seqNumber": 7806,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000687s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.644287109375,
+        "seqNumber": 7807,
+        "line": "\tSmartDashboard.updateValues(): 0.000445s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6461181640625,
+        "seqNumber": 7808,
+        "line": "\trobotPeriodic(): 0.114323s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.6468505859375,
+        "seqNumber": 7809,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.647216796875,
+        "seqNumber": 7810,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.647705078125,
+        "seqNumber": 7811,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 49.79736328125,
+        "seqNumber": 7812,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 51.511962890625,
+        "seqNumber": 7813,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 51.5126953125,
+        "seqNumber": 7814,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 51.9881591796875,
+        "seqNumber": 7815,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 51.9908447265625,
+        "seqNumber": 7816,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 51.9912109375,
+        "seqNumber": 7817,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.005859375,
+        "seqNumber": 7818,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 52.0950927734375,
+        "seqNumber": 7819,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000000s\n\tIntakeWheelsSubsystem.periodic(): 0.000000s\n\tVisionSubsystem.periodic(): 0.000408s\n\tShooterPivotSubsystem.periodic(): 0.000260s\n\tCommandSwerveDrivetrain.periodic(): 0.000037s\n\tClimberSubsystem.periodic(): 0.000019s\n\tRunCommand.execute(): 0.001818s\n\tbuttons.run(): 0.000148s\n\tShooterPivot Track Angle.execute(): 0.032815s\n\tRobotStateMachine.periodic(): 0.000093s\n\tShooterSubsystem.periodic(): 0.000278s\n\tPivotSubsystem.periodic(): 0.000092s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.095947265625,
+        "seqNumber": 7820,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.0968017578125,
+        "seqNumber": 7821,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.0972900390625,
+        "seqNumber": 7822,
+        "line": "\tVisionSubsystem.periodic(): 0.000408s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.0987548828125,
+        "seqNumber": 7823,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.000260s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.0992431640625,
+        "seqNumber": 7824,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000037s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1021728515625,
+        "seqNumber": 7825,
+        "line": "\tClimberSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1033935546875,
+        "seqNumber": 7826,
+        "line": "\tRunCommand.execute(): 0.001818s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1036376953125,
+        "seqNumber": 7827,
+        "line": "\tbuttons.run(): 0.000148s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.10400390625,
+        "seqNumber": 7828,
+        "line": "\tShooterPivot Track Angle.execute(): 0.032815s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.104248046875,
+        "seqNumber": 7829,
+        "line": "\tRobotStateMachine.periodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.104736328125,
+        "seqNumber": 7830,
+        "line": "\tShooterSubsystem.periodic(): 0.000278s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1048583984375,
+        "seqNumber": 7831,
+        "line": "\tPivotSubsystem.periodic(): 0.000092s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1051025390625,
+        "seqNumber": 7832,
+        "line": ""
+    },
+    {
+        "timestamp": 52.115966796875,
+        "seqNumber": 7833,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000093s\n\tSmartDashboard.updateValues(): 0.000315s\n\trobotPeriodic(): 0.128236s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.116455078125,
+        "seqNumber": 7834,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1168212890625,
+        "seqNumber": 7835,
+        "line": "\tSmartDashboard.updateValues(): 0.000315s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1170654296875,
+        "seqNumber": 7836,
+        "line": "\trobotPeriodic(): 0.128236s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1175537109375,
+        "seqNumber": 7837,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1180419921875,
+        "seqNumber": 7838,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.1199951171875,
+        "seqNumber": 7839,
+        "line": ""
+    },
+    {
+        "timestamp": 52.2005615234375,
+        "seqNumber": 7840,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (74 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 52.5146484375,
+        "seqNumber": 7841,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 8 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 52.5159912109375,
+        "seqNumber": 7842,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 8 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 53.512939453125,
+        "seqNumber": 7843,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 53.514404296875,
+        "seqNumber": 7844,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 54.5318603515625,
+        "seqNumber": 7845,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 54.53271484375,
+        "seqNumber": 7846,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 55.2149658203125,
+        "seqNumber": 7847,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (73 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 55.5350341796875,
+        "seqNumber": 7848,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 55.53564453125,
+        "seqNumber": 7849,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 56.5511474609375,
+        "seqNumber": 7850,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.55224609375,
+        "seqNumber": 7851,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 56.568603515625,
+        "seqNumber": 7852,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.5692138671875,
+        "seqNumber": 7853,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.570556640625,
+        "seqNumber": 7854,
+        "line": ""
+    },
+    {
+        "timestamp": 56.6126708984375,
+        "seqNumber": 7855,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000111s\n\tSmartDashboard.updateValues(): 0.016101s\n\trobotPeriodic(): 0.005213s\n\tLiveWindow.updateValues(): 0.000019s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.614501953125,
+        "seqNumber": 7856,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000111s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.61474609375,
+        "seqNumber": 7857,
+        "line": "\tSmartDashboard.updateValues(): 0.016101s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.614990234375,
+        "seqNumber": 7858,
+        "line": "\trobotPeriodic(): 0.005213s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.6151123046875,
+        "seqNumber": 7859,
+        "line": "\tLiveWindow.updateValues(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.6153564453125,
+        "seqNumber": 7860,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 56.615478515625,
+        "seqNumber": 7861,
+        "line": ""
+    },
+    {
+        "timestamp": 57.5550537109375,
+        "seqNumber": 7862,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 57.556396484375,
+        "seqNumber": 7863,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 58.221923828125,
+        "seqNumber": 7864,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (72 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 58.5723876953125,
+        "seqNumber": 7865,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 58.57373046875,
+        "seqNumber": 7866,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 59.5926513671875,
+        "seqNumber": 7867,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 59.5948486328125,
+        "seqNumber": 7868,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 60.611328125,
+        "seqNumber": 7869,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 60.6123046875,
+        "seqNumber": 7870,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 61.51904296875,
+        "seqNumber": 7871,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (71 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 61.615234375,
+        "seqNumber": 7872,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 61.6158447265625,
+        "seqNumber": 7873,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 62.6319580078125,
+        "seqNumber": 7874,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 62.6326904296875,
+        "seqNumber": 7875,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 63.650634765625,
+        "seqNumber": 7876,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 63.65234375,
+        "seqNumber": 7877,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 64.51953125,
+        "seqNumber": 7878,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (69 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 64.652587890625,
+        "seqNumber": 7879,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 64.654052734375,
+        "seqNumber": 7880,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 66.6719970703125,
+        "seqNumber": 7881,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 66.6728515625,
+        "seqNumber": 7882,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 67.1685791015625,
+        "seqNumber": 7883,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.1708984375,
+        "seqNumber": 7884,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.171875,
+        "seqNumber": 7885,
+        "line": ""
+    },
+    {
+        "timestamp": 67.20068359375,
+        "seqNumber": 7886,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.005750s\n\tSmartDashboard.updateValues(): 0.000334s\n\trobotPeriodic(): 0.016324s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.2012939453125,
+        "seqNumber": 7887,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.005750s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.2032470703125,
+        "seqNumber": 7888,
+        "line": "\tSmartDashboard.updateValues(): 0.000334s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.203857421875,
+        "seqNumber": 7889,
+        "line": "\trobotPeriodic(): 0.016324s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.2041015625,
+        "seqNumber": 7890,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.204345703125,
+        "seqNumber": 7891,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.2054443359375,
+        "seqNumber": 7892,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.4954833984375,
+        "seqNumber": 7893,
+        "line": "Drivetrain State: FIELD_CENTRIC -> VISION_TRACKING"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.5,
+        "seqNumber": 7894,
+        "line": "Game State: IDLE -> SCORING"
+    },
+    {
+        "timestamp": 67.5233154296875,
+        "seqNumber": 7895,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (68 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 67.6732177734375,
+        "seqNumber": 7896,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.6751708984375,
+        "seqNumber": 7897,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7034912109375,
+        "seqNumber": 7898,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 67.735595703125,
+        "seqNumber": 7899,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000019s\n\tShooterPivotSubsystem.periodic(): 0.000259s\n\tCommandSwerveDrivetrain.periodic(): 0.000074s\n\tClimberSubsystem.periodic(): 0.000000s\n\tbuttons.run(): 0.011594s\n\tShooterSubsystem.periodic(): 0.000575s\n\tIntakeWheelsSubsystem.periodic(): 0.000000s\n\tVisionSubsystem.periodic(): 0.003191s\n\tSequentialCommandGroup.execute(): 0.016602s\n\tRobotStateMachine.periodic(): 0.000334s\n\tPivotSubsystem.periodic(): 0.000093s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7362060546875,
+        "seqNumber": 7900,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7369384765625,
+        "seqNumber": 7901,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.000259s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7396240234375,
+        "seqNumber": 7902,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000074s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.740478515625,
+        "seqNumber": 7903,
+        "line": "\tClimberSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7413330078125,
+        "seqNumber": 7904,
+        "line": "\tbuttons.run(): 0.011594s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.742431640625,
+        "seqNumber": 7905,
+        "line": "\tShooterSubsystem.periodic(): 0.000575s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.744140625,
+        "seqNumber": 7906,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7445068359375,
+        "seqNumber": 7907,
+        "line": "\tVisionSubsystem.periodic(): 0.003191s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.744873046875,
+        "seqNumber": 7908,
+        "line": "\tSequentialCommandGroup.execute(): 0.016602s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.7454833984375,
+        "seqNumber": 7909,
+        "line": "\tRobotStateMachine.periodic(): 0.000334s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.74853515625,
+        "seqNumber": 7910,
+        "line": "\tPivotSubsystem.periodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 67.748779296875,
+        "seqNumber": 7911,
+        "line": ""
+    },
+    {
+        "timestamp": 68.5087890625,
+        "seqNumber": 7912,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.510986328125,
+        "seqNumber": 7913,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.511474609375,
+        "seqNumber": 7914,
+        "line": ""
+    },
+    {
+        "timestamp": 68.54150390625,
+        "seqNumber": 7915,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000093s\n\tSmartDashboard.updateValues(): 0.000315s\n\trobotPeriodic(): 0.020164s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.5440673828125,
+        "seqNumber": 7916,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.5443115234375,
+        "seqNumber": 7917,
+        "line": "\tSmartDashboard.updateValues(): 0.000315s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.5445556640625,
+        "seqNumber": 7918,
+        "line": "\trobotPeriodic(): 0.020164s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.544921875,
+        "seqNumber": 7919,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.5452880859375,
+        "seqNumber": 7920,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.5472412109375,
+        "seqNumber": 7921,
+        "line": ""
+    },
+    {
+        "timestamp": 68.6920166015625,
+        "seqNumber": 7922,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 68.6927490234375,
+        "seqNumber": 7923,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 69.6923828125,
+        "seqNumber": 7924,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 69.6932373046875,
+        "seqNumber": 7925,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.072265625,
+        "seqNumber": 7926,
+        "line": "Game State: SCORING -> IDLE"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.0751953125,
+        "seqNumber": 7927,
+        "line": "Game State: IDLE -> SCORING"
+    },
+    {
+        "timestamp": 70.212890625,
+        "seqNumber": 7928,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.215576171875,
+        "seqNumber": 7929,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.2161865234375,
+        "seqNumber": 7930,
+        "line": ""
+    },
+    {
+        "timestamp": 70.2481689453125,
+        "seqNumber": 7931,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000483s\n\tSmartDashboard.updateValues(): 0.015545s\n\trobotPeriodic(): 0.019162s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.2518310546875,
+        "seqNumber": 7932,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000483s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.252197265625,
+        "seqNumber": 7933,
+        "line": "\tSmartDashboard.updateValues(): 0.015545s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.2525634765625,
+        "seqNumber": 7934,
+        "line": "\trobotPeriodic(): 0.019162s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.2528076171875,
+        "seqNumber": 7935,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.2530517578125,
+        "seqNumber": 7936,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.254638671875,
+        "seqNumber": 7937,
+        "line": ""
+    },
+    {
+        "timestamp": 70.5238037109375,
+        "seqNumber": 7938,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (67 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.620361328125,
+        "seqNumber": 7939,
+        "line": "Game State: SCORING -> IDLE"
+    },
+    {
+        "timestamp": 70.6995849609375,
+        "seqNumber": 7940,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 70.7001953125,
+        "seqNumber": 7941,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 71.7117919921875,
+        "seqNumber": 7942,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 71.712890625,
+        "seqNumber": 7943,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 73.5328369140625,
+        "seqNumber": 7944,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (66 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 73.7117919921875,
+        "seqNumber": 7945,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 73.712646484375,
+        "seqNumber": 7946,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 74.7310791015625,
+        "seqNumber": 7947,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 74.7320556640625,
+        "seqNumber": 7948,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 75.732177734375,
+        "seqNumber": 7949,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 75.7330322265625,
+        "seqNumber": 7950,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 76.604248046875,
+        "seqNumber": 7951,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (65 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 76.7333984375,
+        "seqNumber": 7952,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7352294921875,
+        "seqNumber": 7953,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 76.7490234375,
+        "seqNumber": 7954,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7506103515625,
+        "seqNumber": 7955,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7509765625,
+        "seqNumber": 7956,
+        "line": ""
+    },
+    {
+        "timestamp": 76.7822265625,
+        "seqNumber": 7957,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000260s\n\tSmartDashboard.updateValues(): 0.016435s\n\trobotPeriodic(): 0.019385s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7838134765625,
+        "seqNumber": 7958,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000260s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.78466796875,
+        "seqNumber": 7959,
+        "line": "\tSmartDashboard.updateValues(): 0.016435s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7850341796875,
+        "seqNumber": 7960,
+        "line": "\trobotPeriodic(): 0.019385s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.785400390625,
+        "seqNumber": 7961,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7857666015625,
+        "seqNumber": 7962,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 76.7860107421875,
+        "seqNumber": 7963,
+        "line": ""
+    },
+    {
+        "timestamp": 77.751708984375,
+        "seqNumber": 7964,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7529296875,
+        "seqNumber": 7965,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 77.769775390625,
+        "seqNumber": 7966,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.771240234375,
+        "seqNumber": 7967,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7724609375,
+        "seqNumber": 7968,
+        "line": ""
+    },
+    {
+        "timestamp": 77.7906494140625,
+        "seqNumber": 7969,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000223s\n\tSmartDashboard.updateValues(): 0.014469s\n\trobotPeriodic(): 0.005546s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000019s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7916259765625,
+        "seqNumber": 7970,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000223s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.792236328125,
+        "seqNumber": 7971,
+        "line": "\tSmartDashboard.updateValues(): 0.014469s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7958984375,
+        "seqNumber": 7972,
+        "line": "\trobotPeriodic(): 0.005546s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7962646484375,
+        "seqNumber": 7973,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.7965087890625,
+        "seqNumber": 7974,
+        "line": "\tShuffleboard.update(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 77.796875,
+        "seqNumber": 7975,
+        "line": ""
+    },
+    {
+        "timestamp": 78.7745361328125,
+        "seqNumber": 7976,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 78.775146484375,
+        "seqNumber": 7977,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 79.6048583984375,
+        "seqNumber": 7978,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (64 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 79.7757568359375,
+        "seqNumber": 7979,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.77685546875,
+        "seqNumber": 7980,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 79.8094482421875,
+        "seqNumber": 7981,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8101806640625,
+        "seqNumber": 7982,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8104248046875,
+        "seqNumber": 7983,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8138427734375,
+        "seqNumber": 7984,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 79.848388671875,
+        "seqNumber": 7985,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000018s\n\tShooterPivotSubsystem.periodic(): 0.016343s\n\tCommandSwerveDrivetrain.periodic(): 0.001855s\n\tClimberSubsystem.periodic(): 0.000018s\n\tRunCommand.execute(): 0.000093s\n\tbuttons.run(): 0.000167s\n\tShooterSubsystem.periodic(): 0.000408s\n\tIntakeWheelsSubsystem.periodic(): 0.000000s\n\tVisionSubsystem.periodic(): 0.002653s\n\tShooterPivot Track Angle.execute(): 0.000148s\n\tRobotStateMachine.periodic(): 0.000112s\n\tPivotSubsystem.periodic(): 0.000130s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.84912109375,
+        "seqNumber": 7986,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.849365234375,
+        "seqNumber": 7987,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.016343s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8505859375,
+        "seqNumber": 7988,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.001855s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8514404296875,
+        "seqNumber": 7989,
+        "line": "\tClimberSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8519287109375,
+        "seqNumber": 7990,
+        "line": "\tRunCommand.execute(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.852294921875,
+        "seqNumber": 7991,
+        "line": "\tbuttons.run(): 0.000167s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8529052734375,
+        "seqNumber": 7992,
+        "line": "\tShooterSubsystem.periodic(): 0.000408s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.856201171875,
+        "seqNumber": 7993,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8565673828125,
+        "seqNumber": 7994,
+        "line": "\tVisionSubsystem.periodic(): 0.002653s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8570556640625,
+        "seqNumber": 7995,
+        "line": "\tShooterPivot Track Angle.execute(): 0.000148s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8631591796875,
+        "seqNumber": 7996,
+        "line": "\tRobotStateMachine.periodic(): 0.000112s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8634033203125,
+        "seqNumber": 7997,
+        "line": "\tPivotSubsystem.periodic(): 0.000130s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8636474609375,
+        "seqNumber": 7998,
+        "line": ""
+    },
+    {
+        "timestamp": 79.8795166015625,
+        "seqNumber": 7999,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000241s\n\tSmartDashboard.updateValues(): 0.000482s\n\trobotPeriodic(): 0.060770s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.88037109375,
+        "seqNumber": 8000,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000241s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8829345703125,
+        "seqNumber": 8001,
+        "line": "\tSmartDashboard.updateValues(): 0.000482s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.88330078125,
+        "seqNumber": 8002,
+        "line": "\trobotPeriodic(): 0.060770s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.8834228515625,
+        "seqNumber": 8003,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.884033203125,
+        "seqNumber": 8004,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 79.88427734375,
+        "seqNumber": 8005,
+        "line": ""
+    },
+    {
+        "timestamp": 80.779296875,
+        "seqNumber": 8006,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 80.7825927734375,
+        "seqNumber": 8007,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 80.7864990234375,
+        "seqNumber": 8008,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 81.392333984375,
+        "seqNumber": 8009,
+        "line": "Game State: IDLE -> SCORING"
+    },
+    {
+        "timestamp": 81.79150390625,
+        "seqNumber": 8010,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 81.79248046875,
+        "seqNumber": 8011,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 82.6131591796875,
+        "seqNumber": 8012,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (63 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 82.7955322265625,
+        "seqNumber": 8013,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 82.796142578125,
+        "seqNumber": 8014,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 83.81201171875,
+        "seqNumber": 8015,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 83.8128662109375,
+        "seqNumber": 8016,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 84.835693359375,
+        "seqNumber": 8017,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.836669921875,
+        "seqNumber": 8018,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 84.8682861328125,
+        "seqNumber": 8019,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.8704833984375,
+        "seqNumber": 8020,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.870849609375,
+        "seqNumber": 8021,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9002685546875,
+        "seqNumber": 8022,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 84.9713134765625,
+        "seqNumber": 8023,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000018s\n\tShooterPivotSubsystem.periodic(): 0.001447s\n\tCommandSwerveDrivetrain.periodic(): 0.000056s\n\tClimberSubsystem.periodic(): 0.000018s\n\tbuttons.run(): 0.006975s\n\tShooterSubsystem.periodic(): 0.016844s\n\tIntakeWheelsSubsystem.periodic(): 0.000018s\n\tVisionSubsystem.periodic(): 0.002003s\n\tSequentialCommandGroup.execute(): 0.008125s\n\tRobotStateMachine.periodic(): 0.000353s\n\tPivotSubsystem.periodic(): 0.015323s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9720458984375,
+        "seqNumber": 8024,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9725341796875,
+        "seqNumber": 8025,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.001447s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9727783203125,
+        "seqNumber": 8026,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000056s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.974609375,
+        "seqNumber": 8027,
+        "line": "\tClimberSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9749755859375,
+        "seqNumber": 8028,
+        "line": "\tbuttons.run(): 0.006975s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9752197265625,
+        "seqNumber": 8029,
+        "line": "\tShooterSubsystem.periodic(): 0.016844s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9754638671875,
+        "seqNumber": 8030,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9755859375,
+        "seqNumber": 8031,
+        "line": "\tVisionSubsystem.periodic(): 0.002003s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9761962890625,
+        "seqNumber": 8032,
+        "line": "\tSequentialCommandGroup.execute(): 0.008125s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9766845703125,
+        "seqNumber": 8033,
+        "line": "\tRobotStateMachine.periodic(): 0.000353s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.9781494140625,
+        "seqNumber": 8034,
+        "line": "\tPivotSubsystem.periodic(): 0.015323s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 84.979736328125,
+        "seqNumber": 8035,
+        "line": ""
+    },
+    {
+        "timestamp": 84.9996337890625,
+        "seqNumber": 8036,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000427s\n\tSmartDashboard.updateValues(): 0.000686s\n\trobotPeriodic(): 0.123988s\n\tLiveWindow.updateValues(): 0.000019s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.0013427734375,
+        "seqNumber": 8037,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000427s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.003662109375,
+        "seqNumber": 8038,
+        "line": "\tSmartDashboard.updateValues(): 0.000686s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.00390625,
+        "seqNumber": 8039,
+        "line": "\trobotPeriodic(): 0.123988s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.0042724609375,
+        "seqNumber": 8040,
+        "line": "\tLiveWindow.updateValues(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.0050048828125,
+        "seqNumber": 8041,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.0054931640625,
+        "seqNumber": 8042,
+        "line": ""
+    },
+    {
+        "timestamp": 85.6143798828125,
+        "seqNumber": 8043,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (62 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.7313232421875,
+        "seqNumber": 8044,
+        "line": "Game State: SCORING -> IDLE"
+    },
+    {
+        "timestamp": 85.86376953125,
+        "seqNumber": 8045,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.8648681640625,
+        "seqNumber": 8046,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 85.9326171875,
+        "seqNumber": 8047,
+        "line": "Game State: IDLE -> SCORING"
+    },
+    {
+        "timestamp": 86.87158203125,
+        "seqNumber": 8048,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 86.872314453125,
+        "seqNumber": 8049,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 87.2884521484375,
+        "seqNumber": 8050,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.292724609375,
+        "seqNumber": 8051,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.2930908203125,
+        "seqNumber": 8052,
+        "line": ""
+    },
+    {
+        "timestamp": 87.358642578125,
+        "seqNumber": 8053,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000093s\n\tSmartDashboard.updateValues(): 0.000334s\n\trobotPeriodic(): 0.020980s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000018s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.3624267578125,
+        "seqNumber": 8054,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.36279296875,
+        "seqNumber": 8055,
+        "line": "\tSmartDashboard.updateValues(): 0.000334s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.364013671875,
+        "seqNumber": 8056,
+        "line": "\trobotPeriodic(): 0.020980s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.3642578125,
+        "seqNumber": 8057,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.365234375,
+        "seqNumber": 8058,
+        "line": "\tShuffleboard.update(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.365478515625,
+        "seqNumber": 8059,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.433349609375,
+        "seqNumber": 8060,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 87.5032958984375,
+        "seqNumber": 8061,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000018s\n\tShooterPivotSubsystem.periodic(): 0.004638s\n\tCommandSwerveDrivetrain.periodic(): 0.000056s\n\tClimberSubsystem.periodic(): 0.000018s\n\tbuttons.run(): 0.005509s\n\tShooterSubsystem.periodic(): 0.004489s\n\tIntakeWheelsSubsystem.periodic(): 0.000019s\n\tVisionSubsystem.periodic(): 0.002412s\n\tSequentialCommandGroup.execute(): 0.009553s\n\tRobotStateMachine.periodic(): 0.000093s\n\tPivotSubsystem.periodic(): 0.001428s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5042724609375,
+        "seqNumber": 8062,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.50634765625,
+        "seqNumber": 8063,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.004638s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5069580078125,
+        "seqNumber": 8064,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000056s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.50732421875,
+        "seqNumber": 8065,
+        "line": "\tClimberSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5074462890625,
+        "seqNumber": 8066,
+        "line": "\tbuttons.run(): 0.005509s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5076904296875,
+        "seqNumber": 8067,
+        "line": "\tShooterSubsystem.periodic(): 0.004489s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5079345703125,
+        "seqNumber": 8068,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5081787109375,
+        "seqNumber": 8069,
+        "line": "\tVisionSubsystem.periodic(): 0.002412s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.50830078125,
+        "seqNumber": 8070,
+        "line": "\tSequentialCommandGroup.execute(): 0.009553s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5089111328125,
+        "seqNumber": 8071,
+        "line": "\tRobotStateMachine.periodic(): 0.000093s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5091552734375,
+        "seqNumber": 8072,
+        "line": "\tPivotSubsystem.periodic(): 0.001428s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.5093994140625,
+        "seqNumber": 8073,
+        "line": ""
+    },
+    {
+        "timestamp": 87.8919677734375,
+        "seqNumber": 8074,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 87.8929443359375,
+        "seqNumber": 8075,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 88.671630859375,
+        "seqNumber": 8076,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (61 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 88.9129638671875,
+        "seqNumber": 8077,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 88.9136962890625,
+        "seqNumber": 8078,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 89.93603515625,
+        "seqNumber": 8079,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 89.936767578125,
+        "seqNumber": 8080,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 89.94873046875,
+        "seqNumber": 8081,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 89.9503173828125,
+        "seqNumber": 8082,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 89.9505615234375,
+        "seqNumber": 8083,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 89.956298828125,
+        "seqNumber": 8084,
+        "line": "CommandScheduler loop overrun"
+    },
+    {
+        "timestamp": 90.0372314453125,
+        "seqNumber": 8085,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tIndexerSubsystem.periodic(): 0.000019s\n\tShooterPivotSubsystem.periodic(): 0.000334s\n\tCommandSwerveDrivetrain.periodic(): 0.000056s\n\tClimberSubsystem.periodic(): 0.000000s\n\tbuttons.run(): 0.001205s\n\tShooterSubsystem.periodic(): 0.005509s\n\tIntakeWheelsSubsystem.periodic(): 0.000018s\n\tVisionSubsystem.periodic(): 0.000445s\n\tSequentialCommandGroup.execute(): 0.014618s\n\tRobotStateMachine.periodic(): 0.000445s\n\tPivotSubsystem.periodic(): 0.000112s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0396728515625,
+        "seqNumber": 8086,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tIndexerSubsystem.periodic(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0400390625,
+        "seqNumber": 8087,
+        "line": "\tShooterPivotSubsystem.periodic(): 0.000334s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.040283203125,
+        "seqNumber": 8088,
+        "line": "\tCommandSwerveDrivetrain.periodic(): 0.000056s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.041015625,
+        "seqNumber": 8089,
+        "line": "\tClimberSubsystem.periodic(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.041748046875,
+        "seqNumber": 8090,
+        "line": "\tbuttons.run(): 0.001205s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.04248046875,
+        "seqNumber": 8091,
+        "line": "\tShooterSubsystem.periodic(): 0.005509s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0430908203125,
+        "seqNumber": 8092,
+        "line": "\tIntakeWheelsSubsystem.periodic(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0435791015625,
+        "seqNumber": 8093,
+        "line": "\tVisionSubsystem.periodic(): 0.000445s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0438232421875,
+        "seqNumber": 8094,
+        "line": "\tSequentialCommandGroup.execute(): 0.014618s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0440673828125,
+        "seqNumber": 8095,
+        "line": "\tRobotStateMachine.periodic(): 0.000445s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0443115234375,
+        "seqNumber": 8096,
+        "line": "\tPivotSubsystem.periodic(): 0.000112s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0447998046875,
+        "seqNumber": 8097,
+        "line": ""
+    },
+    {
+        "timestamp": 90.084716796875,
+        "seqNumber": 8098,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000371s\n\tSmartDashboard.updateValues(): 0.000593s\n\trobotPeriodic(): 0.110948s\n\tLiveWindow.updateValues(): 0.000019s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.085693359375,
+        "seqNumber": 8099,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000371s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0869140625,
+        "seqNumber": 8100,
+        "line": "\tSmartDashboard.updateValues(): 0.000593s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.087646484375,
+        "seqNumber": 8101,
+        "line": "\trobotPeriodic(): 0.110948s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.088134765625,
+        "seqNumber": 8102,
+        "line": "\tLiveWindow.updateValues(): 0.000019s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.09033203125,
+        "seqNumber": 8103,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.0908203125,
+        "seqNumber": 8104,
+        "line": ""
+    },
+    {
+        "timestamp": 90.95166015625,
+        "seqNumber": 8105,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 90.952392578125,
+        "seqNumber": 8106,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 91.108642578125,
+        "seqNumber": 8107,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.1099853515625,
+        "seqNumber": 8108,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.1104736328125,
+        "seqNumber": 8109,
+        "line": ""
+    },
+    {
+        "timestamp": 91.173095703125,
+        "seqNumber": 8110,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000483s\n\tSmartDashboard.updateValues(): 0.019032s\n\trobotPeriodic(): 0.007791s\n\tLiveWindow.updateValues(): 0.000000s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.173828125,
+        "seqNumber": 8111,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000483s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.1741943359375,
+        "seqNumber": 8112,
+        "line": "\tSmartDashboard.updateValues(): 0.019032s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.174560546875,
+        "seqNumber": 8113,
+        "line": "\trobotPeriodic(): 0.007791s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.1749267578125,
+        "seqNumber": 8114,
+        "line": "\tLiveWindow.updateValues(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.17626953125,
+        "seqNumber": 8115,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.1768798828125,
+        "seqNumber": 8116,
+        "line": ""
+    },
+    {
+        "timestamp": 91.69287109375,
+        "seqNumber": 8117,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (59 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 91.9715576171875,
+        "seqNumber": 8118,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 91.97216796875,
+        "seqNumber": 8119,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 92.991455078125,
+        "seqNumber": 8120,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 92.99267578125,
+        "seqNumber": 8121,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 94.015380859375,
+        "seqNumber": 8122,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 94.0169677734375,
+        "seqNumber": 8123,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 94.7125244140625,
+        "seqNumber": 8124,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (57 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "timestamp": 95.0323486328125,
+        "seqNumber": 8125,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.0330810546875,
+        "seqNumber": 8126,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 95.82861328125,
+        "seqNumber": 8127,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.8311767578125,
+        "seqNumber": 8128,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.832275390625,
+        "seqNumber": 8129,
+        "line": ""
+    },
+    {
+        "timestamp": 95.8642578125,
+        "seqNumber": 8130,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tteleopPeriodic(): 0.000445s\n\tSmartDashboard.updateValues(): 0.013115s\n\trobotPeriodic(): 0.016547s\n\tLiveWindow.updateValues(): 0.000018s\n\tShuffleboard.update(): 0.000000s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.866943359375,
+        "seqNumber": 8131,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tteleopPeriodic(): 0.000445s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.8675537109375,
+        "seqNumber": 8132,
+        "line": "\tSmartDashboard.updateValues(): 0.013115s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.8680419921875,
+        "seqNumber": 8133,
+        "line": "\trobotPeriodic(): 0.016547s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.868896484375,
+        "seqNumber": 8134,
+        "line": "\tLiveWindow.updateValues(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.8692626953125,
+        "seqNumber": 8135,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.86962890625,
+        "seqNumber": 8136,
+        "line": ""
+    },
+    {
+        "messageType": 2,
+        "timestamp": 95.8927001953125,
+        "seqNumber": 8137,
+        "line": "Game State: SCORING -> IDLE"
+    },
+    {
+        "timestamp": 96.05224609375,
+        "seqNumber": 8138,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 96.0531005859375,
+        "seqNumber": 8139,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 97.0704345703125,
+        "seqNumber": 8140,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.0712890625,
+        "seqNumber": 8141,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 97.715576171875,
+        "seqNumber": 8142,
+        "numOccur": 1,
+        "errorCode": 0,
+        "flags": 0,
+        "details": "[phoenix] Signal Logger: Available disk space (57 MB) is low; at 50 MB, old hoot logs will be deleted. Use Tuner X to download and delete hoot logs.",
+        "location": "",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8084716796875,
+        "seqNumber": 8143,
+        "line": "Teleop period ended"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8114013671875,
+        "seqNumber": 8144,
+        "line": "Drivetrain State: VISION_TRACKING -> DISABLED"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8143310546875,
+        "seqNumber": 8145,
+        "line": "Match State: TELEOP_RUNNING -> DISABLED"
+    },
+    {
+        "timestamp": 97.830810546875,
+        "seqNumber": 8146,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Loop time of 0.02s overrun\n",
+        "location": "edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8316650390625,
+        "seqNumber": 8147,
+        "line": "Warning at edu.wpi.first.wpilibj.IterativeRobotBase.printLoopOverrunMessage(IterativeRobotBase.java:436): Loop time of 0.02s overrun"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8319091796875,
+        "seqNumber": 8148,
+        "line": ""
+    },
+    {
+        "timestamp": 97.86669921875,
+        "seqNumber": 8149,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "\tSmartDashboard.updateValues(): 0.001447s\n\tdisabledInit(): 0.003747s\n\trobotPeriodic(): 0.009387s\n\tLiveWindow.updateValues(): 0.000018s\n\tShuffleboard.update(): 0.000000s\n\tdisabledPeriodic(): 0.008922s\n",
+        "location": "edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.867431640625,
+        "seqNumber": 8150,
+        "line": "Warning at edu.wpi.first.wpilibj.Tracer.lambda$printEpochs$0(Tracer.java:62): \tSmartDashboard.updateValues(): 0.001447s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8680419921875,
+        "seqNumber": 8151,
+        "line": "\tdisabledInit(): 0.003747s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8695068359375,
+        "seqNumber": 8152,
+        "line": "\trobotPeriodic(): 0.009387s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.870361328125,
+        "seqNumber": 8153,
+        "line": "\tLiveWindow.updateValues(): 0.000018s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8712158203125,
+        "seqNumber": 8154,
+        "line": "\tShuffleboard.update(): 0.000000s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.8719482421875,
+        "seqNumber": 8155,
+        "line": "\tdisabledPeriodic(): 0.008922s"
+    },
+    {
+        "messageType": 2,
+        "timestamp": 97.872314453125,
+        "seqNumber": 8156,
+        "line": ""
+    },
+    {
+        "timestamp": 98.072265625,
+        "seqNumber": 8157,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 98.0728759765625,
+        "seqNumber": 8158,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    },
+    {
+        "timestamp": 99.0728759765625,
+        "seqNumber": 8159,
+        "numOccur": 1,
+        "errorCode": 1,
+        "flags": 0,
+        "details": "Joystick Button 4 on port 1 not available, check if controller is plugged in",
+        "location": "edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345)",
+        "callStack": "",
+        "messageType": 1
+    },
+    {
+        "messageType": 2,
+        "timestamp": 99.07373046875,
+        "seqNumber": 8160,
+        "line": "Warning at edu.wpi.first.wpilibj.DriverStation.reportJoystickUnpluggedWarning(DriverStation.java:1345): Joystick Button 4 on port 1 not available, check if controller is plugged in"
+    }
+]

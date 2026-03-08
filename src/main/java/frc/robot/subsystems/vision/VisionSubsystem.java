@@ -8,6 +8,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -76,10 +77,11 @@ public class VisionSubsystem extends SubsystemBase {
     // }
 
     LimelightHelpers.SetRobotOrientation(
-        cameraName, fusedHeadingDeg, angularVelocityDegPerSec, 0, 0, 0, 0);
+        cameraName, MathUtil.inputModulus(fusedHeadingDeg + 180, -180, 180), angularVelocityDegPerSec, 0, 0, 0, 0);
 
     LimelightHelpers.PoseEstimate mt2 =
-        LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
+        // LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
+        LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
 
     boolean mt2Accepted = tryAcceptMT2(mt2, odoPose, logPrefix);
 
@@ -98,7 +100,8 @@ public class VisionSubsystem extends SubsystemBase {
       return false;
     }
 
-    Pose2d pose = mt2.pose;
+    Pose2d pose = new Pose2d(mt2.pose.getTranslation(), mt2.pose.getRotation().plus(Rotation2d.fromDegrees(180)));
+    //Pose2d pose = mt2.pose;
 
     // SAFETY REMOVED: Accept all poses unconditionally
     // if (pose.equals(new Pose2d())) {
@@ -197,7 +200,8 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
-    Pose2d pose = mt1.pose;
+    Pose2d pose = new Pose2d(mt1.pose.getTranslation(), mt1.pose.getRotation().plus(Rotation2d.fromDegrees(180)));
+    //Pose2d pose = mt1.pose;
 
     // SAFETY REMOVED: Accept all MT1 poses unconditionally
     // if (pose.equals(new Pose2d())) {

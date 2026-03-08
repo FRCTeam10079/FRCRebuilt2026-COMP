@@ -197,7 +197,7 @@ public class LaunchCalculator {
     // Translation2d shooterFieldPos = estimatedPose
     // .getTranslation()
     // .plus(new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y)
-    //     .rotateBy(estimatedPose.getRotation()));
+    // .rotateBy(estimatedPose.getRotation()));
 
     // ---- Step 3: Field-relative velocity ----
     ChassisSpeeds fieldVelocity =
@@ -226,8 +226,6 @@ public class LaunchCalculator {
     // ---- Step 5: Compute drive heading angle ----
     // The robot should face from the lookahead position toward the target
     Rotation2d driveAngle = target.minus(lookaheadPos).getAngle();
-
-    driveAngle = driveAngle.plus(Rotation2d.fromDegrees(180));
     // If the shooter has a significant lateral offset, apply asin correction
     // (similar to MA's getDriveAngleWithLauncherOffset)
     if (Math.abs(SHOOTER_OFFSET_Y) > 0.01) {
@@ -236,7 +234,8 @@ public class LaunchCalculator {
           Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / lookaheadDistance, -1.0, 1.0));
       driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
       // double distForOffset = target.getDistance(estimatedPose.getTranslation());
-      // double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / distForOffset, -1.0,
+      // double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y /
+      // distForOffset, -1.0,
       // 1.0));
       // driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
       // Rotate 180 deg if the shooter fires backwards (like MA's launcher)

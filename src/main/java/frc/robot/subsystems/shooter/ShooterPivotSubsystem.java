@@ -351,6 +351,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
       setAngle(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
     }
 
+    SmartDashboard.putBoolean("ShooterPivot/isInTrenchZone", isInTrenchZone());
     SmartDashboard.putNumber("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
     SmartDashboard.putNumber("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees.in(Degrees));
     SmartDashboard.putNumber("ShooterPivot/Position (rot)", getPosition());

@@ -17,7 +17,6 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -45,9 +44,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   private final TalonFX m_pivotMotor = new TalonFX(ShooterPivotConstants.MOTOR_ID);
 
   // Control requests
-  private final MotionMagicVoltage m_motionMagicRequest =
-      new MotionMagicVoltage(0.0).withSlot(0).withEnableFOC(true);
-  private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0.0).withEnableFOC(true);
+  private final MotionMagicVoltage m_motionMagicRequest = new MotionMagicVoltage(0.0);
+  private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0.0);
   private final NeutralOut m_neutralRequest = new NeutralOut();
   StatusSignal<Angle> positionSignal = m_pivotMotor.getPosition();
 
@@ -69,13 +67,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
     // Motor output
     config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
     // Current limits
     config.CurrentLimits = new CurrentLimitsConfigs()
-        .withSupplyCurrentLimitEnable(true)
         .withSupplyCurrentLimit(ShooterPivotConstants.SUPPLY_CURRENT_LIMIT)
-        .withStatorCurrentLimitEnable(true)
         .withStatorCurrentLimit(ShooterPivotConstants.STATOR_CURRENT_LIMIT);
 
     // PID + FF gains (Slot 0)
@@ -100,8 +95,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)))
-        .withReverseSoftLimitThreshold(0.0);
+            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
 
     m_pivotMotor.getConfigurator().apply(config);
   }
@@ -157,8 +151,12 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    */
   public void setAngle(Angle angle) {
     // Trench safety: cap angle when in trench zone
-    if (isInTrenchZone() && angle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+    if (!m_trenchMode
+        && isInTrenchZone()
+        && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
       angle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+    } else if (m_trenchMode) {
+      return;
     }
 
     // Clamp to safe range
@@ -246,8 +244,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)))
-        .withReverseSoftLimitThreshold(0.0);
+            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
     m_pivotMotor.getConfigurator().apply(softLimits);
   }
 
@@ -347,7 +344,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   public void periodic() {
     // Trench safety: actively lower pivot when entering trench zone,
     // even if no command is currently calling setAngle()
-    if (isInTrenchZone() && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+    if (!m_trenchMode
+        && isInTrenchZone()
+        && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+      // TODO: Stop shooter and reactivate it once good
       setAngle(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
     }
 

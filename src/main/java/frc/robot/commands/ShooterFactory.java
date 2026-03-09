@@ -30,41 +30,30 @@ import java.util.function.Supplier;
 /**
  * Static factory for distance-based shooting commands.
  *
- * <p>
- * All shooting logic funnels through this class so the conditions for firing
- * (flywheel RPM,
- * pivot angle, heading alignment, setpoint validity) are checked in exactly one
- * place.
+ * <p>All shooting logic funnels through this class so the conditions for firing (flywheel RPM,
+ * pivot angle, heading alignment, setpoint validity) are checked in exactly one place.
  *
- * <p>
- * The core shooting sequence is: 1. A Supplier<ShooterSetpoint> provides the
- * current
- * distance-based setpoint (RPM + angle) 2. The flywheel and pivot track that
- * setpoint continuously
+ * <p>The core shooting sequence is: 1. A Supplier<ShooterSetpoint> provides the current
+ * distance-based setpoint (RPM + angle) 2. The flywheel and pivot track that setpoint continuously
  * 3. isOnTarget() gates feeding until everything is ready
  */
 public final class ShooterFactory {
 
-  private ShooterFactory() {
-  } // static utility
+  private ShooterFactory() {} // static utility
 
   // ==================== ON-TARGET GATING ====================
 
   /**
    * Check whether all conditions for a safe shot are met.
    *
-   * <p>
-   * Conditions: - Setpoint is valid (non-null, reasonable distance) - Flywheel
-   * RPM within
-   * ON_TARGET_RPM_PERCENT of target - Pivot angle within
-   * SHOOTING_TOLERANCE_DEGREES deg of target -
+   * <p>Conditions: - Setpoint is valid (non-null, reasonable distance) - Flywheel RPM within
+   * ON_TARGET_RPM_PERCENT of target - Pivot angle within SHOOTING_TOLERANCE_DEGREES deg of target -
    * Drivetrain heading within tolerance (checked via headingOnTarget supplier)
    *
    * @param setpointSupplier current setpoint
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param headingOnTarget  supplier returning true when the drivetrain heading
-   *                         is aligned
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param headingOnTarget supplier returning true when the drivetrain heading is aligned
    * @return true when it is safe to feed the ball
    */
   public static boolean isOnTarget(
@@ -79,7 +68,8 @@ public final class ShooterFactory {
     }
 
     boolean flywheelReady = shooter.isAt(sp.flywheelRPM());
-    boolean pivotReady = shooterPivot.isAtAngle(sp.pivotAngle(), ShooterPivotConstants.SHOOTING_TOLERANCE);
+    boolean pivotReady =
+        shooterPivot.isAtAngle(sp.pivotAngle(), ShooterPivotConstants.SHOOTING_TOLERANCE);
     boolean headingReady = headingOnTarget.get();
 
     // Telemetry for debugging
@@ -94,14 +84,12 @@ public final class ShooterFactory {
   // ==================== COMMAND FACTORIES ====================
 
   /**
-   * Spin up the flywheel and move the pivot to track a dynamic setpoint. Does NOT
-   * feed - just
-   * prepares the shooter. Useful for pre-spinning while driving toward a scoring
-   * position.
+   * Spin up the flywheel and move the pivot to track a dynamic setpoint. Does NOT feed - just
+   * prepares the shooter. Useful for pre-spinning while driving toward a scoring position.
    *
    * @param setpointSupplier dynamic setpoint from ShooterMath
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
    * @return command that runs until cancelled
    */
   public static Command aimAndSpinUp(
@@ -124,21 +112,17 @@ public final class ShooterFactory {
   /**
    * Full distance-based shooting sequence (teleop).
    *
-   * <p>
-   * Simultaneously: - Spins up flywheel to setpoint RPM - Tracks pivot angle from
-   * setpoint -
+   * <p>Simultaneously: - Spins up flywheel to setpoint RPM - Tracks pivot angle from setpoint -
    * Waits until isOnTarget() is true, then feeds the indexer
    *
-   * <p>
-   * The driver holds this command while aiming the drivetrain at the hub (via
-   * heading lock or
+   * <p>The driver holds this command while aiming the drivetrain at the hub (via heading lock or
    * manual rotation). When all conditions align, the ball is automatically fed.
    *
    * @param setpointSupplier dynamic setpoint
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param indexer          indexer subsystem for feeding
-   * @param headingOnTarget  supplier for heading alignment check
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem for feeding
+   * @param headingOnTarget supplier for heading alignment check
    * @return command that fires when ready, runs until released
    */
   public static Command shoot(
@@ -150,19 +134,18 @@ public final class ShooterFactory {
 
     return aimAndSpinUp(setpointSupplier, shooter, shooterPivot)
         .alongWith(Commands.waitUntil(
-            () -> isOnTarget(setpointSupplier, shooter, shooterPivot, headingOnTarget))
+                () -> isOnTarget(setpointSupplier, shooter, shooterPivot, headingOnTarget))
             .andThen(indexer.feedCommand()))
         .withName("ShooterFactory Shoot");
   }
 
   /**
-   * Fender shot - fixed RPM and angle, no distance calculation needed. Good for
-   * scoring from right
+   * Fender shot - fixed RPM and angle, no distance calculation needed. Good for scoring from right
    * in front of the hub.
    *
-   * @param shooter      flywheel subsystem
+   * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
-   * @param indexer      indexer subsystem
+   * @param indexer indexer subsystem
    * @return command that fires a fixed fender shot
    */
   public static Command fenderShot(
@@ -182,15 +165,13 @@ public final class ShooterFactory {
   /**
    * Autonomous distance-based shot with timeout.
    *
-   * <p>
-   * Same as shoot() but with a timeout for auto routines. The heading check is
-   * always true in
+   * <p>Same as shoot() but with a timeout for auto routines. The heading check is always true in
    * auto (the robot should already be aimed by the trajectory).
    *
    * @param setpointSupplier dynamic setpoint
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param indexer          indexer subsystem
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem
    * @return command that shoots with timeout
    */
   public static Command autoShoot(
@@ -206,23 +187,17 @@ public final class ShooterFactory {
   }
 
   /**
-   * Force-shoot override: spins up the flywheel and tracks the pivot angle, but
-   * feeds as soon as
-   * the flywheel is at speed - bypassing setpoint validity, heading alignment,
-   * and pivot angle
+   * Force-shoot override: spins up the flywheel and tracks the pivot angle, but feeds as soon as
+   * the flywheel is at speed - bypassing setpoint validity, heading alignment, and pivot angle
    * checks.
    *
-   * <p>
-   * This is an operator safety-override for situations where the normal on-target
-   * gating is too
-   * restrictive (e.g., the robot thinks it's out of range but the operator wants
-   * to shoot anyway).
+   * <p>This is an operator safety-override for situations where the normal on-target gating is too
+   * restrictive (e.g., the robot thinks it's out of range but the operator wants to shoot anyway).
    *
-   * @param setpointSupplier dynamic setpoint (still used for RPM and pivot
-   *                         tracking)
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param indexer          indexer subsystem for feeding
+   * @param setpointSupplier dynamic setpoint (still used for RPM and pivot tracking)
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem for feeding
    * @return command that feeds as soon as flywheel is ready, ignoring other gates
    */
   public static Command forceShoot(
@@ -237,28 +212,27 @@ public final class ShooterFactory {
             // Still blocked while in the trench zone to prevent firing at
             // the wrong pivot angle (trench safety caps the pivot low).
             Commands.waitUntil(() -> {
-              ShooterSetpoint sp = setpointSupplier.get();
-              AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero()))
-                  ? sp.flywheelRPM()
-                  : RPM.zero();
-              boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
-              SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
-              return ready && !shooterPivot.isInTrenchZone();
-            })
+                  ShooterSetpoint sp = setpointSupplier.get();
+                  AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero()))
+                      ? sp.flywheelRPM()
+                      : RPM.zero();
+                  boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
+                  SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
+                  return ready && !shooterPivot.isInTrenchZone();
+                })
                 .andThen(indexer.feedCommand()))
         .withName("ShooterFactory ForceShoot");
   }
 
   /**
-   * Create a heading-locked drive command that aims the drivetrain at the hub
-   * while the driver
+   * Create a heading-locked drive command that aims the drivetrain at the hub while the driver
    * controls translation.
    *
-   * @param drivetrain         swerve drivetrain
-   * @param xInput             driver X (forward) input
-   * @param yInput             driver Y (strafe) input
-   * @param headingSupplier    supplier of the target heading to the hub
-   * @param maxVelocity        max translation speed
+   * @param drivetrain swerve drivetrain
+   * @param xInput driver X (forward) input
+   * @param yInput driver Y (strafe) input
+   * @param headingSupplier supplier of the target heading to the hub
+   * @param maxVelocity max translation speed
    * @param maxAngularVelocity max angular speed
    * @return command that applies heading lock toward the hub
    */
@@ -283,17 +257,13 @@ public final class ShooterFactory {
   // ==================== SHOOT-ON-THE-MOVE COMMANDS ====================
 
   /**
-   * Spin up the flywheel and move the pivot based on {@link LaunchCalculator}
-   * predictions.
+   * Spin up the flywheel and move the pivot based on {@link LaunchCalculator} predictions.
    *
-   * <p>
-   * Instead of using the static distance-based setpoint (which assumes the robot
-   * is stationary),
-   * this reads RPM, pivot angle, and pivot feedforward velocity from the
-   * LaunchCalculator, which
+   * <p>Instead of using the static distance-based setpoint (which assumes the robot is stationary),
+   * this reads RPM, pivot angle, and pivot feedforward velocity from the LaunchCalculator, which
    * accounts for the robot's velocity and time-of-flight.
    *
-   * @param shooter      flywheel subsystem
+   * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
    * @return command that tracks the launch setpoint continuously
    */
@@ -319,25 +289,18 @@ public final class ShooterFactory {
   /**
    * Full shoot-on-the-move sequence.
    *
-   * <p>
-   * Simultaneously: - Spins up flywheel to LaunchCalculator's predicted RPM -
-   * Tracks pivot angle
-   * from LaunchCalculator - Waits until all on-target conditions are met, then
-   * feeds the indexer
+   * <p>Simultaneously: - Spins up flywheel to LaunchCalculator's predicted RPM - Tracks pivot angle
+   * from LaunchCalculator - Waits until all on-target conditions are met, then feeds the indexer
    *
-   * <p>
-   * The heading check uses the drivetrain's {@code isAtLaunchHeadingGoal()} which
-   * compares the
-   * actual heading against the LaunchCalculator's predicted drive angle using the
-   * wider launch
+   * <p>The heading check uses the drivetrain's {@code isAtLaunchHeadingGoal()} which compares the
+   * actual heading against the LaunchCalculator's predicted drive angle using the wider launch
    * tolerance (most likely 10 deg instead of the static 3 deg).
    *
-   * @param setpointSupplier fallback static setpoint (used for isOnTarget
-   *                         RPM/angle checks)
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param indexer          indexer subsystem
-   * @param drivetrain       for heading check
+   * @param setpointSupplier fallback static setpoint (used for isOnTarget RPM/angle checks)
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem
+   * @param drivetrain for heading check
    * @return command that fires when the launch conditions are met
    */
   public static Command shootOnTheMove(
@@ -351,11 +314,12 @@ public final class ShooterFactory {
 
     // Build a ShooterSetpoint supplier from LaunchCalculator for the on-target
     // check
-    Supplier<ShooterSetpoint> launchSetpoint = calc.createLaunchSetpointSupplier(() -> drivetrain.getState().Pose);
+    Supplier<ShooterSetpoint> launchSetpoint =
+        calc.createLaunchSetpointSupplier(() -> drivetrain.getState().Pose);
 
     return aimAndSpinUpFromLauncher(shooter, shooterPivot)
         .alongWith(Commands.waitUntil(() -> isOnTarget(
-            launchSetpoint, shooter, shooterPivot, drivetrain::isAtLaunchHeadingGoal))
+                launchSetpoint, shooter, shooterPivot, drivetrain::isAtLaunchHeadingGoal))
             .andThen(indexer.feedCommand()))
         .withName("ShooterFactory ShootOnTheMove");
   }
@@ -363,17 +327,14 @@ public final class ShooterFactory {
   /**
    * Autonomous shoot-on-the-move with timeout.
    *
-   * <p>
-   * Same as {@link #shootOnTheMove} but with a timeout for autonomous routines.
-   * In auto, the
-   * trajectory should be providing the motion, so the heading check uses the
-   * launch heading goal.
+   * <p>Same as {@link #shootOnTheMove} but with a timeout for autonomous routines. In auto, the
+   * trajectory should be providing the motion, so the heading check uses the launch heading goal.
    *
    * @param setpointSupplier fallback static setpoint
-   * @param shooter          flywheel subsystem
-   * @param shooterPivot     pivot subsystem
-   * @param indexer          indexer subsystem
-   * @param drivetrain       swerve drivetrain
+   * @param shooter flywheel subsystem
+   * @param shooterPivot pivot subsystem
+   * @param indexer indexer subsystem
+   * @param drivetrain swerve drivetrain
    * @return command with timeout
    */
   public static Command autoShootOnTheMove(

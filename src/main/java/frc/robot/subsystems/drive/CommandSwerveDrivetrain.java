@@ -670,6 +670,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // Get current heading
     double currentHeadingDegrees = getState().Pose.getRotation().getDegrees();
 
+    // Pass logging context (measured omega) before update
+    double measuredOmega = getState().Speeds.omegaRadiansPerSecond;
+    m_headingController.setLoggingContext(maxAngularVelocity, measuredOmega);
+
     // Calculate rotation output from heading controller (-1 to 1)
     double rotationOutput = m_headingController.update(currentHeadingDegrees);
 

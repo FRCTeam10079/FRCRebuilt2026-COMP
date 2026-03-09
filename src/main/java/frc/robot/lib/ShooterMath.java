@@ -60,7 +60,7 @@ public final class ShooterMath {
     double dy = hubPosition.getY() - robotPose.getY();
 
     double forwardHeading = Math.toDegrees(Math.atan2(dy, dx));
-    return Degrees.of(MathUtil.inputModulus(forwardHeading + 180, -180, 180));
+    return Degrees.of(MathUtil.inputModulus(forwardHeading, -180, 180));
   }
 
   /**

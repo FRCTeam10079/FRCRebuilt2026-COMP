@@ -6,6 +6,7 @@ package frc.robot.subsystems.drive;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.HeadingControllerConstants;
 
@@ -35,6 +36,13 @@ public class SwerveHeadingController {
   private final PIDController m_pidController;
 
   private double m_goalDegrees = 0.0;
+
+  // ==================== CSV LOGGING ====================
+  private boolean m_csvHeaderPrinted = false;
+  private double m_lastErrorDeg = 0.0;
+  private double m_lastTimestamp = 0.0;
+  private double m_loggingMaxAngularVelocity = 0.0;
+  private double m_loggingMeasuredOmega = 0.0;
 
   /** Creates a new SwerveHeadingController */
   public SwerveHeadingController() {
@@ -105,6 +113,7 @@ public class SwerveHeadingController {
     // Handle state machine
     switch (m_state) {
       case OFF:
+        m_csvHeaderPrinted = false;
         return 0.0;
 
       case SNAP:
@@ -117,14 +126,25 @@ public class SwerveHeadingController {
         }
 
         // Clamp output to valid range
-        return MathUtil.clamp(snapOutput, -1.0, 1.0);
+        double clampedSnap = MathUtil.clamp(snapOutput, -1.0, 1.0);
+        logCSV(currentHeadingDegrees, clampedSnap);
+        return clampedSnap;
 
       case MAINTAIN:
         // Calculate output with lower gains
         double maintainOutput = m_pidController.calculate(currentHeadingDegrees);
 
+        // Re-snap: if error has grown beyond what MAINTAIN can handle efficiently
+        // (e.g. driver changed direction fast, or tracking target moved a lot),
+        // switch back to SNAP's higher gains so we converge quickly.
+        if (Math.abs(getError()) > HeadingControllerConstants.RESNAP_THRESHOLD_DEGREES) {
+          setHeadingControllerState(HeadingControllerState.SNAP);
+        }
+
         // Clamp output to valid range
-        return MathUtil.clamp(maintainOutput, -1.0, 1.0);
+        double clampedMaintain = MathUtil.clamp(maintainOutput, -1.0, 1.0);
+        logCSV(currentHeadingDegrees, clampedMaintain);
+        return clampedMaintain;
 
       default:
         return 0.0;
@@ -184,6 +204,54 @@ public class SwerveHeadingController {
     m_pidController.reset();
     m_state = HeadingControllerState.OFF;
     m_goalDegrees = 0.0;
+  }
+
+  /** Set context values needed for CSV logging. Call each loop from driveWithHeadingLock. */
+  public void setLoggingContext(double maxAngularVelocity, double measuredOmegaRadPerSec) {
+    m_loggingMaxAngularVelocity = maxAngularVelocity;
+    m_loggingMeasuredOmega = measuredOmegaRadPerSec;
+  }
+
+  /** Print one CSV data line with all heading controller state. */
+  private void logCSV(double currentHeadingDegrees, double totalOutput) {
+    if (!m_csvHeaderPrinted) {
+      System.out.println("HDG_CSV,timestamp_s,state,goal_deg,current_deg,error_deg,"
+          + "kP,kD,p_output,d_approx,total_output,"
+          + "omega_cmd_radps,omega_actual_radps");
+      m_csvHeaderPrinted = true;
+      m_lastErrorDeg = getError();
+      m_lastTimestamp = Timer.getFPGATimestamp();
+    }
+
+    double now = Timer.getFPGATimestamp();
+    double dt = now - m_lastTimestamp;
+    double errorDeg = getError();
+
+    // Approximate P and D contributions
+    double kP = m_pidController.getP();
+    double kD = m_pidController.getD();
+    double pOutput = kP * errorDeg;
+    double dApprox = (dt > 0.001) ? kD * (errorDeg - m_lastErrorDeg) / dt : 0.0;
+
+    double omegaCmd = totalOutput * m_loggingMaxAngularVelocity;
+
+    System.out.printf(
+        "HDG_CSV,%.4f,%s,%.2f,%.2f,%.2f,%.5f,%.5f,%.5f,%.5f,%.5f,%.4f,%.4f%n",
+        now,
+        m_state.toString(),
+        m_goalDegrees,
+        currentHeadingDegrees,
+        errorDeg,
+        kP,
+        kD,
+        pOutput,
+        dApprox,
+        totalOutput,
+        omegaCmd,
+        m_loggingMeasuredOmega);
+
+    m_lastErrorDeg = errorDeg;
+    m_lastTimestamp = now;
   }
 
   /** Log telemetry data to SmartDashboard Call this from a subsystem's periodic() method */

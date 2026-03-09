@@ -98,9 +98,6 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         .withReverseSoftLimitThreshold(0.0);
 
     m_pivotMotor.getConfigurator().apply(config);
-
-    // Zero encoder on boot (will be re-zeroed by homing routine)
-    m_pivotMotor.setPosition(0);
   }
 
   // ==================== POSITION CONTROL ====================

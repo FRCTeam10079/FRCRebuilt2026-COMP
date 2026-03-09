@@ -20,6 +20,7 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -54,7 +55,12 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   private boolean m_isHomed = true;
   private Angle m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
 
-  public ShooterPivotSubsystem() {
+  // Trench auto-lower
+  private final Supplier<Pose2d> m_poseSupplier;
+  private boolean m_trenchMode = false;
+
+  public ShooterPivotSubsystem(Supplier<Pose2d> poseSupplier) {
+    m_poseSupplier = poseSupplier;
     configureMotor();
   }
 
@@ -102,12 +108,59 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   // ==================== POSITION CONTROL ====================
 
+  // ==================== TRENCH ZONE DETECTION ====================
+
+  /**
+   * Check if the robot is in or approaching the trench zone, with hysteresis.
+   *
+   * <p>Uses wider approach thresholds to ENTER trench mode and tighter thresholds to EXIT, which
+   * prevents oscillation at the boundary.
+   */
+  public boolean isInTrenchZone() {
+    if (m_poseSupplier == null) return false;
+    Pose2d pose = m_poseSupplier.get();
+    if (pose == null) return false;
+
+    double x = pose.getX();
+    double y = pose.getY();
+    double fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
+    double margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+
+    if (m_trenchMode) {
+      // Exit thresholds (actual trench zone = tighter)
+      boolean inX =
+          x >= ShooterPivotConstants.TRENCH_X_MIN && x <= ShooterPivotConstants.TRENCH_X_MAX;
+      boolean inY = y <= ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD
+          || y >= (fieldW - ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD);
+      m_trenchMode = inX && inY;
+    } else {
+      // Entry thresholds (approach zone = wider by margin)
+      boolean inX = x >= (ShooterPivotConstants.TRENCH_X_MIN - margin)
+          && x <= (ShooterPivotConstants.TRENCH_X_MAX + margin);
+      boolean inY = y <= (ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD + margin)
+          || y >= (fieldW - ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD - margin);
+      m_trenchMode = inX && inY;
+    }
+    return m_trenchMode;
+  }
+
+  // ==================== POSITION CONTROL ====================
+
   /**
    * Command the pivot to a specific angle using MotionMagic.
+   *
+   * <p>When the robot is in the trench zone, the angle is capped at TRENCH_LOWER_ANGLE regardless
+   * of the requested target. This acts as a safety interlock so no command can accidentally raise
+   * the pivot into the trench beam.
    *
    * @param angle target angle (60-80deg range)
    */
   public void setAngle(Angle angle) {
+    // Trench safety: cap angle when in trench zone
+    if (isInTrenchZone() && angle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+      angle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+    }
+
     // Clamp to safe range
     angle =
         Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
@@ -292,6 +345,12 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    // Trench safety: actively lower pivot when entering trench zone,
+    // even if no command is currently calling setAngle()
+    if (isInTrenchZone() && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+      setAngle(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
+    }
+
     SmartDashboard.putNumber("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
     SmartDashboard.putNumber("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees.in(Degrees));
     SmartDashboard.putNumber("ShooterPivot/Position (rot)", getPosition());
@@ -306,5 +365,6 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         "ShooterPivot/MotorVoltage", m_pivotMotor.getMotorVoltage().getValueAsDouble());
     SmartDashboard.putNumber(
         "ShooterPivot/DutyCycle", m_pivotMotor.getDutyCycle().getValueAsDouble());
+    SmartDashboard.putBoolean("ShooterPivot/TrenchMode", m_trenchMode);
   }
 }

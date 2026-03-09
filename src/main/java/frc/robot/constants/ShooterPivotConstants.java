@@ -74,6 +74,34 @@ public class ShooterPivotConstants {
 
   public static final double MANUAL_DEADBAND = 0.1;
 
+  // ==================== TRENCH AUTO-LOWER ====================
+  // Derived from 2026 REBUILT AprilTag field layout (2026-rebuilt-welded.json).
+  // Trench posts at y~0.644m from each side wall, beam spans between hub X
+  // positions.
+  // Clearance under trench arm: 22.25in (56.5cm). Tune thresholds on the real
+  // field!
+
+  /** Field width in meters (from WPILib AprilTag JSON). */
+  public static final double FIELD_WIDTH_METERS = 8.069;
+
+  /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
+  public static final double TRENCH_X_MIN = 4.5;
+
+  /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
+  public static final double TRENCH_X_MAX = 12.0;
+
+  /**
+   * Y-distance from the side wall within which the robot is considered "under the trench". Trench
+   * posts at ~0.644m from each wall; add half robot width + safety margin.
+   */
+  public static final double TRENCH_Y_WALL_THRESHOLD = 1.2;
+
+  /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
+  public static final double TRENCH_APPROACH_MARGIN = 0.5;
+
+  /** Angle to command when the robot is in or approaching the trench zone. */
+  public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE
+
   // ==================== CONVERSIONS ====================
   /** Convert position of pivot angle to motor rotations. motorRotations = position * GEAR_RATIO */
   public static Angle degreesToMotorRotations(Angle position) {

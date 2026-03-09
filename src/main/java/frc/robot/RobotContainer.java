@@ -58,7 +58,8 @@ public class RobotContainer {
   // Mechanisms
 
   public final ShooterSubsystem shooter = new ShooterSubsystem();
-  public final ShooterPivotSubsystem shooterPivot = new ShooterPivotSubsystem();
+  public final ShooterPivotSubsystem shooterPivot =
+      new ShooterPivotSubsystem(() -> drivetrain.getState().Pose);
   // Intake
   private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();

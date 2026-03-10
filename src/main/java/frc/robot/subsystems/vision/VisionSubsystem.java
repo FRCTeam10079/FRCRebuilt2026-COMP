@@ -131,7 +131,7 @@ public class VisionSubsystem extends SubsystemBase {
     for (String name : names) {
       LimelightHelpers.SetRobotOrientation(name, currentHeadingDeg, 0, 0, 0, 0, 0);
       // Mode 1 while disabled: seeds LL4's internal IMU with external gyro.
-      LimelightHelpers.SetIMUMode(name, 1);
+      LimelightHelpers.SetIMUMode(name, 0);
 
       if (VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED) {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);

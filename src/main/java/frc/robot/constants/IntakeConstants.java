@@ -20,15 +20,15 @@ public class IntakeConstants {
     public static final int MOTOR_ID = 24;
 
     public static final Angle INTAKE_POSITION = Rotations.of(0);
-    public static final Angle STOWED_POSITION = Rotations.of(-6.25);
+    public static final Angle STOWED_POSITION = Rotations.of(-6.5);
 
     public static final int SUPPLY_CURRENT_LIMIT = 60;
     public static final int STATOR_CURRENT_LIMIT = 100;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
-    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(25.0);
+    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(40.0);
     /** How long (seconds) current must exceed the threshold before declaring a stall. */
-    public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.75);
+    public static final Time STALL_TIME_THRESHOLD = Seconds.of(1.75);
 
     public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.05);
 
@@ -82,12 +82,12 @@ public class IntakeConstants {
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(50);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(100);
 
-    public static final double INTAKE_IN_RPM = 2600;
-    public static final double INTAKE_OUT_RPM = -2200;
+    public static final double INTAKE_IN_RPM = 2800;
+    public static final double INTAKE_OUT_RPM = -2400;
 
     public static final double KA = 0;
     public static final double KS = 0.1;
-    public static final double KP = 1.5;
+    public static final double KP = 1.75;
     public static final double KI = 0;
     public static final double KD = 0.1;
     public static final double KV = 1;

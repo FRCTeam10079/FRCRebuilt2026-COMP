@@ -25,6 +25,12 @@ public class ShooterConstants {
   /** Pivot angle for a close-range fender shot (degrees). */
   public static final Angle FENDER_SHOT_PIVOT_ANGLE = Degrees.of(78.0);
 
+  // ==================== FERRY SHOT ================================
+  /** RPM for long-range ferry shots (from middle / other side of field) */
+  public static final AngularVelocity FERRY_SHOT_SPEED = RPM.of(5000.0);
+  /** Pivot angle for long-range ferry shots (degrees) */
+  public static final Angle FERRY_SHOT_PIVOT_ANGLE = Degrees.of(72.5);
+
   // ==================== TOLERANCES ====================
   public static final AngularVelocity SHOOTER_SPEED_TOLERANCE = RPM.of(150);
   public static final int STABILITY_CYCLES_REQUIRED = 5;

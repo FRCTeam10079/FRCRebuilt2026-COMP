@@ -4,7 +4,11 @@
 
 package frc.robot.controllers;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.RPM;
+
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -12,8 +16,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
+import frc.robot.Constants.ShooterPivotConstants;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.LaunchCalculator;
+import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
@@ -118,6 +125,58 @@ public final class DriverControls {
         .onFalse(
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
 
+    // ==================== SHOOT ON THE MOVE ====================
+    // Left Bumper - Hold to activate SOTM: auto-aims heading while driving,
+    // pre-spins the shooter from LaunchCalculator, and auto-feeds when all
+    // conditions are met (valid parameters, heading + level, flywheel + pivot).
+    // Adapted from MA (6328) pattern: drive + spin-up on button hold, debounced
+    // feeding on compound trigger.
+
+    // Step 1: SOTM drive (heading lock + velocity limiting + COR shifting)
+    // + launcher spin-up run while left bumper is held.
+    controller
+        .leftBumper()
+        .whileTrue(drivetrain
+            .shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX)
+            .alongWith(ShooterFactory.aimAndSpinUpFromLauncher(shooter, shooterPivot))
+            .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
+            .finallyDo(() -> {
+              if (stateMachine.getGameState() == GameState.SCORING) {
+                stateMachine.setGameState(GameState.IDLE);
+              }
+            }));
+
+    // Step 2: Debounced auto-feeding. All sub-conditions must hold, then stay
+    // true for 0.25 s (falling debounce) before the indexer feeds. This prevents
+    // feeding on a momentary flicker of all-OK.
+    Trigger sotmReady = new Trigger(() -> {
+      LaunchParameters params = LaunchCalculator.getInstance().getParameters();
+      if (params == null || !params.isValid()) return false;
+      return shooter.isAt(RPM.of(params.flywheelRPM()))
+          && shooterPivot.isAtAngle(
+              Degrees.of(params.pivotAngleDegrees()), ShooterPivotConstants.SHOOTING_TOLERANCE)
+          && drivetrain.isAtLaunchHeadingGoal();
+    });
+
+    controller
+        .leftBumper()
+        .and(() -> {
+          LaunchParameters params = LaunchCalculator.getInstance().getParameters();
+          return params != null && params.isValid();
+        })
+        .and(sotmReady.debounce(0.25, DebounceType.kFalling))
+        .whileTrue(indexer.feedCommand());
+
+    // Rumble when SOTM is ready to fire (left bumper held + in tolerance)
+    controller
+        .leftBumper()
+        .and(sotmReady)
+        .onTrue(Commands.runOnce(() -> controller
+            .getHID()
+            .setRumble(RumbleType.kBothRumble, Constants.StateMachineConstants.RUMBLE_STRONG)))
+        .onFalse(
+            Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
+
     // ==================== VISION ALIGNMENT ====================
     // A - Align to AprilTag (CENTER)
     controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
@@ -137,8 +196,11 @@ public final class DriverControls {
     controller.x().whileTrue(drivetrain.applyRequest(() -> brakeRequest));
 
     // ==================== DRIVER FEEDBACK ====================
-    // Pulse rumble while loaded so driver knows they can leave loading zone
+    // Pulse rumble while loaded so driver knows they can leave loading zone.
+    // Suppressed while SOTM is active (left bumper held) so the steady SOTM
+    // readiness rumble isn't overwritten by the pulse's silence phase.
     new Trigger(() -> stateMachine.getFuelState() == FuelState.LOADED)
+        .and(controller.leftBumper().negate())
         .whileTrue(Commands.repeatingSequence(
             Commands.runOnce(() -> controller
                 .getHID()

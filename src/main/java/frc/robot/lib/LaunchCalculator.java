@@ -12,7 +12,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.constants.GameConstants;
 import java.util.function.Supplier;
 
 /**
@@ -65,17 +68,17 @@ public class LaunchCalculator {
    * Moving average filter window for pivot angle velocity feedforward. Smooths out the derivative
    * to prevent jitter.
    *
-   * <p>0.4s window = 20 samples at 50Hz (same as MA).
+   * <p>0.1s window = 5 samples at 50Hz (same as MA 6328).
    */
-  private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
+  private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.1;
 
   /**
-   * Moving average filter window for drive heading velocity feedforward. Wider window = smoother
-   * but more lag.
+   * Moving average filter window for drive heading velocity feedforward. Tight window = responsive
+   * feedforward for fast turning.
    *
-   * <p>1.5s window = 75 samples at 50Hz (same as MA).
+   * <p>0.1s window = 5 samples at 50Hz (same as MA 6328).
    */
-  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 1.5;
+  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 0.1;
 
   /**
    * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the robot is too
@@ -101,9 +104,65 @@ public class LaunchCalculator {
    * <p>TODO: MEASURE ON THE ROBOT - set to (0, 0) if shooter is roughly centered. If lateral offset
    * is > ~5cm, measure and set it for accurate heading compensation.
    */
-  private static final double SHOOTER_OFFSET_X = 0.0; // meters, placeholder
+  /**
+   * Shooter offset from robot center as (x, y) in robot frame.
+   *
+   * <p>x = forward/back from center (positive = forward) y = left/right from center (positive =
+   * left)
+   *
+   * <p>Public so that the COR shifting in shootOnTheMoveDriveCommand can reference them.
+   */
+  public static final double SHOOTER_OFFSET_X = 10.5 * 0.0254; // 10.5 inches forward in meters
 
-  private static final double SHOOTER_OFFSET_Y = 0.0; // meters, placeholder
+  public static final double SHOOTER_OFFSET_Y = 0.0; // meters, no lateral offset
+
+  // ==================== FIELD GEOMETRY (for bad boxes) ====================
+
+  /** Field length derived from symmetric hub placement. ~16.54 m. */
+  private static final double FIELD_LENGTH =
+      GameConstants.RED_HUB_CENTER.getX() + GameConstants.BLUE_HUB_CENTER.getX();
+
+  /** Field width derived from hub Y-center (hubs are at field midline). ~8.07 m. */
+  private static final double FIELD_WIDTH = GameConstants.BLUE_HUB_CENTER.getY() * 2.0;
+
+  /** Hub half-width in meters (47 inches / 2). Used for bad box Y-span. */
+  private static final double HUB_HALF_WIDTH_M = 47.0 * 0.0254 / 2.0; // ~0.597 m
+
+  // ==================== BAD BOXES (exclusion zones) ====================
+  // All defined from BLUE alliance perspective. Flipped for red via flipBounds().
+  // Adapted from Mechanical Advantage (6328)
+
+  /**
+   * Under-tower zone near the (blue) alliance wall. Robot cannot reliably shoot from underneath the
+   * tower structure.
+   *
+   * <p>MA values: Bounds(0, 46", 129", 168") = (0, 1.17m, 3.28m, 4.27m)
+   */
+  private static final Bounds TOWER_BOUND = new Bounds(0.0, 1.17, 3.28, 4.27);
+
+  /**
+   * Behind our (blue) hub, toward field center. The hub structure physically blocks shot
+   * trajectories from this region. Runs from the neutral zone line to field midline, within the
+   * hub's Y-span.
+   *
+   * <p>minX = field_center - 120" (~5.22 m), maxX = field_center (~8.27 m)
+   */
+  private static final Bounds NEAR_HUB_BOUND = new Bounds(
+      FIELD_LENGTH / 2.0 - 3.048, // neutral zone near line
+      FIELD_LENGTH / 2.0, // field center
+      GameConstants.BLUE_HUB_CENTER.getY() - HUB_HALF_WIDTH_M,
+      GameConstants.BLUE_HUB_CENTER.getY() + HUB_HALF_WIDTH_M);
+
+  /**
+   * Behind the opponent's (red) hub, toward the red alliance wall.
+   *
+   * <p>minX ~ red hub near face, maxX = field length.
+   */
+  private static final Bounds FAR_HUB_BOUND = new Bounds(
+      GameConstants.RED_HUB_CENTER.getX() - HUB_HALF_WIDTH_M,
+      FIELD_LENGTH,
+      GameConstants.RED_HUB_CENTER.getY() - HUB_HALF_WIDTH_M,
+      GameConstants.RED_HUB_CENTER.getY() + HUB_HALF_WIDTH_M);
 
   // ==================== FILTERS ====================
 
@@ -270,9 +329,12 @@ public class LaunchCalculator {
     lastDriveAngle = driveAngle;
 
     // ---- Step 8: Validity check ----
+    boolean outsideOfBadBoxes = !isInsideBadBox(estimatedPose.getTranslation());
     boolean isValid = setpoint.isValid()
         && lookaheadDistance >= MIN_VALID_DISTANCE
-        && lookaheadDistance <= MAX_VALID_DISTANCE;
+        && lookaheadDistance <= MAX_VALID_DISTANCE
+        && outsideOfBadBoxes;
+    SmartDashboard.putBoolean("LaunchCalc/OutsideBadBoxes", outsideOfBadBoxes);
 
     // ---- Step 9: Build the result ----
     latestParameters = new LaunchParameters(
@@ -371,5 +433,56 @@ public class LaunchCalculator {
     lastPivotAngleDegrees = Double.NaN;
     lastDriveAngle = null;
     latestParameters = null;
+  }
+
+  // ==================== BAD BOX HELPERS ====================
+
+  /**
+   * Check whether the robot is inside any exclusion zone where shooting is unsafe.
+   *
+   * <p>Bad boxes are defined from the BLUE alliance perspective and flipped for red.
+   *
+   * @param robotPosition field-relative robot position
+   * @return true if the robot is inside a bad box (should NOT shoot)
+   */
+  private boolean isInsideBadBox(Translation2d robotPosition) {
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    Bounds tower = isRed ? flipBounds(TOWER_BOUND) : TOWER_BOUND;
+    Bounds nearHub = isRed ? flipBounds(NEAR_HUB_BOUND) : NEAR_HUB_BOUND;
+    Bounds farHub = isRed ? flipBounds(FAR_HUB_BOUND) : FAR_HUB_BOUND;
+    return tower.contains(robotPosition)
+        || nearHub.contains(robotPosition)
+        || farHub.contains(robotPosition);
+  }
+
+  /**
+   * Flip a Bounds from blue alliance coordinates to red alliance coordinates.
+   *
+   * <p>Both X and Y are mirrored (field is rotationally symmetric). Min/max swap because the axis
+   * direction reverses, following the same pattern as MA's AllianceFlipUtil.
+   */
+  private static Bounds flipBounds(Bounds bounds) {
+    return new Bounds(
+        FIELD_LENGTH - bounds.maxX(),
+        FIELD_LENGTH - bounds.minX(),
+        FIELD_WIDTH - bounds.maxY(),
+        FIELD_WIDTH - bounds.minY());
+  }
+
+  // ==================== BOUNDS RECORD ====================
+
+  /**
+   * Axis-aligned bounding box for field exclusion zones.
+   *
+   * <p>Adapted from Mechanical Advantage (6328).
+   */
+  public record Bounds(double minX, double maxX, double minY, double maxY) {
+    /** Whether the translation is contained within these bounds. */
+    public boolean contains(Translation2d translation) {
+      return translation.getX() >= minX()
+          && translation.getX() <= maxX()
+          && translation.getY() >= minY()
+          && translation.getY() <= maxY();
+    }
   }
 }

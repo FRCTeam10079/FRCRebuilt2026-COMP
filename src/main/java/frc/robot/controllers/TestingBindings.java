@@ -16,10 +16,12 @@ import frc.robot.Constants.AlignPosition;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
 import frc.robot.commands.AlignToAprilTag;
+import frc.robot.commands.ShooterFactory;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
 
@@ -41,6 +43,7 @@ public final class TestingBindings {
    * @param pivot pivot arm subsystem
    * @param indexer indexer subsystem
    * @param shooter shooter subsystem
+   * @param shooterPivot shooterPivot subsystem
    * @param vision vision subsystem
    */
   public static void configure(
@@ -50,6 +53,7 @@ public final class TestingBindings {
       PivotSubsystem pivot,
       IndexerSubsystem indexer,
       ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
       VisionSubsystem vision) {
 
     // Gate ALL test bindings behind FMS check — at competition these are inert
@@ -144,6 +148,8 @@ public final class TestingBindings {
             .setRumble(RumbleType.kBothRumble, Constants.StateMachineConstants.RUMBLE_STRONG)))
         .onFalse(
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
+
+    leftTrigger.whileTrue(ShooterFactory.ferryShoot(shooter, shooterPivot, indexer));
   }
 
   /**

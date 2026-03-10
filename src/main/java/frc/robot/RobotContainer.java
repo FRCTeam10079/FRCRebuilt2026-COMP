@@ -165,7 +165,7 @@ public class RobotContainer {
         m_stateMachine,
         m_setpointSupplier);
     TestingBindings.configure(
-        m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
+        m_testController, drivetrain, intake, pivot, indexer, shooter, shooterPivot, vision);
   }
 
   /** Get the driver controller for use in commands/subsystems */

@@ -26,6 +26,7 @@ public class IndexerConstants {
   public static final double kFeederReverseRPM = 3000;
   public static final double kSpindexerTargetRPM = -5000;
   public static final double kSpindexerReverseRPM = 5000;
+  public static final double kSpindexerIdleReverseRPM = 30;
 
   protected IndexerConstants() {}
 }

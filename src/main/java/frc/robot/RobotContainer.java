@@ -1,7 +1,6 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
@@ -56,7 +55,6 @@ public class RobotContainer {
   private final IndexerSubsystem indexer = new IndexerSubsystem();
 
   // Mechanisms
-
   public final ShooterSubsystem shooter = new ShooterSubsystem();
   public final ShooterPivotSubsystem shooterPivot = new ShooterPivotSubsystem();
   // Intake
@@ -84,8 +82,7 @@ public class RobotContainer {
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 
-    // Create the memoized \[]
-    // setpoint supplier (caches by pose X/Y/theta)
+    // Create the memoized setpoint supplier (caches by pose X/Y/theta)
     m_setpointSupplier = ShooterMath.createSetpointSupplier(() -> drivetrain.getState().Pose);
 
     // Register controllers with state machine for haptic feedback
@@ -113,8 +110,7 @@ public class RobotContainer {
         drivetrain);
 
     // ==================== REGISTER NAMED COMMANDS ====================
-    // AutoCommands provides factory methods used by both PathPlanner and
-    // Choreo.
+    // AutoCommands provides factory methods used by both PathPlanner and Choreo.
     // Must be registered BEFORE any PathPlanner autos/paths are created.
     autoCommands = new AutoCommands(
         intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
@@ -123,6 +119,10 @@ public class RobotContainer {
 
     // ==================== BUILD AUTO CHOOSER ====================
     autos = new Autos(drivetrain, choreoAutoFactory, autoCommands);
+
+    // ==================== DEFAULT COMMANDS ====================
+    // Indexer idle reverse default command
+    indexer.setDefaultCommand(indexer.idleReverseCommand());
 
     // Configure button bindings
     configureBindings();

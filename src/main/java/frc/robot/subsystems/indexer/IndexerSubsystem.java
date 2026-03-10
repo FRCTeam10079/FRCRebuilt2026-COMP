@@ -139,4 +139,11 @@ public class IndexerSubsystem extends SubsystemBase {
     return startEnd(() -> setSpeeds(feederRPM, spindexerRPM), this::stop)
         .withName("Indexer " + feederRPM + "/" + spindexerRPM + " RPM");
   }
+
+  // Command to run indexer in reverse direction at all times when not shooting
+  public Command idleReverseCommand() {
+    // set feeder rpm to 0 and set spindexer rpm to the reverse speed
+    return run(() -> setSpeeds(0, IndexerConstants.kSpindexerIdleReverseRPM))
+        .withName("Indexer Idle Reverse");
+  }
 }

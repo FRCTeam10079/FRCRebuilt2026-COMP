@@ -46,5 +46,9 @@ public class VisionConstants {
   public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
   public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;
 
+  // One-shot heading bootstrap: fires once on first multi-tag result if
+  // MT1 heading diverges from gyro by more than this threshold.
+  public static final double HEADING_BOOTSTRAP_THRESHOLD_DEG = 30.0;
+
   protected VisionConstants() {}
 }

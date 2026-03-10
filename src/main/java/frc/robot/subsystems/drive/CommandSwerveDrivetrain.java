@@ -523,6 +523,32 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   }
 
   /**
+   * Transform field-relative velocity to account for a shifted center of rotation.
+   *
+   * <p>Adapted from Mechanical Advantage (6328) GeomUtil.transformVelocity. When the swerve modules
+   * pivot around a point offset from the robot center, the linear velocity at the robot center
+   * changes due to the rotational component. This method computes the adjusted velocity.
+   *
+   * @param velocity original field-relative ChassisSpeeds
+   * @param transform robot-frame translation from robot center to the desired pivot point
+   * @param currentRotation current robot heading (for frame conversion)
+   * @return ChassisSpeeds with linear velocity adjusted for the offset pivot point
+   */
+  private static ChassisSpeeds transformVelocityForCOR(
+      ChassisSpeeds velocity, Translation2d transform, Rotation2d currentRotation) {
+    return new ChassisSpeeds(
+        velocity.vxMetersPerSecond
+            + velocity.omegaRadiansPerSecond
+                * (transform.getY() * currentRotation.getCos()
+                    - transform.getX() * currentRotation.getSin()),
+        velocity.vyMetersPerSecond
+            + velocity.omegaRadiansPerSecond
+                * (transform.getX() * currentRotation.getCos()
+                    - transform.getY() * currentRotation.getSin()),
+        velocity.omegaRadiansPerSecond);
+  }
+
+  /**
    * Apply field-centric driving with smooth driving tuning.
    *
    * <p>Features: - Deadband application to eliminate joystick drift - Squared angular input for
@@ -881,9 +907,37 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             }
           }
 
+          // ---- Center-of-rotation shifting ----
+          // When heading error is large, shift the swerve pivot point toward the
+          // shooter so the robot rotates around the launch point instead of its
+          // geometric center. This improves aiming responsiveness.
+          // Linear interpolation: no shift below COR_MIN, full shift at COR_MAX.
+          double headingErrorDeg = Math.abs(Math.toDegrees(headingErrorRad));
+          double corScalar = MathUtil.clamp(
+              (headingErrorDeg - Constants.DrivetrainConstants.COR_MIN_ERROR_DEG)
+                  / (Constants.DrivetrainConstants.COR_MAX_ERROR_DEG
+                      - Constants.DrivetrainConstants.COR_MIN_ERROR_DEG),
+              0.0,
+              1.0);
+
+          // The shooter offset from robot center (robot frame).
+          // When SHOOTER_OFFSET is (0,0), this has no effect - corScalar * (0,0) = (0,0).
+          Translation2d shooterToRobot = new Translation2d(
+              -LaunchCalculator.SHOOTER_OFFSET_X, -LaunchCalculator.SHOOTER_OFFSET_Y);
+
+          // Transform field-relative velocity with the COR offset.
+          // corScalar=0 -> pivot at robot center (normal); corScalar=1 -> pivot at
+          // shooter.
+          Translation2d corOffset = shooterToRobot.times(1.0 - corScalar);
+          ChassisSpeeds fieldSpeeds = new ChassisSpeeds(xVelocity, yVelocity, omegaOutput);
+          ChassisSpeeds corAdjustedSpeeds =
+              transformVelocityForCOR(fieldSpeeds, corOffset, currentHeading);
+
           // ---- Apply skew compensation and drive ----
-          ChassisSpeeds compensatedSpeeds =
-              calculateSpeedsWithSkewCompensation(xVelocity, yVelocity, omegaOutput);
+          ChassisSpeeds compensatedSpeeds = calculateSpeedsWithSkewCompensation(
+              corAdjustedSpeeds.vxMetersPerSecond,
+              corAdjustedSpeeds.vyMetersPerSecond,
+              corAdjustedSpeeds.omegaRadiansPerSecond);
 
           setControl(m_fieldCentricRequest.withSpeeds(compensatedSpeeds));
 
@@ -891,6 +945,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           Logger.recordOutput("ShootOnMove/HeadingErrorDeg", Math.toDegrees(headingErrorRad));
           Logger.recordOutput("ShootOnMove/OmegaOutput", omegaOutput);
           Logger.recordOutput("ShootOnMove/IsValid", params.isValid());
+          Logger.recordOutput("ShootOnMove/CORScalar", corScalar);
         })
         .finallyDo(() -> {
           LaunchCalculator.getInstance().reset();
@@ -899,10 +954,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   }
 
   /**
-   * Check if the robot heading is within launch tolerance of the target. Uses the wider launch-mode
-   * tolerance (not the static 3 deg tolerance).
+   * Check if the robot heading is within launch tolerance of the target AND the robot is level
+   * enough to shoot. Uses the wider launch-mode tolerance (not the static 3 deg tolerance).
    *
-   * @return true if heading is close enough to launch target to fire
+   * <p>Combines heading (yaw) check with pitch/roll tolerance to prevent shooting while the robot
+   * is tilted (e.g., driving over field elements). Adapted from MA (6328) atLaunchGoal().
+   *
+   * @return true if heading is close enough AND robot is level enough to fire
    */
   public boolean isAtLaunchHeadingGoal() {
     LaunchParameters params = LaunchCalculator.getInstance().getParameters();
@@ -910,7 +968,28 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     double errorDeg =
         Math.abs(params.driveAngle().minus(getState().Pose.getRotation()).getDegrees());
-    return errorDeg <= Constants.ShooterConstants.LAUNCH_HEADING_TOLERANCE_DEGREES;
+    boolean headingOk = errorDeg <= Constants.ShooterConstants.LAUNCH_HEADING_TOLERANCE_DEGREES;
+    boolean levelOk = isLevelForLaunch();
+
+    SmartDashboard.putBoolean("ShootOnMove/HeadingOk", headingOk);
+    SmartDashboard.putBoolean("ShootOnMove/LevelOk", levelOk);
+
+    return headingOk && levelOk;
+  }
+
+  /**
+   * Check if the robot is level enough to shoot on the move.
+   *
+   * <p>Reads pitch and roll from the Pigeon2 IMU. If either exceeds the tolerance (default 5deg,
+   * matching MA), the robot is considered too tilted for an accurate shot.
+   *
+   * @return true if pitch and roll are within tolerance
+   */
+  public boolean isLevelForLaunch() {
+    double pitchDeg = Math.abs(getPigeon2().getPitch().getValueAsDouble());
+    double rollDeg = Math.abs(getPigeon2().getRoll().getValueAsDouble());
+    return pitchDeg <= Constants.ShooterConstants.LAUNCH_PITCH_TOLERANCE_DEGREES
+        && rollDeg <= Constants.ShooterConstants.LAUNCH_ROLL_TOLERANCE_DEGREES;
   }
 
   // ==================== PATHFINDING COMMANDS ====================

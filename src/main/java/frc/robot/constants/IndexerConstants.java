@@ -6,7 +6,7 @@ public class IndexerConstants {
 
   public static final int kCurrentLimit = 40;
 
-  public static final double kFeederKP = 0.7;
+  public static final double kFeederKP = 1.0;
   public static final double kFeederKI = 0.0;
   public static final double kFeederKD = 0.0;
   public static final double kFeederKS = 0.5;
@@ -22,11 +22,11 @@ public class IndexerConstants {
   public static final double kSpindexerKA = 0.01;
   public static final double kSpindexerKG = 0.0;
 
-  public static final double kFeederTargetRPM = -3000;
-  public static final double kFeederReverseRPM = 3000;
+  public static final double kFeederTargetRPM = -3500;
+  public static final double kFeederReverseRPM = 3500;
   public static final double kSpindexerTargetRPM = -5000;
   public static final double kSpindexerReverseRPM = 5000;
-  public static final double kSpindexerIdleReverseRPM = 30;
+  public static final double kSpindexerIdleReverseRPM = 100;
 
   protected IndexerConstants() {}
 }

@@ -68,8 +68,7 @@ public final class ShooterFactory {
     }
 
     boolean flywheelReady = shooter.isAt(sp.flywheelRPM());
-    boolean pivotReady =
-        shooterPivot.isAtAngle(sp.pivotAngle(), ShooterPivotConstants.SHOOTING_TOLERANCE);
+    boolean pivotReady = shooterPivot.isAtAngle(sp.pivotAngle());
     boolean headingReady = headingOnTarget.get();
 
     // Telemetry for debugging

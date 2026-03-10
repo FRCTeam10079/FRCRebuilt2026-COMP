@@ -5,6 +5,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -22,6 +23,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -111,31 +113,31 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    * prevents oscillation at the boundary.
    */
   public boolean isInTrenchZone() {
+    // Yeah... we have a bug in here.
     if (m_poseSupplier == null) return false;
     Pose2d pose = m_poseSupplier.get();
     if (pose == null) return false;
 
-    double x = pose.getX();
-    double y = pose.getY();
-    double fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
-    double margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance x = Meters.of(pose.getX());
+    Distance y = Meters.of(pose.getY());
+    Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
+    Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
 
     if (m_trenchMode) {
       // Exit thresholds (actual trench zone = tighter)
       boolean inX =
-          x >= ShooterPivotConstants.TRENCH_X_MIN && x <= ShooterPivotConstants.TRENCH_X_MAX;
-      boolean inY = y <= ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD
-          || y >= (fieldW - ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD);
-      m_trenchMode = inX && inY;
+          x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
+          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
+      return inX && inY;
     } else {
       // Entry thresholds (approach zone = wider by margin)
-      boolean inX = x >= (ShooterPivotConstants.TRENCH_X_MIN - margin)
-          && x <= (ShooterPivotConstants.TRENCH_X_MAX + margin);
-      boolean inY = y <= (ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD + margin)
-          || y >= (fieldW - ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD - margin);
-      m_trenchMode = inX && inY;
+      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
+          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
+          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(margin));
+      return inX && inY;
     }
-    return m_trenchMode;
   }
 
   // ==================== POSITION CONTROL ====================
@@ -151,22 +153,30 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    */
   public void setAngle(Angle angle) {
     // Trench safety: cap angle when in trench zone
-    if (!m_trenchMode
-        && isInTrenchZone()
-        && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-      angle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
-    } else if (m_trenchMode) {
-      return;
+    if (m_trenchMode) {
+      m_trenchMode = isInTrenchZone();
+    } else if (isInTrenchZone()) {
+      lowerForTrenchZone();
+    } else {
+      // Clamp to safe range
+      setAngleUnchecked(
+          Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE));
     }
+  }
 
-    // Clamp to safe range
-    angle =
-        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+  private void setAngleUnchecked(Angle angle) {
     m_targetAngleDegrees = angle;
-
     m_pivotMotor.setControl(
         m_motionMagicRequest.withPosition(ShooterPivotConstants.degreesToMotorRotations(
-            angle.minus(ShooterPivotConstants.MIN_ANGLE))));
+            m_targetAngleDegrees.minus(ShooterPivotConstants.MIN_ANGLE))));
+  }
+
+  /** Ensure that the pivot is lowering when it is in the trench zone. */
+  private void lowerForTrenchZone() {
+    m_trenchMode = true;
+    if (m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+      setAngleUnchecked(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
+    }
   }
 
   /**
@@ -183,16 +193,15 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    * Check if the pivot is at the target angle within shooting tolerance.
    *
    * @param targetDegrees the target angle
-   * @param toleranceDegrees the tolerance
    * @return true if within tolerance
    */
-  public boolean isAtAngle(Angle targetDegrees, Angle toleranceDegrees) {
-    return getCurrentAngle().isNear(targetDegrees, toleranceDegrees);
+  public boolean isAtAngle(Angle targetDegrees) {
+    return getCurrentAngle().isNear(targetDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE);
   }
 
   /** Check if the pivot is at its current target within shooting tolerance. */
   public boolean isAtTarget() {
-    return isAtAngle(m_targetAngleDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE);
+    return isAtAngle(m_targetAngleDegrees);
   }
 
   /** @return whether the pivot has been homed via hard-stop detection. */
@@ -344,11 +353,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   public void periodic() {
     // Trench safety: actively lower pivot when entering trench zone,
     // even if no command is currently calling setAngle()
-    if (!m_trenchMode
-        && isInTrenchZone()
-        && m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-      // TODO: Stop shooter and reactivate it once good
-      setAngle(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
+    if (m_trenchMode) {
+      m_trenchMode = isInTrenchZone();
+    } else if (isInTrenchZone()) {
+      lowerForTrenchZone();
     }
 
     SmartDashboard.putBoolean("ShooterPivot/isInTrenchZone", isInTrenchZone());

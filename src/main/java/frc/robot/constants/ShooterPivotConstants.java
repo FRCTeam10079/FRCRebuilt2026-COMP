@@ -2,6 +2,7 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
@@ -11,6 +12,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Velocity;
 
 public class ShooterPivotConstants {
@@ -82,22 +84,22 @@ public class ShooterPivotConstants {
   // field!
 
   /** Field width in meters (from WPILib AprilTag JSON). */
-  public static final double FIELD_WIDTH_METERS = 8.069;
+  public static final Distance FIELD_WIDTH_METERS = Meters.of(8.069);
 
   /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
-  public static final double TRENCH_X_MIN = 4.5;
+  public static final Distance TRENCH_X_MIN = Meters.of(4.5);
 
   /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
-  public static final double TRENCH_X_MAX = 12.0;
+  public static final Distance TRENCH_X_MAX = Meters.of(12.0);
 
   /**
    * Y-distance from the side wall within which the robot is considered "under the trench". Trench
    * posts at ~0.644m from each wall; add half robot width + safety margin.
    */
-  public static final double TRENCH_Y_WALL_THRESHOLD = 1.2;
+  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.2);
 
   /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
-  public static final double TRENCH_APPROACH_MARGIN = 0.5;
+  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE

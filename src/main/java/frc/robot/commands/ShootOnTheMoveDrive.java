@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.AprilTagMaps;
 import frc.robot.Constants.DrivetrainConstants;
+import frc.robot.Constants.GameConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
 import frc.robot.lib.ShooterInterpolationTable;
@@ -204,26 +205,49 @@ public class ShootOnTheMoveDrive extends Command {
 
     // Convert tag position to Pose2d
     Pose2d aprilTagPose = calculateTagPose();
-    // If no tag detected, don't execute
-    if (!tagDetected) {
-      return;
+
+    Pose2d hubPose;
+
+    Pose2d correctedHubPose;
+
+    double distanceToHub;
+
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+
+    if (isRed) {
+
+      hubPose = new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d());
+
+      distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
+
+      correctedHubPose = new Pose2d(
+          hubPose.getX() + (drivetrain.getState().Speeds.vxMetersPerSecond
+              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getY() + (drivetrain.getState().Speeds.vyMetersPerSecond
+              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          new Rotation2d(0));
+
+    } else {
+
+      hubPose = new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
+
+      distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
+
+      correctedHubPose = new Pose2d(
+          hubPose.getX() - (drivetrain.getState().Speeds.vxMetersPerSecond
+              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getY() - (drivetrain.getState().Speeds.vyMetersPerSecond
+              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          new Rotation2d(0));
+
     }
 
-    double distanceToAprilTag = currentPose.getTranslation().getDistance(aprilTagPose.getTranslation());
-
-    Pose2d correctedPose = new Pose2d(
-        aprilTagPose.getX() + (drivetrain.getState().Speeds.vxMetersPerSecond
-            * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
-        aprilTagPose.getY() + (drivetrain.getState().Speeds.vyMetersPerSecond
-            * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
-        new Rotation2d(0));
-
     // Calculate velocities using PID
-    double[] velocities = calculatePIDVelocities(currentPose, correctedPose);
+    double[] velocities = calculatePIDVelocities(currentPose, correctedHubPose);
 
     SmartDashboard.putNumber("AlignToAprilTag/VelocityX", drivetrain.getState().Speeds.vyMetersPerSecond);
 
-    SmartDashboard.putNumber("AlignToAprilTag/ToF", ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag));
+    SmartDashboard.putNumber("AlignToAprilTag/ToF", ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
 
     SmartDashboard.putNumberArray(
         "AprilTagPose",
@@ -236,9 +260,9 @@ public class ShootOnTheMoveDrive extends Command {
     SmartDashboard.putNumberArray(
         "CorrectedPose",
         new double[] {
-            correctedPose.getX(),
-            correctedPose.getY(),
-            correctedPose.getRotation().getDegrees()
+            correctedHubPose.getX(),
+            correctedHubPose.getY(),
+            correctedHubPose.getRotation().getDegrees()
         });
 
     // Apply velocities to drivetrain
@@ -345,13 +369,28 @@ public class ShootOnTheMoveDrive extends Command {
 
   public Pose2d getCorrectedRobotPose() {
     Pose2d currentPose = drivetrain.getState().Pose;
-    Pose2d aprilTagPose = calculateTagPose();
+
+    Pose2d hubPose;
+
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+
+    if (isRed) {
+
+      hubPose = new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d());
+
+    } else {
+
+      hubPose = new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
+
+    }
+    // Pose2d aprilTagPose = calculateTagPose();
+
     // If no tag detected, don't execute
     if (!tagDetected) {
       return currentPose;
     }
 
-    double distanceToAprilTag = currentPose.getTranslation().getDistance(aprilTagPose.getTranslation());
+    double distanceToAprilTag = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
     Pose2d correctedPose = new Pose2d(
         currentPose.getX() - (drivetrain.getState().Speeds.vxMetersPerSecond

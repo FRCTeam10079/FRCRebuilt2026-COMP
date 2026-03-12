@@ -5,27 +5,60 @@
     "data": {
       "commands": [
         {
-          "type": "named",
+          "type": "race",
           "data": {
-            "name": "Shoot"
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.0
+                }
+              }
+            ]
           }
         },
         {
-          "type": "wait",
+          "type": "race",
           "data": {
-            "waitTime": 3.0
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "deployPivot"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 1.5
+                }
+              }
+            ]
           }
         },
         {
-          "type": "named",
+          "type": "race",
           "data": {
-            "name": "intakeFuel"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "rStartToRNeutral"
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "intakeFuel"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "rStartToRNeutral"
+                }
+              }
+            ]
           }
         },
         {

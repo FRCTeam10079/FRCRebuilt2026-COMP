@@ -10,6 +10,7 @@ import static edu.wpi.first.units.Units.RPM;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -21,6 +22,7 @@ import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.LaunchCalculator.LaunchParameters;
+import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
@@ -36,25 +38,27 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * Driver controller bindings (Port 0). All driver button->command mappings live here so
+ * Driver controller bindings (Port 0). All driver button->command mappings live
+ * here so
  * RobotContainer stays lean.
  */
 public final class DriverControls {
 
-  private DriverControls() {} // Static utility class
+  private DriverControls() {
+  } // Static utility class
 
   /**
    * Bind all driver controls.
    *
-   * @param controller the driver's Xbox controller
-   * @param drivetrain swerve drivetrain subsystem
-   * @param vision vision subsystem (for alignment commands)
-   * @param intake intake wheels subsystem
-   * @param pivot intake pivot subsystem
-   * @param shooter shooter subsystem
-   * @param shooterPivot shooter pivot subsystem
-   * @param indexer indexer subsystem
-   * @param stateMachine global robot state machine
+   * @param controller       the driver's Xbox controller
+   * @param drivetrain       swerve drivetrain subsystem
+   * @param vision           vision subsystem (for alignment commands)
+   * @param intake           intake wheels subsystem
+   * @param pivot            intake pivot subsystem
+   * @param shooter          shooter subsystem
+   * @param shooterPivot     shooter pivot subsystem
+   * @param indexer          indexer subsystem
+   * @param stateMachine     global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
@@ -97,8 +101,8 @@ public final class DriverControls {
                   }
                 },
                 intake)
-            // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
-            );
+        // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
+        );
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
@@ -108,12 +112,12 @@ public final class DriverControls {
     controller
         .rightBumper()
         .whileTrue(ShooterFactory.aimAtHub(
-                drivetrain,
-                controller::getLeftY,
-                controller::getLeftX,
-                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
+            drivetrain,
+            controller::getLeftY,
+            controller::getLeftX,
+            () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+            Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+            Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
             .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
@@ -178,13 +182,42 @@ public final class DriverControls {
     // Step 2: Debounced auto-feeding. All sub-conditions must hold, then stay
     // true for 0.25 s (falling debounce) before the indexer feeds. This prevents
     // feeding on a momentary flicker of all-OK.
+    // NOTE: Each condition is evaluated into a separate variable to avoid Java
+    // short-circuit && — previously isAtLaunchHeadingGoal() was never called
+    // when the flywheel wasn't at speed, hiding heading-tracking diagnostics.
+    int[] gateLogCounter = { 0 };
     Trigger sotmReady = new Trigger(() -> {
       LaunchParameters params = LaunchCalculator.getInstance().getParameters();
-      if (params == null || !params.isValid()) return false;
-      return shooter.isAt(RPM.of(params.flywheelRPM()))
-          && shooterPivot.isAtAngle(
-              Degrees.of(params.pivotAngleDegrees()), ShooterPivotConstants.SHOOTING_TOLERANCE)
-          && drivetrain.isAtLaunchHeadingGoal();
+      if (params == null || !params.isValid())
+        return false;
+
+      boolean fly = shooter.isAt(RPM.of(params.flywheelRPM()));
+      boolean piv = shooterPivot.isAtAngle(
+          Degrees.of(params.pivotAngleDegrees()), ShooterPivotConstants.SHOOTING_TOLERANCE);
+      boolean hdg = drivetrain.isAtLaunchHeadingGoal();
+
+      // Periodic gate logging at ~2Hz with actual sensor values
+      gateLogCounter[0]++;
+      if (gateLogCounter[0] % 25 == 0) {
+        double pitchDeg = Math.abs(drivetrain.getPigeon2().getPitch().getValueAsDouble());
+        double rollDeg = Math.abs(drivetrain.getPigeon2().getRoll().getValueAsDouble());
+        System.out.printf(
+            "SOTM_GATE,%.3f,fly=%b(%.0f/%.0f),piv=%b(%.1f/%.1f),hdg=%b(%.1f),lvl(%s)(p=%.1f,r=%.1f)%n",
+            Timer.getFPGATimestamp(),
+            fly,
+            params.flywheelRPM(),
+            shooter.getCurrentRPM().in(RPM),
+            piv,
+            params.pivotAngleDegrees(),
+            shooterPivot.getCurrentAngle().in(Degrees),
+            hdg,
+            params.driveAngle().minus(drivetrain.getState().Pose.getRotation()).getDegrees(),
+            drivetrain.isLevelForLaunch() ? "ok" : "FAIL",
+            pitchDeg,
+            rollDeg);
+      }
+
+      return fly && piv && hdg;
     });
 
     controller
@@ -211,6 +244,27 @@ public final class DriverControls {
     controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
 
     controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
+
+    // ==================== TOF TUNING (D-PAD LEFT/RIGHT) ====================
+    // D-pad Left - Increase TOF at nearest distance key
+    // D-pad Right - Decrease TOF at nearest distance key
+    // Prints current distance bucket and TOF value on each press.
+    controller.povLeft().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
+          edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.adjustTof(dist, true);
+    }));
+    controller.povRight().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
+          edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.adjustTof(dist, false);
+    }));
+    // D-pad Up - Print current TOF at nearest key (read-only check)
+    controller.povUp().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
+          edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.printCurrentTof(dist);
+    }));
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot

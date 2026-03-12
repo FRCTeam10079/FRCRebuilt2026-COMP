@@ -15,7 +15,8 @@ import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State
+ * Machine for
  * comprehensive robot control
  */
 public class Robot extends TimedRobot {
@@ -41,16 +42,22 @@ public class Robot extends TimedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
+      pub.set(new String[] { "mjpg:http://" + llName + ".local:5800/stream.mjpg" });
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }
 
   @Override
   public void robotPeriodic() {
-    // Clear shoot-on-the-move parameters at the start of each cycle.
-    // They will be re-populated by the shootOnTheMoveDriveCommand if active.
-    LaunchCalculator.getInstance().clearParameters();
+    // Clear and immediately update LaunchCalculator with fresh drivetrain state.
+    // Parameters must be computed BEFORE triggers evaluate, so shootOnTheMove can
+    // work.
+    LaunchCalculator calc = LaunchCalculator.getInstance();
+    calc.clearParameters();
+    calc.update(
+        m_robotContainer.drivetrain.getState().Pose,
+        m_robotContainer.drivetrain.getState().Speeds,
+        m_robotContainer.drivetrain.getState().Pose.getRotation());
 
     // Update master state machine
     m_stateMachine.periodic();

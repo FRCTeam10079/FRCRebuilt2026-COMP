@@ -14,6 +14,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.constants.GameConstants;
 import java.util.function.Supplier;
@@ -183,6 +184,7 @@ public class LaunchCalculator {
   private double lastPivotAngleDegrees = Double.NaN;
   private Rotation2d lastDriveAngle = null;
   private LaunchParameters latestParameters = null;
+  private int filtLogCounter = 0;
 
   // ==================== DATA RECORD ====================
 
@@ -238,6 +240,20 @@ public class LaunchCalculator {
     double smoothedVy = vyFilter.calculate(rawRobotRelativeVelocity.vyMetersPerSecond);
     double smoothedOmega = omegaFilter.calculate(rawRobotRelativeVelocity.omegaRadiansPerSecond);
     ChassisSpeeds robotRelativeVelocity = new ChassisSpeeds(smoothedVx, smoothedVy, smoothedOmega);
+
+    // ---- SOTM filter debug logging (2Hz) ----
+    filtLogCounter++;
+    if (filtLogCounter % 25 == 0) {
+      System.out.printf(
+          "SOTM_FILT,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f%n",
+          Timer.getFPGATimestamp(),
+          rawRobotRelativeVelocity.vxMetersPerSecond,
+          rawRobotRelativeVelocity.vyMetersPerSecond,
+          rawRobotRelativeVelocity.omegaRadiansPerSecond,
+          smoothedVx,
+          smoothedVy,
+          smoothedOmega);
+    }
 
     // ---- Step 1: Phase delay compensation ----
     // Project the robot pose forward by the phase delay to compensate for system

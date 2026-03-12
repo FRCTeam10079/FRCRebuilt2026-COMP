@@ -49,6 +49,7 @@ public final class DriverControls {
    * @param indexer indexer subsystem
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    */
   public static void configure(
       CommandXboxController controller,
@@ -60,7 +61,8 @@ public final class DriverControls {
       ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
       RobotStateMachine stateMachine,
-      Supplier<ShooterSetpoint> setpointSupplier) {
+      Supplier<ShooterSetpoint> setpointSupplier,
+      Supplier<Boolean> trenchModeSupplier) {
 
     // ==================== DEFAULT DRIVE ====================
     drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
@@ -119,7 +121,8 @@ public final class DriverControls {
     // Assumes aim-at-hub is engaged via right bumper, OR driver is manually aiming.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(ShooterFactory.forceShoot(setpointSupplier, shooter, shooterPivot, indexer)
+        .whileTrue(ShooterFactory.forceShoot(
+                setpointSupplier, shooter, shooterPivot, indexer, trenchModeSupplier)
 
             // align old
             // () -> {

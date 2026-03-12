@@ -13,6 +13,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IndexerConstants;
+import java.util.function.Supplier;
 
 /**
  * Dual-motor indexer subsystem with independent feeder and spindexer control.
@@ -30,7 +31,14 @@ public class IndexerSubsystem extends SubsystemBase {
   private final VelocityVoltage m_feederRequest = new VelocityVoltage(0).withSlot(0);
   private final VelocityVoltage m_spindexerRequest = new VelocityVoltage(0).withSlot(0);
 
-  public IndexerSubsystem() {
+  private final Supplier<Boolean> m_trenchModeSupplier;
+  private boolean m_trenchMode = false;
+
+  private double m_feederRPS = 0;
+  private double m_spindexerRPS = 0;
+
+  public IndexerSubsystem(Supplier<Boolean> trenchModeSupplier) {
+    m_trenchModeSupplier = trenchModeSupplier;
     m_feederMotor = new TalonFX(IndexerConstants.kFeederMotorID, new CANBus("rio"));
     m_spindexerMotor = new TalonFX(IndexerConstants.kSpindexerMotorID, new CANBus("rio"));
     configureMotors();
@@ -41,7 +49,6 @@ public class IndexerSubsystem extends SubsystemBase {
     // ==================== FEEDER CONFIGURATION ====================
     TalonFXConfiguration feederConfig = new TalonFXConfiguration();
     feederConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
     feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     feederConfig.Slot0 = new Slot0Configs()
         .withKP(IndexerConstants.kFeederKP)
@@ -56,7 +63,6 @@ public class IndexerSubsystem extends SubsystemBase {
     // ==================== SPINDEXER CONFIGURATION ====================
     TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
     spindexerConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
     spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     spindexerConfig.Slot0 = new Slot0Configs()
         .withKP(IndexerConstants.kSpindexerKP)
@@ -77,18 +83,26 @@ public class IndexerSubsystem extends SubsystemBase {
    */
   public void setSpeeds(double feederRPM, double spindexerRPM) {
     // 1. Convert RPM to RPS
-    double feederRPS = feederRPM / 60.0;
-    double spindexerRPS = spindexerRPM / 60.0;
+    m_feederRPS = feederRPM / 60.0;
+    m_spindexerRPS = spindexerRPM / 60.0;
 
-    // 2. Send commands to motors
-    m_feederMotor.setControl(m_feederRequest.withVelocity(feederRPS));
-    m_spindexerMotor.setControl(m_spindexerRequest.withVelocity(spindexerRPS));
+    if (!m_trenchMode) {
+      // 2. Send commands to motors
+      setSpeedsRPS();
+    }
+  }
+
+  private void setSpeedsRPS() {
+    m_feederMotor.setControl(m_feederRequest.withVelocity(m_feederRPS));
+    m_spindexerMotor.setControl(m_spindexerRequest.withVelocity(m_spindexerRPS));
   }
 
   /** Stop both indexer motors immediately. */
   public void stop() {
     m_feederMotor.stopMotor();
     m_spindexerMotor.stopMotor();
+    m_feederRPS = 0;
+    m_spindexerRPS = 0;
   }
 
   // ==================== COMMAND FACTORIES ====================
@@ -138,5 +152,18 @@ public class IndexerSubsystem extends SubsystemBase {
   public Command runAtSpeedsCommand(double feederRPM, double spindexerRPM) {
     return startEnd(() -> setSpeeds(feederRPM, spindexerRPM), this::stop)
         .withName("Indexer " + feederRPM + "/" + spindexerRPM + " RPM");
+  }
+
+  @Override
+  public void periodic() {
+    if (m_trenchModeSupplier.get()) {
+      if (!m_trenchMode) {
+        stop();
+        m_trenchMode = true;
+      }
+    } else if (m_trenchMode) {
+      setSpeedsRPS();
+      m_trenchMode = false;
+    }
   }
 }

@@ -52,17 +52,19 @@ public class RobotContainer {
 
   // Vision
   public final VisionSubsystem vision;
-  // Indexer
-  private final IndexerSubsystem indexer = new IndexerSubsystem();
 
   // Mechanisms
 
   public final ShooterSubsystem shooter = new ShooterSubsystem();
   public final ShooterPivotSubsystem shooterPivot =
       new ShooterPivotSubsystem(() -> drivetrain.getState().Pose);
+  private final Supplier<Boolean> m_trenchModeSupplier = () -> shooterPivot.isInTrenchMode();
   // Intake
   private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
   private final PivotSubsystem pivot = new PivotSubsystem();
+
+  // Indexer
+  private final IndexerSubsystem indexer = new IndexerSubsystem(m_trenchModeSupplier);
 
   // Climber (stub — hardware not wired yet)
   private final ClimberSubsystem climber = new ClimberSubsystem();
@@ -118,7 +120,15 @@ public class RobotContainer {
     // Choreo.
     // Must be registered BEFORE any PathPlanner autos/paths are created.
     autoCommands = new AutoCommands(
-        intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
+        intake,
+        pivot,
+        indexer,
+        shooter,
+        shooterPivot,
+        drivetrain,
+        vision,
+        m_setpointSupplier,
+        m_trenchModeSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
@@ -154,7 +164,8 @@ public class RobotContainer {
         shooterPivot,
         indexer,
         m_stateMachine,
-        m_setpointSupplier);
+        m_setpointSupplier,
+        m_trenchModeSupplier);
     OperatorControls.configure(
         m_operatorController,
         intake,
@@ -164,7 +175,8 @@ public class RobotContainer {
         shooter,
         shooterPivot,
         m_stateMachine,
-        m_setpointSupplier);
+        m_setpointSupplier,
+        m_trenchModeSupplier);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }

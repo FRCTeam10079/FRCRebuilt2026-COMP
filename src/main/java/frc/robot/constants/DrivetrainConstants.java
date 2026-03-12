@@ -1,9 +1,11 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 
 public class DrivetrainConstants {
@@ -53,6 +55,19 @@ public class DrivetrainConstants {
   public static final double ALIGN_OFFSET_Y_RIGHT = -0.23;
   public static final double ALIGN_OFFSET_X_CENTER = -0.50;
   public static final double ALIGN_OFFSET_Y_CENTER = 0.0;
+
+  // ==================== TRENCH BOUNDARIES ====================
+  public static final Distance FIELD_LENGTH = Meters.of(16.541);
+
+  // Field-relative X coordinates for the Trench zone.
+  public static final Distance TRENCH_X_MIN = Meters.of(4.5); // Change to actual start of trench
+  public static final Distance TRENCH_X_MAX = Meters.of(7.5); // Change to actual end of trench
+
+  // Failsafe: Add a buffer of 0.5 meters so the robot lowers early and
+  // raises late.
+  // This ensures that if odometry drifts slightly, the robot remains safely
+  // stowed.
+  public static final Distance TRENCH_SAFETY_BUFFER = Meters.of(0.5);
 
   // ==================== SHOOT-ON-THE-MOVE ====================
   /**

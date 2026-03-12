@@ -43,6 +43,7 @@ public class AutoCommands {
   private final CommandSwerveDrivetrain drivetrain;
   private final VisionSubsystem vision;
   private final Supplier<ShooterSetpoint> setpointSupplier;
+  private final Supplier<Boolean> trenchModeSupplier;
 
   public AutoCommands(
       IntakeWheelsSubsystem intake,
@@ -52,7 +53,8 @@ public class AutoCommands {
       ShooterPivotSubsystem shooterPivot,
       CommandSwerveDrivetrain drivetrain,
       VisionSubsystem vision,
-      Supplier<ShooterSetpoint> setpointSupplier) {
+      Supplier<ShooterSetpoint> setpointSupplier,
+      Supplier<Boolean> trenchModeSupplier) {
     this.intake = intake;
     this.pivot = pivot;
     this.indexer = indexer;
@@ -61,6 +63,7 @@ public class AutoCommands {
     this.drivetrain = drivetrain;
     this.vision = vision;
     this.setpointSupplier = setpointSupplier;
+    this.trenchModeSupplier = trenchModeSupplier;
   }
 
   // ==================== INTAKE WHEELS ====================
@@ -136,12 +139,13 @@ public class AutoCommands {
    * assumed correct from the trajectory, so heading check is always true.
    */
   public Command shoot() {
-    return ShooterFactory.autoShoot(setpointSupplier, shooter, shooterPivot, indexer);
+    return ShooterFactory.autoShoot(
+        setpointSupplier, shooter, shooterPivot, indexer, trenchModeSupplier);
   }
 
   /** Fixed fender shot for close-range scoring positions in auto. */
   public Command fenderShot() {
-    return ShooterFactory.fenderShot(shooter, shooterPivot, indexer);
+    return ShooterFactory.fenderShot(shooter, shooterPivot, indexer, trenchModeSupplier);
   }
 
   // ==================== VISION ALIGNMENT ====================

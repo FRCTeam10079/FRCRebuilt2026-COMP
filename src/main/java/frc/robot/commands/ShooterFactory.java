@@ -54,13 +54,18 @@ public final class ShooterFactory {
    * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
    * @param headingOnTarget supplier returning true when the drivetrain heading is aligned
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return true when it is safe to feed the ball
    */
   public static boolean isOnTarget(
       Supplier<ShooterSetpoint> setpointSupplier,
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
-      Supplier<Boolean> headingOnTarget) {
+      Supplier<Boolean> headingOnTarget,
+      Supplier<Boolean> trenchModeSupplier) {
+    if (trenchModeSupplier.get()) {
+      return false;
+    }
 
     ShooterSetpoint sp = setpointSupplier.get();
     if (sp == null || !sp.isValid()) {
@@ -122,6 +127,7 @@ public final class ShooterFactory {
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem for feeding
    * @param headingOnTarget supplier for heading alignment check
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command that fires when ready, runs until released
    */
   public static Command shoot(
@@ -129,11 +135,12 @@ public final class ShooterFactory {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
-      Supplier<Boolean> headingOnTarget) {
+      Supplier<Boolean> headingOnTarget,
+      Supplier<Boolean> trenchModeSupplier) {
 
     return aimAndSpinUp(setpointSupplier, shooter, shooterPivot)
-        .alongWith(Commands.waitUntil(
-                () -> isOnTarget(setpointSupplier, shooter, shooterPivot, headingOnTarget))
+        .alongWith(Commands.waitUntil(() -> isOnTarget(
+                setpointSupplier, shooter, shooterPivot, headingOnTarget, trenchModeSupplier))
             .andThen(indexer.feedCommand()))
         .withName("ShooterFactory Shoot");
   }
@@ -145,10 +152,14 @@ public final class ShooterFactory {
    * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command that fires a fixed fender shot
    */
   public static Command fenderShot(
-      ShooterSubsystem shooter, ShooterPivotSubsystem shooterPivot, IndexerSubsystem indexer) {
+      ShooterSubsystem shooter,
+      ShooterPivotSubsystem shooterPivot,
+      IndexerSubsystem indexer,
+      Supplier<Boolean> trenchModeSupplier) {
 
     Supplier<ShooterSetpoint> fixed = () -> ShooterSetpoint.FENDER_SHOT;
 
@@ -156,7 +167,8 @@ public final class ShooterFactory {
         .holdRPMCommand(ShooterConstants.FENDER_SHOT_SPEED)
         .alongWith(
             shooterPivot.goToAngleCommand(ShooterConstants.FENDER_SHOT_PIVOT_ANGLE),
-            Commands.waitUntil(() -> shooter.isReady() && shooterPivot.isAtTarget())
+            Commands.waitUntil(() ->
+                    !trenchModeSupplier.get() && shooter.isReady() && shooterPivot.isAtTarget())
                 .andThen(indexer.feedCommand()))
         .withName("ShooterFactory Fender Shot");
   }
@@ -171,16 +183,18 @@ public final class ShooterFactory {
    * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command that shoots with timeout
    */
   public static Command autoShoot(
       Supplier<ShooterSetpoint> setpointSupplier,
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
-      IndexerSubsystem indexer) {
+      IndexerSubsystem indexer,
+      Supplier<Boolean> trenchModeSupplier) {
 
     // In auto, the trajectory handles heading, so heading is always "on target"
-    return shoot(setpointSupplier, shooter, shooterPivot, indexer, () -> true)
+    return shoot(setpointSupplier, shooter, shooterPivot, indexer, () -> true, trenchModeSupplier)
         .withTimeout(ShooterConstants.AUTO_SHOOT_TIMEOUT)
         .withName("ShooterFactory AutoShoot");
   }
@@ -197,13 +211,15 @@ public final class ShooterFactory {
    * @param shooter flywheel subsystem
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem for feeding
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command that feeds as soon as flywheel is ready, ignoring other gates
    */
   public static Command forceShoot(
       Supplier<ShooterSetpoint> setpointSupplier,
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
-      IndexerSubsystem indexer) {
+      IndexerSubsystem indexer,
+      Supplier<Boolean> trenchModeSupplier) {
 
     return aimAndSpinUp(setpointSupplier, shooter, shooterPivot)
         .alongWith(
@@ -211,13 +227,16 @@ public final class ShooterFactory {
             // Still blocked while in the trench zone to prevent firing at
             // the wrong pivot angle (trench safety caps the pivot low).
             Commands.waitUntil(() -> {
+                  if (trenchModeSupplier.get()) {
+                    return false;
+                  }
                   ShooterSetpoint sp = setpointSupplier.get();
                   AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero()))
                       ? sp.flywheelRPM()
                       : RPM.zero();
                   boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
                   SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
-                  return ready && !shooterPivot.isInTrenchZone();
+                  return ready;
                 })
                 .andThen(indexer.feedCommand()))
         .withName("ShooterFactory ForceShoot");
@@ -300,6 +319,7 @@ public final class ShooterFactory {
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem
    * @param drivetrain for heading check
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command that fires when the launch conditions are met
    */
   public static Command shootOnTheMove(
@@ -307,7 +327,8 @@ public final class ShooterFactory {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
-      CommandSwerveDrivetrain drivetrain) {
+      CommandSwerveDrivetrain drivetrain,
+      Supplier<Boolean> trenchModeSupplier) {
 
     LaunchCalculator calc = LaunchCalculator.getInstance();
 
@@ -318,7 +339,11 @@ public final class ShooterFactory {
 
     return aimAndSpinUpFromLauncher(shooter, shooterPivot)
         .alongWith(Commands.waitUntil(() -> isOnTarget(
-                launchSetpoint, shooter, shooterPivot, drivetrain::isAtLaunchHeadingGoal))
+                launchSetpoint,
+                shooter,
+                shooterPivot,
+                drivetrain::isAtLaunchHeadingGoal,
+                trenchModeSupplier))
             .andThen(indexer.feedCommand()))
         .withName("ShooterFactory ShootOnTheMove");
   }
@@ -334,6 +359,7 @@ public final class ShooterFactory {
    * @param shooterPivot pivot subsystem
    * @param indexer indexer subsystem
    * @param drivetrain swerve drivetrain
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    * @return command with timeout
    */
   public static Command autoShootOnTheMove(
@@ -341,9 +367,11 @@ public final class ShooterFactory {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       IndexerSubsystem indexer,
-      CommandSwerveDrivetrain drivetrain) {
+      CommandSwerveDrivetrain drivetrain,
+      Supplier<Boolean> trenchModeSupplier) {
 
-    return shootOnTheMove(setpointSupplier, shooter, shooterPivot, indexer, drivetrain)
+    return shootOnTheMove(
+            setpointSupplier, shooter, shooterPivot, indexer, drivetrain, trenchModeSupplier)
         .withTimeout(ShooterConstants.AUTO_SHOOT_TIMEOUT)
         .withName("ShooterFactory AutoShootOnTheMove");
   }

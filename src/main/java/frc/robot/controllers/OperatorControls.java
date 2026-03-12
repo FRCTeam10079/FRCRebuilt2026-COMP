@@ -41,6 +41,7 @@ public final class OperatorControls {
    * @param shooterPivot shooter pivot subsystem
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
+   * @param trenchModeSupplier supplier for the state of the shooter pivot being in trench mode
    */
   public static void configure(
       CommandXboxController operator,
@@ -51,7 +52,8 @@ public final class OperatorControls {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       RobotStateMachine stateMachine,
-      Supplier<ShooterSetpoint> setpointSupplier) {
+      Supplier<ShooterSetpoint> setpointSupplier,
+      Supplier<Boolean> trenchModeSupplier) {
 
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
@@ -111,7 +113,8 @@ public final class OperatorControls {
     // disagrees (e.g., out-of-range or heading misalignment).
     operator
         .rightTrigger(0.5)
-        .whileTrue(ShooterFactory.forceShoot(setpointSupplier, shooter, shooterPivot, indexer)
+        .whileTrue(ShooterFactory.forceShoot(
+                setpointSupplier, shooter, shooterPivot, indexer, trenchModeSupplier)
             .withName("Operator Force Shoot"));
 
     // ==================== CLIMB SAFETY ====================

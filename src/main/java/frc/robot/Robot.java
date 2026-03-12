@@ -26,7 +26,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State
+ * Machine for
  * comprehensive robot control
  */
 public class Robot extends LoggedRobot {
@@ -91,9 +92,15 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void robotPeriodic() {
-    // Clear shoot-on-the-move parameters at the start of each cycle.
-    // They will be re-populated by the shootOnTheMoveDriveCommand if active.
-    LaunchCalculator.getInstance().clearParameters();
+    // Clear and immediately update LaunchCalculator with fresh drivetrain state.
+    // Parameters must be computed BEFORE triggers evaluate, so shootOnTheMove can
+    // work.
+    LaunchCalculator calc = LaunchCalculator.getInstance();
+    calc.clearParameters();
+    calc.update(
+        m_robotContainer.drivetrain.getState().Pose,
+        m_robotContainer.drivetrain.getState().Speeds,
+        m_robotContainer.drivetrain.getState().Pose.getRotation());
 
     Logger.recordOutput(
         "Shooter/DistanceToHub",

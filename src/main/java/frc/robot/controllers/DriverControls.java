@@ -64,8 +64,8 @@ public final class DriverControls {
 
     // ==================== DEFAULT DRIVE ====================
     drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
-        () -> -controller.getLeftY(),
-        () -> -controller.getLeftX(),
+        () -> controller.getLeftY(),
+        () -> controller.getLeftX(),
         //controller::getLeftY,
         //controller::getLeftX,
         () -> controller.getRightX(),

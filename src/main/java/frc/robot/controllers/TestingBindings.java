@@ -72,10 +72,8 @@ public final class TestingBindings {
 
     // ==================== DISPLACED DRIVER/OPERATOR CONTROLS ====================
     // Left/Right Bumper - AprilTag align variants moved from driver
-    controller.leftBumper().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT));
-    controller
-        .rightBumper()
-        .whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT));
+    controller.leftBumper().whileTrue(new AlignToAprilTag(drivetrain, AlignPosition.LEFT));
+    controller.rightBumper().whileTrue(new AlignToAprilTag(drivetrain, AlignPosition.RIGHT));
 
     // Start - Reset heading moved from driver
     controller.start().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));

@@ -149,7 +149,7 @@ public final class DriverControls {
 
     // ==================== VISION ALIGNMENT ====================
     // A - Align to AprilTag (CENTER)
-    controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
+    controller.a().whileTrue(new AlignToAprilTag(drivetrain, AlignPosition.CENTER));
 
     controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
 

@@ -91,7 +91,6 @@ public class AutoCommands {
   public Command stowPivot() {
     return pivot.stowCommand();
   }
-  
 
   /** Deploy pivot + spin intake. Ends when pivot is deployed. */
   public Command intakeFuel() {

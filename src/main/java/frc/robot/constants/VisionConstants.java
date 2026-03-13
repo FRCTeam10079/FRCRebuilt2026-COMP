@@ -3,7 +3,7 @@ package frc.robot.constants;
 public class VisionConstants {
   public static final String LIMELIGHT_LEFT_NAME = "limelight-left";
   public static final String LIMELIGHT_RIGHT_NAME = "limelight-right";
-  public static final String[] LIMELIGHT_NAMES = { LIMELIGHT_LEFT_NAME, LIMELIGHT_RIGHT_NAME };
+  public static final String[] LIMELIGHT_NAMES = {LIMELIGHT_LEFT_NAME, LIMELIGHT_RIGHT_NAME};
 
   public static final int PIPELINE_APRILTAG = 0;
 
@@ -50,6 +50,5 @@ public class VisionConstants {
   // MT1 heading diverges from gyro by more than this threshold.
   public static final double HEADING_BOOTSTRAP_THRESHOLD_DEG = 30.0;
 
-  protected VisionConstants() {
-  }
+  protected VisionConstants() {}
 }

@@ -54,7 +54,7 @@ public class VisionSubsystem extends SubsystemBase {
     if (isAuto) {
       return;
     }
-    
+
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;
     ChassisSpeeds speeds = drivetrain.getState().Speeds;

@@ -24,13 +24,11 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.ShooterPivotConstants;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
@@ -115,22 +113,31 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    * prevents oscillation at the boundary.
    */
   public boolean isInTrenchZone() {
-    Distance x = Meters.of(m_poseSupplier.get().getX());
-    var alliance = DriverStation.getAlliance();
-    boolean isRed = alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+    // Yeah... we have a bug in here.
+    if (m_poseSupplier == null) return false;
+    Pose2d pose = m_poseSupplier.get();
+    if (pose == null) return false;
 
-    Distance trenchMin = DrivetrainConstants.TRENCH_X_MIN;
-    Distance trenchMax = DrivetrainConstants.TRENCH_X_MAX;
+    Distance x = Meters.of(pose.getX());
+    Distance y = Meters.of(pose.getY());
+    Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
+    Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
 
-    if (isRed) {
-      // Flip X coordinates to match the Red side of the field
-      Distance tempMin = DrivetrainConstants.FIELD_LENGTH.minus(trenchMax);
-      trenchMax = DrivetrainConstants.FIELD_LENGTH.minus(trenchMin);
-      trenchMin = tempMin;
+    if (m_trenchMode) {
+      // Exit thresholds (actual trench zone = tighter)
+      boolean inX =
+          x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
+          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
+      return inX && inY;
+    } else {
+      // Entry thresholds (approach zone = wider by margin)
+      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
+          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
+          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(margin));
+      return inX && inY;
     }
-
-    return x.gte(trenchMin.minus(DrivetrainConstants.TRENCH_SAFETY_BUFFER))
-        && x.lte(trenchMax.plus(DrivetrainConstants.TRENCH_SAFETY_BUFFER));
   }
 
   public boolean isInTrenchMode() {
@@ -338,8 +345,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     // Trench safety: actively lower pivot when entering trench zone
     if (isInTrenchZone()) {
       if (!m_trenchMode) {
-        if (m_targetAngleDegrees.gt(ShooterPivotConstants.STOW_ANGLE)) {
-          setAngleInternal(ShooterPivotConstants.STOW_ANGLE);
+        if (m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+          setAngleInternal(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
         }
         m_trenchMode = true;
       }

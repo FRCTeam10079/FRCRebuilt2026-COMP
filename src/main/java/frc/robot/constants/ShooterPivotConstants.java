@@ -2,6 +2,7 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Second;
@@ -11,6 +12,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Velocity;
 
 public class ShooterPivotConstants {
@@ -59,8 +61,6 @@ public class ShooterPivotConstants {
   public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK =
       RotationsPerSecondPerSecond.per(Second).of(400.0);
 
-  public static final Angle STOW_ANGLE = Degrees.of(60.0);
-
   // ==================== TOLERANCES ====================
 
   /** Wider tolerance for "ready to shoot" in degrees. */
@@ -75,6 +75,34 @@ public class ShooterPivotConstants {
   public static final double MANUAL_MAX_OUTPUT = 0.35;
 
   public static final double MANUAL_DEADBAND = 0.1;
+
+  // ==================== TRENCH AUTO-LOWER ====================
+  // Derived from 2026 REBUILT AprilTag field layout (2026-rebuilt-welded.json).
+  // Trench posts at y~0.644m from each side wall, beam spans between hub X
+  // positions.
+  // Clearance under trench arm: 22.25in (56.5cm). Tune thresholds on the real
+  // field!
+
+  /** Field width in meters (from WPILib AprilTag JSON). */
+  public static final Distance FIELD_WIDTH_METERS = Meters.of(8.069);
+
+  /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
+  public static final Distance TRENCH_X_MIN = Meters.of(4.5);
+
+  /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
+  public static final Distance TRENCH_X_MAX = Meters.of(12.0);
+
+  /**
+   * Y-distance from the side wall within which the robot is considered "under the trench". Trench
+   * posts at ~0.644m from each wall; add half robot width + safety margin.
+   */
+  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.2);
+
+  /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
+  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
+
+  /** Angle to command when the robot is in or approaching the trench zone. */
+  public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE
 
   // ==================== CONVERSIONS ====================
   /** Convert position of pivot angle to motor rotations. motorRotations = position * GEAR_RATIO */

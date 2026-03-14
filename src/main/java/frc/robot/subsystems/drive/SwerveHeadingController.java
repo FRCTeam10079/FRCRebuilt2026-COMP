@@ -214,6 +214,7 @@ public class SwerveHeadingController {
 
   /** Print one CSV data line with all heading controller state. */
   private void logCSV(double currentHeadingDegrees, double totalOutput) {
+    /*
     if (!m_csvHeaderPrinted) {
       System.out.println("HDG_CSV,timestamp_s,state,goal_deg,current_deg,error_deg,"
           + "kP,kD,p_output,d_approx,total_output,"
@@ -222,6 +223,7 @@ public class SwerveHeadingController {
       m_lastErrorDeg = getError();
       m_lastTimestamp = Timer.getFPGATimestamp();
     }
+    */
 
     double now = Timer.getFPGATimestamp();
     double dt = now - m_lastTimestamp;

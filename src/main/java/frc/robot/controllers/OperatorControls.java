@@ -7,6 +7,7 @@ package frc.robot.controllers;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.IndexerConstants;
 import frc.robot.Constants.ShooterPivotConstants;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterInterpolationTable;
@@ -77,7 +78,10 @@ public final class OperatorControls {
     operator
         .b()
         .whileTrue(Commands.startEnd(pivot::deployPivot, pivot::stowPivot, pivot)
-            .alongWith(intake.intakeOutCommand(), indexer.reverseCommand()));
+            .alongWith(
+                intake.intakeOutCommand(),
+                indexer.runAtSpeedsCommand(
+                    IndexerConstants.kFeederReverseRPM, IndexerConstants.kSpindexerReverseRPM)));
 
     // ==================== SHOOTER PIVOT ====================
     // Default: auto-aim tracking from distance-based setpoint

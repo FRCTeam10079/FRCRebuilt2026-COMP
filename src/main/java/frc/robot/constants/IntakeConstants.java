@@ -23,7 +23,7 @@ public class IntakeConstants {
     public static final Angle STOWED_POSITION = Rotations.of(-6.25);
 
     public static final int SUPPLY_CURRENT_LIMIT = 60;
-    public static final int STATOR_CURRENT_LIMIT = 100;
+    public static final int STATOR_CURRENT_LIMIT = 90;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
     public static final Current STALL_CURRENT_THRESHOLD = Amps.of(25.0);
@@ -80,7 +80,7 @@ public class IntakeConstants {
     public static final int MOTOR_ID = 19;
 
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
-    public static final Current STATOR_CURRENT_LIMIT = Amps.of(100);
+    public static final Current STATOR_CURRENT_LIMIT = Amps.of(90);
 
     public static final double INTAKE_IN_RPM = 3000;
     public static final double INTAKE_OUT_RPM = -3000;

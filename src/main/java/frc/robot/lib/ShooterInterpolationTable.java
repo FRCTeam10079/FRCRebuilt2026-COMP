@@ -43,9 +43,9 @@ public final class ShooterInterpolationTable {
     rpmTable.put(1.0, 2000.0);
     rpmTable.put(2.2, 2050.0);
     // rpmTable.put(2.5, 2100.0);
-    rpmTable.put(3.0, 2325.0);
+    rpmTable.put(3.0, 2340.0);
     // rpmTable.put(3.5, 2500.0);
-    rpmTable.put(4.5, 2600.0);
+    rpmTable.put(4.5, 2615.0);
     // rpmTable.put(4.5, 3300.0);
     // rpmTable.put(5.0, 2500.0);
     // rpmTable.put(5.5, 3900.0);
@@ -67,9 +67,9 @@ public final class ShooterInterpolationTable {
     angleTable.put(1.0, 60.0);
     angleTable.put(2.0, 60.0);
     // angleTable.put(2.5, 60.0);
-    angleTable.put(3.2, 63.0);
+    angleTable.put(3.2, 63.5);
     // angleTable.put(3.5, 64.0);
-    angleTable.put(4.5, 72.0);
+    angleTable.put(4.5, 72.5);
     // Don't need 5, max is 4.5
   }
 

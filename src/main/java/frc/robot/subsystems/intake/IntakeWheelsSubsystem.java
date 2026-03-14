@@ -71,6 +71,18 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
     m_intakeMotor.setControl(m_neutralRequest);
   }
 
+  public double getSupplyCurrentAmps() {
+    return m_intakeMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getStatorCurrentAmps() {
+    return m_intakeMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getMotorVoltageVolts() {
+    return m_intakeMotor.getMotorVoltage().getValueAsDouble();
+  }
+
   // ==================== COMMAND FACTORIES ====================
 
   /**

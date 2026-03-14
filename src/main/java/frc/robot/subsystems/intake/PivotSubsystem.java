@@ -129,6 +129,18 @@ public class PivotSubsystem extends SubsystemBase {
     return rotorPositionSignal.getValue();
   }
 
+  public double getSupplyCurrentAmps() {
+    return m_pivotMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getStatorCurrentAmps() {
+    return m_pivotMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getMotorVoltageVolts() {
+    return m_pivotMotor.getMotorVoltage().getValueAsDouble();
+  }
+
   @Override
   public void periodic() {
 

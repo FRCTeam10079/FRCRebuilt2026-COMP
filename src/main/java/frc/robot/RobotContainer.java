@@ -184,6 +184,22 @@ public class RobotContainer {
     return m_stateMachine;
   }
 
+  public IntakeWheelsSubsystem getIntake() {
+    return intake;
+  }
+
+  public PivotSubsystem getPivot() {
+    return pivot;
+  }
+
+  public IndexerSubsystem getIndexer() {
+    return indexer;
+  }
+
+  public ClimberSubsystem getClimber() {
+    return climber;
+  }
+
   /**
    * Returns the autonomous command selected via SmartDashboard.
    *

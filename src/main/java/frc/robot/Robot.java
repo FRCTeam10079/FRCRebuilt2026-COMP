@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.lib.LaunchCalculator;
+import frc.robot.lib.PowerDiagnosticsLogger;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 
@@ -25,6 +26,7 @@ public class Robot extends TimedRobot {
 
   // MASTER STATE MACHINE - Controls EVERYTHING
   private final RobotStateMachine m_stateMachine;
+  private final PowerDiagnosticsLogger m_powerDiagnosticsLogger;
 
   public Robot() {
     // Start structured data logging - logs are written to /home/lvuser/logs on the
@@ -33,6 +35,12 @@ public class Robot extends TimedRobot {
 
     m_robotContainer = new RobotContainer();
     m_stateMachine = RobotStateMachine.getInstance();
+    m_powerDiagnosticsLogger = new PowerDiagnosticsLogger(
+        m_robotContainer.getIntake(),
+        m_robotContainer.getPivot(),
+        m_robotContainer.getIndexer(),
+        m_robotContainer.shooter,
+        m_robotContainer.shooterPivot);
 
     // ==================== LIMELIGHT CAMERA STREAMS FOR ELASTIC DASHBOARD
     // ====================
@@ -57,6 +65,8 @@ public class Robot extends TimedRobot {
 
     // Run command scheduler
     CommandScheduler.getInstance().run();
+
+    m_powerDiagnosticsLogger.logPeriodic();
   }
 
   @Override

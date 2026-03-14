@@ -91,6 +91,31 @@ public class IndexerSubsystem extends SubsystemBase {
     m_spindexerMotor.stopMotor();
   }
 
+  public double getFeederSupplyCurrentAmps() {
+    return m_feederMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getSpindexerSupplyCurrentAmps() {
+    return m_spindexerMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getFeederStatorCurrentAmps() {
+    return m_feederMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  /** @return spindexer stator current in amps. */
+  public double getSpindexerStatorCurrentAmps() {
+    return m_spindexerMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getFeederVoltageVolts() {
+    return m_feederMotor.getMotorVoltage().getValueAsDouble();
+  }
+
+  public double getSpindexerVoltageVolts() {
+    return m_spindexerMotor.getMotorVoltage().getValueAsDouble();
+  }
+
   // ==================== COMMAND FACTORIES ====================
 
   /**

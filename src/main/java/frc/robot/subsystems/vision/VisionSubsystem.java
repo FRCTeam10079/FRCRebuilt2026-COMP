@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
-import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import org.littletonrobotics.junction.Logger;
 
@@ -49,11 +48,11 @@ public class VisionSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    //boolean isAuto = RobotStateMachine.getInstance().getMatchState().autonomous;
-    //Logger.recordOutput("Vision/AutoSkipped", isAuto);
-    //if (isAuto) {
+    // boolean isAuto = RobotStateMachine.getInstance().getMatchState().autonomous;
+    // Logger.recordOutput("Vision/AutoSkipped", isAuto);
+    // if (isAuto) {
     //  return;
-    //}
+    // }
 
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;

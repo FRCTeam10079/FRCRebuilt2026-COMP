@@ -60,6 +60,9 @@ public class Robot extends TimedRobot {
     // They will be re-populated by the shootOnTheMoveDriveCommand if active.
     LaunchCalculator.getInstance().clearParameters();
 
+    SmartDashboard.putNumber("Shooter/Distance To Hub (Meters)", 
+      ShooterMath.getDistanceToHub(m_robotContainer.drivetrain.getState().Pose).in(Meters));
+
     // Update master state machine
     m_stateMachine.periodic();
 

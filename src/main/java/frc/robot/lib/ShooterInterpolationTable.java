@@ -43,9 +43,9 @@ public final class ShooterInterpolationTable {
     rpmTable.put(1.0, 2000.0);
     rpmTable.put(2.2, 2050.0);
     // rpmTable.put(2.5, 2100.0);
-    rpmTable.put(3.0, 2340.0);
+    rpmTable.put(3.0, 2355.0);
     // rpmTable.put(3.5, 2500.0);
-    rpmTable.put(4.5, 2615.0);
+    rpmTable.put(4.5, 2625.0);
     // rpmTable.put(4.5, 3300.0);
     // rpmTable.put(5.0, 2500.0);
     // rpmTable.put(5.5, 3900.0);

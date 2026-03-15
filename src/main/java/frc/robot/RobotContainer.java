@@ -164,7 +164,8 @@ public class RobotContainer {
         shooter,
         shooterPivot,
         m_stateMachine,
-        m_setpointSupplier);
+        m_setpointSupplier,
+        () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose));
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }

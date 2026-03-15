@@ -6,17 +6,13 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Meters;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.PowerDiagnosticsLogger;
 import frc.robot.lib.ShooterMath;
@@ -28,11 +24,6 @@ import frc.robot.statemachine.RobotStateMachine;
  * comprehensive robot control
  */
 public class Robot extends TimedRobot {
-  private static final String VOLTAGE_KEY = "Voltage";
-  private static final String MATCH_TIME_KEY = "Match Time";
-  private static final String AUTO_DELAY_KEY = "Auto Delay";
-  private static final String ROBOT_VELOCITY_KEY = "Robot Velocity";
-
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
@@ -65,8 +56,6 @@ public class Robot extends TimedRobot {
       pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
-
-    SmartDashboard.setDefaultNumber(AUTO_DELAY_KEY, 0.0);
   }
 
   @Override
@@ -79,19 +68,6 @@ public class Robot extends TimedRobot {
         "Shooter/Distance To Hub (Meters)",
         ShooterMath.getDistanceToHub(m_robotContainer.drivetrain.getState().Pose)
             .in(Meters));
-
-    SmartDashboard.putNumber(VOLTAGE_KEY, RobotController.getBatteryVoltage());
-
-    // WPILib returns -1 when the DS is enabled without FMS. On real FMS this counts
-    // down in
-    // whole-second steps.
-    double matchTimeSeconds = DriverStation.getMatchTime();
-    SmartDashboard.putNumber(MATCH_TIME_KEY, matchTimeSeconds < 0.0 ? 0.0 : matchTimeSeconds);
-
-    ChassisSpeeds chassisSpeeds = m_robotContainer.drivetrain.getState().Speeds;
-    double robotVelocityMetersPerSecond =
-        Math.hypot(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
-    SmartDashboard.putNumber(ROBOT_VELOCITY_KEY, robotVelocityMetersPerSecond);
 
     // Update master state machine
     m_stateMachine.periodic();
@@ -129,13 +105,9 @@ public class Robot extends TimedRobot {
     // Heading is sent every frame in VisionSubsystem.periodic().
 
     // Get and schedule autonomous command
-    Command selectedAuto = m_robotContainer.getAutonomousCommand();
-    double autoDelaySeconds = SmartDashboard.getNumber(AUTO_DELAY_KEY, 0.0);
+    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
-    if (selectedAuto != null) {
-      m_autonomousCommand = autoDelaySeconds > 0.0
-          ? Commands.waitSeconds(autoDelaySeconds).andThen(selectedAuto)
-          : selectedAuto;
+    if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
       // Transition to running state
       m_stateMachine.setMatchState(MatchState.AUTO_RUNNING);

@@ -6,6 +6,7 @@ package frc.robot.controllers;
 
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Degrees;
 
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -69,15 +70,19 @@ public final class OperatorControls {
 
     // ==================== HUB OVERRIDES ====================
     // D-Pad Up - Force hub active (offense)
+    /*
     operator
         .povUp()
         .onTrue(Commands.runOnce(() -> stateMachine.setHubShiftState(HubShiftState.MY_HUB_ACTIVE)));
+    */
 
     // D-Pad Down - Force hub inactive (defense/hoard)
+    /*
     operator
         .povDown()
         .onTrue(
             Commands.runOnce(() -> stateMachine.setHubShiftState(HubShiftState.MY_HUB_INACTIVE)));
+    */
 
     // ==================== UNJAM / EJECT ====================
     // B - Hold reverse intake + indexer
@@ -139,42 +144,42 @@ public final class OperatorControls {
       SmartDashboard.putNumber("Tuning/Shooter/NewRpm", newRpm);
     }));
 
-    // D-Pad LEFT/RIGHT tuning: nudge angle up/down.
-    // SmartDashboard.putString("Tuning/Shooter/ActiveMode", "ANGLE");
-    // operator
-    // .povLeft()
-    // .onTrue(Commands.runOnce(() -> {
-    // double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    // double tuningDistanceMeters =
-    // ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    // double currentAngle =
-    // ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    // double newAngle = currentAngle + angleStepDeg;
-    // ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    // SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE +");
-    // SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    // rawDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    // tuningDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
-    // }));
-    // operator
-    // .povRight()
-    // .onTrue(Commands.runOnce(() -> {
-    // double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    // double tuningDistanceMeters =
-    // ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    // double currentAngle =
-    // ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    // double newAngle = currentAngle - angleStepDeg;
-    // ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    // SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE -");
-    // SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    // rawDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    // tuningDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
-    // }));
+    // D-Pad Up/Down tuning: nudge angle up/down.
+    SmartDashboard.putString("Tuning/Shooter/ActiveMode", "ANGLE");
+    operator
+    .povUp()
+    .onTrue(Commands.runOnce(() -> {
+    double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
+    double tuningDistanceMeters =
+    ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
+    double currentAngle =
+    ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
+    double newAngle = currentAngle + angleStepDeg;
+    ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
+    SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE +");
+    SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
+    rawDistanceMeters);
+    SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
+    tuningDistanceMeters);
+    SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
+    }));
+    operator
+    .povDown()
+    .onTrue(Commands.runOnce(() -> {
+    double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
+    double tuningDistanceMeters =
+    ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
+    double currentAngle =
+    ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
+    double newAngle = currentAngle - angleStepDeg;
+    ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
+    SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE -");
+    SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
+    rawDistanceMeters);
+    SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
+    tuningDistanceMeters);
+    SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
+    }));
 
     // ==================== FORCE SHOOT OVERRIDE ====================
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.

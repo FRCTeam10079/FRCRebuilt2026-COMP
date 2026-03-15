@@ -16,33 +16,25 @@ import java.util.TreeSet;
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.
  *
- * <p>
- * Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
+ * <p>Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
  * empirically-measured data points.
  *
- * <p>
- * Tuning guide: Drive to each distance, manually adjust RPM and angle until
- * fuel consistently
- * scores, then record the values here. The interpolation handles all
- * intermediate distances
+ * <p>Tuning guide: Drive to each distance, manually adjust RPM and angle until fuel consistently
+ * scores, then record the values here. The interpolation handles all intermediate distances
  * automatically.
  *
- * <p>
- * Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release
- * height is 19.5in
- * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot
- * range: 60deg to
+ * <p>Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release height is 19.5in
+ * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot range: 60deg to
  * 80deg from horizontal.
  */
 public final class ShooterInterpolationTable {
 
-  private ShooterInterpolationTable() {
-  } // Static utility class
+  private ShooterInterpolationTable() {} // Static utility class
 
   // ==================== RPM TABLE ====================
   // Maps distance (meters) -> flywheel RPM
-  private static InterpolatingTreeMap<Double, Double> rpmTable = new InterpolatingTreeMap<>(
-      InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> rpmTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
   private static final NavigableSet<Double> rpmKeys = new TreeSet<>();
 
   static {
@@ -65,8 +57,8 @@ public final class ShooterInterpolationTable {
 
   // ==================== ANGLE TABLE ====================
   // Maps distance (meters) -> pivot angle (degrees from horizontal)
-  private static InterpolatingTreeMap<Double, Double> angleTable = new InterpolatingTreeMap<>(
-      InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> angleTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
   private static final NavigableSet<Double> angleKeys = new TreeSet<>();
 
   static {
@@ -99,8 +91,8 @@ public final class ShooterInterpolationTable {
   // Maps distance (meters) -> time of flight (seconds)
   // Time from ball leaving the shooter to arriving at the hub.
   // CRITICAL for shoot-on-the-move - determines lookahead offset.
-  private static InterpolatingTreeMap<Double, Double> tofTable = new InterpolatingTreeMap<>(
-      InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> tofTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
 
   static {
     // -------------------------------------------------------
@@ -136,11 +128,8 @@ public final class ShooterInterpolationTable {
   /**
    * Get the interpolated time-of-flight for a given distance.
    *
-   * <p>
-   * This is used by the LaunchCalculator for velocity-compensated lookahead. The
-   * ball's flight
-   * time determines how much the robot's velocity offsets the effective aim
-   * point.
+   * <p>This is used by the LaunchCalculator for velocity-compensated lookahead. The ball's flight
+   * time determines how much the robot's velocity offsets the effective aim point.
    *
    * @param distanceMeters horizontal distance to hub in meters
    * @return estimated time of flight in seconds
@@ -183,10 +172,8 @@ public final class ShooterInterpolationTable {
     Double lower = keys.floor(queryMeters);
     Double upper = keys.ceiling(queryMeters);
 
-    if (lower == null)
-      return upper;
-    if (upper == null)
-      return lower;
+    if (lower == null) return upper;
+    if (upper == null) return lower;
     return (queryMeters - lower) <= (upper - queryMeters) ? lower : upper;
   }
 

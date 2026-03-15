@@ -60,7 +60,9 @@ public final class ShooterMath {
     double dy = hubPosition.getY() - robotPose.getY();
 
     double forwardHeading = Math.toDegrees(Math.atan2(dy, dx));
-    return Degrees.of(MathUtil.inputModulus(forwardHeading, -180, 180));
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    double allianceCorrectedHeading = isRed ? forwardHeading + 180.0 : forwardHeading;
+    return Degrees.of(MathUtil.inputModulus(allianceCorrectedHeading, -180, 180));
   }
 
   /**

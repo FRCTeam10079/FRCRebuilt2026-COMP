@@ -22,11 +22,22 @@ import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.climber.ClimberIO;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.indexer.IndexerIO;
+import frc.robot.subsystems.indexer.IndexerIOTalonFX;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
+import frc.robot.subsystems.intake.IntakeWheelsIO;
+import frc.robot.subsystems.intake.IntakeWheelsIOTalonFX;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
+import frc.robot.subsystems.intake.PivotIO;
+import frc.robot.subsystems.intake.PivotIOTalonFX;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
+import frc.robot.subsystems.shooter.ShooterPivotIO;
+import frc.robot.subsystems.shooter.ShooterPivotIOTalonFX;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
@@ -52,20 +63,13 @@ public class RobotContainer {
 
   // Vision
   public final VisionSubsystem vision;
-  // Indexer
-  private final IndexerSubsystem indexer = new IndexerSubsystem();
-
-  // Mechanisms
-
-  public final ShooterSubsystem shooter = new ShooterSubsystem();
-  public final ShooterPivotSubsystem shooterPivot =
-      new ShooterPivotSubsystem(() -> drivetrain.getState().Pose);
-  // Intake
-  private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
-  private final PivotSubsystem pivot = new PivotSubsystem();
-
-  // Climber (stub — hardware not wired yet)
-  private final ClimberSubsystem climber = new ClimberSubsystem();
+  // Subsystems (initialized in constructor based on mode)
+  private final IndexerSubsystem indexer;
+  public final ShooterSubsystem shooter;
+  public final ShooterPivotSubsystem shooterPivot;
+  private final IntakeWheelsSubsystem intake;
+  private final PivotSubsystem pivot;
+  private final ClimberSubsystem climber;
 
   private final Telemetry m_telemetry =
       new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
@@ -80,6 +84,51 @@ public class RobotContainer {
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
   public RobotContainer() {
+    // ==================== IO MODE SWITCHING ====================
+    switch (Constants.currentMode) {
+      case REAL:
+        indexer = new IndexerSubsystem(new IndexerIOTalonFX());
+        shooter = new ShooterSubsystem(new ShooterIOTalonFX());
+        shooterPivot = new ShooterPivotSubsystem(
+            new ShooterPivotIOTalonFX(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new IntakeWheelsIOTalonFX());
+        pivot = new PivotSubsystem(new PivotIOTalonFX());
+        climber = new ClimberSubsystem(new ClimberIO() {});
+        break;
+
+      case SIM:
+        // Dummy IOs - all inputs stay at defaults (0.0), no hardware access
+        indexer = new IndexerSubsystem(new IndexerIO() {});
+        shooter = new ShooterSubsystem(new ShooterIO() {});
+        shooterPivot =
+            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
+        pivot = new PivotSubsystem(new PivotIO() {});
+        climber = new ClimberSubsystem(new ClimberIO() {});
+        break;
+
+      case REPLAY:
+        // Replay - same as SIM (Logger will inject real data from the log file)
+        indexer = new IndexerSubsystem(new IndexerIO() {});
+        shooter = new ShooterSubsystem(new ShooterIO() {});
+        shooterPivot =
+            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
+        pivot = new PivotSubsystem(new PivotIO() {});
+        climber = new ClimberSubsystem(new ClimberIO() {});
+        break;
+
+      default:
+        indexer = new IndexerSubsystem(new IndexerIO() {});
+        shooter = new ShooterSubsystem(new ShooterIO() {});
+        shooterPivot =
+            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
+        pivot = new PivotSubsystem(new PivotIO() {});
+        climber = new ClimberSubsystem(new ClimberIO() {});
+        break;
+    }
+
     // Create vision subsystem (needs drivetrain reference for pose injection)
     vision = new VisionSubsystem(drivetrain);
 

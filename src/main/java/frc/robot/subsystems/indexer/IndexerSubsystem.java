@@ -4,15 +4,10 @@
 
 package frc.robot.subsystems.indexer;
 
-import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IndexerConstants;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Dual-motor indexer subsystem with independent feeder and spindexer control.
@@ -22,51 +17,17 @@ import frc.robot.Constants.IndexerConstants;
  */
 public class IndexerSubsystem extends SubsystemBase {
 
-  // Two independent motors
-  private final TalonFX m_feederMotor;
-  private final TalonFX m_spindexerMotor;
+  private final IndexerIO io;
+  private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
 
-  // Two independent control requests (allows us to send different speeds)
-  private final VelocityVoltage m_feederRequest = new VelocityVoltage(0).withSlot(0);
-  private final VelocityVoltage m_spindexerRequest = new VelocityVoltage(0).withSlot(0);
-
-  public IndexerSubsystem() {
-    m_feederMotor = new TalonFX(IndexerConstants.kFeederMotorID, new CANBus("rio"));
-    m_spindexerMotor = new TalonFX(IndexerConstants.kSpindexerMotorID, new CANBus("rio"));
-    configureMotors();
+  public IndexerSubsystem(IndexerIO io) {
+    this.io = io;
   }
 
-  /** Configure both indexer motors with PID gains, current limits, and brake mode. */
-  private void configureMotors() {
-    // ==================== FEEDER CONFIGURATION ====================
-    TalonFXConfiguration feederConfig = new TalonFXConfiguration();
-    feederConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    feederConfig.Slot0 = new Slot0Configs()
-        .withKP(IndexerConstants.kFeederKP)
-        .withKI(IndexerConstants.kFeederKI)
-        .withKD(IndexerConstants.kFeederKD)
-        .withKS(IndexerConstants.kFeederKS)
-        .withKV(IndexerConstants.kFeederKV)
-        .withKA(IndexerConstants.kFeederKA)
-        .withKG(IndexerConstants.kFeederKG);
-    m_feederMotor.getConfigurator().apply(feederConfig);
-
-    // ==================== SPINDEXER CONFIGURATION ====================
-    TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
-    spindexerConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    spindexerConfig.Slot0 = new Slot0Configs()
-        .withKP(IndexerConstants.kSpindexerKP)
-        .withKI(IndexerConstants.kSpindexerKI)
-        .withKD(IndexerConstants.kSpindexerKD)
-        .withKS(IndexerConstants.kSpindexerKS)
-        .withKV(IndexerConstants.kSpindexerKV)
-        .withKA(IndexerConstants.kSpindexerKA)
-        .withKG(IndexerConstants.kSpindexerKG);
-    m_spindexerMotor.getConfigurator().apply(spindexerConfig);
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("Indexer", inputs);
   }
 
   /**
@@ -76,53 +37,41 @@ public class IndexerSubsystem extends SubsystemBase {
    * @param spindexerRPM Target RPM for the floor/spindexer wheel
    */
   public void setSpeeds(double feederRPM, double spindexerRPM) {
-    // 1. Convert RPM to RPS
-    double feederRPS = feederRPM / 60.0;
-    double spindexerRPS = spindexerRPM / 60.0;
-
-    // 2. Send commands to motors
-    m_feederMotor.setControl(m_feederRequest.withVelocity(feederRPS));
-    m_spindexerMotor.setControl(m_spindexerRequest.withVelocity(spindexerRPS));
+    io.setFeederVelocity(feederRPM / 60.0);
+    io.setSpindexerVelocity(spindexerRPM / 60.0);
   }
 
   /** Stop both indexer motors immediately. */
   public void stop() {
-    m_feederMotor.stopMotor();
-    m_spindexerMotor.stopMotor();
+    io.stop();
   }
 
   public double getFeederSupplyCurrentAmps() {
-    return m_feederMotor.getSupplyCurrent().getValueAsDouble();
+    return inputs.feederSupplyCurrentAmps;
   }
 
   public double getSpindexerSupplyCurrentAmps() {
-    return m_spindexerMotor.getSupplyCurrent().getValueAsDouble();
+    return inputs.spindexerSupplyCurrentAmps;
   }
 
   public double getFeederStatorCurrentAmps() {
-    return m_feederMotor.getStatorCurrent().getValueAsDouble();
+    return inputs.feederStatorCurrentAmps;
   }
 
-  /** @return spindexer stator current in amps. */
   public double getSpindexerStatorCurrentAmps() {
-    return m_spindexerMotor.getStatorCurrent().getValueAsDouble();
+    return inputs.spindexerStatorCurrentAmps;
   }
 
   public double getFeederVoltageVolts() {
-    return m_feederMotor.getMotorVoltage().getValueAsDouble();
+    return inputs.feederVoltageVolts;
   }
 
   public double getSpindexerVoltageVolts() {
-    return m_spindexerMotor.getMotorVoltage().getValueAsDouble();
+    return inputs.spindexerVoltageVolts;
   }
 
   // ==================== COMMAND FACTORIES ====================
 
-  /**
-   * Command to feed game pieces forward. Runs while the command is active, stops on end.
-   *
-   * @return a feed command that requires this subsystem
-   */
   public Command feedCommand() {
     return startEnd(
             () ->
@@ -131,11 +80,6 @@ public class IndexerSubsystem extends SubsystemBase {
         .withName("Indexer Feed");
   }
 
-  /**
-   * Command to reverse the indexer (unjam). Runs while the command is active, stops on end.
-   *
-   * @return a reverse command that requires this subsystem
-   */
   public Command reverseCommand() {
     return startEnd(
             () -> setSpeeds(
@@ -144,22 +88,10 @@ public class IndexerSubsystem extends SubsystemBase {
         .withName("Indexer Reverse");
   }
 
-  /**
-   * Command to stop the indexer immediately.
-   *
-   * @return an instant stop command that requires this subsystem
-   */
   public Command stopCommand() {
     return runOnce(this::stop).withName("Indexer Stop");
   }
 
-  /**
-   * Command to run both indexer motors at custom RPMs. Stops on end.
-   *
-   * @param feederRPM target RPM for the feeder motor
-   * @param spindexerRPM target RPM for the spindexer motor
-   * @return a start-end command that requires this subsystem
-   */
   public Command runAtSpeedsCommand(double feederRPM, double spindexerRPM) {
     return startEnd(() -> setSpeeds(feederRPM, spindexerRPM), this::stop)
         .withName("Indexer " + feederRPM + "/" + spindexerRPM + " RPM");

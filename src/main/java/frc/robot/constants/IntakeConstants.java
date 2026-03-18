@@ -78,6 +78,7 @@ public class IntakeConstants {
 
   public static class Wheels {
     public static final int MOTOR_ID = 19;
+    public static final int SLAVE_MOTOR_ID = 0; // Needs to be changed to the actual motor id
 
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(90);

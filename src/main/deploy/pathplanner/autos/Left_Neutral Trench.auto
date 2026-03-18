@@ -7,19 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "ldepotStartToDepot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "intakeFuel"
+            "pathName": "shane crazy"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "DepotTolNeutral"
+            "pathName": null
           }
         }
       ]

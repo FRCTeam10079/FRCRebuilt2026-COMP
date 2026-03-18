@@ -79,11 +79,11 @@ public class IntakeConstants {
   public static class Wheels {
     public static final int MOTOR_ID = 19;
 
-    public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(50);
+    public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(100);
 
-    public static final double INTAKE_IN_RPM = 2800;
-    public static final double INTAKE_OUT_RPM = -2400;
+    public static final double INTAKE_IN_RPM = 3000;
+    public static final double INTAKE_OUT_RPM = -3000;
 
     public static final double KA = 0;
     public static final double KS = 0.1;

@@ -68,8 +68,7 @@ public final class ShooterFactory {
     }
 
     boolean flywheelReady = shooter.isAt(sp.flywheelRPM());
-    boolean pivotReady =
-        shooterPivot.isAtAngle(sp.pivotAngle(), ShooterPivotConstants.SHOOTING_TOLERANCE);
+    boolean pivotReady = shooterPivot.isAtAngle(sp.pivotAngle());
     boolean headingReady = headingOnTarget.get();
 
     // Telemetry for debugging
@@ -208,7 +207,9 @@ public final class ShooterFactory {
 
     return aimAndSpinUp(setpointSupplier, shooter, shooterPivot)
         .alongWith(
-            // Only wait for flywheel - skip validity, heading, and pivot checks
+            // Only wait for flywheel - skip validity, heading, and pivot checks.
+            // Still blocked while in the trench zone to prevent firing at
+            // the wrong pivot angle (trench safety caps the pivot low).
             Commands.waitUntil(() -> {
                   ShooterSetpoint sp = setpointSupplier.get();
                   AngularVelocity targetRPM = (sp != null && sp.flywheelRPM().gt(RPM.zero()))
@@ -216,7 +217,7 @@ public final class ShooterFactory {
                       : RPM.zero();
                   boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
                   SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
-                  return ready;
+                  return ready && !shooterPivot.isInTrenchZone();
                 })
                 .andThen(indexer.feedCommand()))
         .withName("ShooterFactory ForceShoot");

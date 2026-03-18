@@ -19,19 +19,20 @@ import frc.robot.Constants.IntakeConstants;
 /**
  * Intake wheels subsystem for collecting game pieces.
  *
- * <p>
- * Uses a double TalonFX (Kraken X60) with velocity control for consistent
- * intake/eject speeds
+ * <p>Uses a double TalonFX (Kraken X60) with velocity control for consistent intake/eject speeds
  * regardless of battery voltage.
  */
 public class IntakeWheelsSubsystem extends SubsystemBase {
 
   // MASTER + SLAVE
-  private final TalonFX m_masterMotor = new TalonFX(IntakeConstants.Wheels.MOTOR_ID, Constants.kCANBus);
+  private final TalonFX m_masterMotor =
+      new TalonFX(IntakeConstants.Wheels.MOTOR_ID, Constants.kCANBus);
 
-  private final TalonFX m_slaveMotor = new TalonFX(IntakeConstants.Wheels.SLAVE_MOTOR_ID, Constants.kCANBus);
+  private final TalonFX m_slaveMotor =
+      new TalonFX(IntakeConstants.Wheels.SLAVE_MOTOR_ID, Constants.kCANBus);
 
-  private final VelocityVoltage m_velocityRequest = new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
+  private final VelocityVoltage m_velocityRequest =
+      new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
 
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
@@ -46,9 +47,7 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
     m_slaveMotor.setControl(m_followerRequest);
   }
 
-  /**
-   * Configure the intake motor with PID gains, current limits, and coast mode.
-   */
+  /** Configure the intake motor with PID gains, current limits, and coast mode. */
   private void configureMotors() {
     TalonFXConfiguration masterConfig = new TalonFXConfiguration();
 
@@ -61,7 +60,8 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
     masterConfig.CurrentLimits.withStatorCurrentLimit(IntakeConstants.Wheels.STATOR_CURRENT_LIMIT);
     masterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
-    masterConfig.Slot0
+    masterConfig
+        .Slot0
         .withKA(IntakeConstants.Wheels.KA)
         .withKV(IntakeConstants.Wheels.KV)
         .withKD(IntakeConstants.Wheels.KD)
@@ -137,6 +137,5 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
   }
 
   @Override
-  public void periodic() {
-  }
+  public void periodic() {}
 }

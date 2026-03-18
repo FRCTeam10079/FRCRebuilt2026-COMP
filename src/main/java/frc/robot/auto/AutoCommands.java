@@ -167,9 +167,9 @@ public class AutoCommands {
   public Command stopAll() {
     return Commands.runOnce(
         () -> {
-          intake.stop();
-          indexer.stop();
-          shooter.stop();
+          intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
+          indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
+          shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
         },
         intake,
         indexer,

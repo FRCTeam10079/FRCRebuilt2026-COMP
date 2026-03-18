@@ -30,12 +30,12 @@ public class RunIndexer extends Command {
 
   @Override
   public void initialize() {
-    m_indexer.setSpeeds(m_feederRPM, m_spindexerRPM);
+    m_indexer.setWantedState(IndexerSubsystem.WantedState.FEED);
   }
 
   @Override
   public void end(boolean interrupted) {
-    m_indexer.stop();
+    m_indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
   }
 
   @Override

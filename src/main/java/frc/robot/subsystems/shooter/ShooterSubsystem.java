@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -23,18 +22,36 @@ public class ShooterSubsystem extends SubsystemBase {
   private final ShooterIO io;
   private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
-  private AngularVelocity m_targetRPM = RPM.zero();
-  private boolean m_isEnabled = false;
+  // ==================== STATE MACHINE ====================
+
+  public enum WantedState {
+    OFF,
+    SPIN_UP,
+    HOLD_RPM,
+    SHOOT
+  }
+
+  private enum SystemState {
+    IDLE,
+    SPINNING_UP,
+    AT_SPEED,
+    SHOOTING
+  }
+
+  private WantedState wantedState = WantedState.OFF;
+  private SystemState systemState = SystemState.IDLE;
+
+  private AngularVelocity targetRPM = RPM.zero();
 
   // Stability tracking with debouncing
-  private int m_stabilityCounter = 0;
+  private int stabilityCounter = 0;
 
-  private final SysIdRoutine m_sysIdRoutine;
+  private final SysIdRoutine sysIdRoutine;
 
   public ShooterSubsystem(ShooterIO io) {
     this.io = io;
 
-    m_sysIdRoutine = new SysIdRoutine(
+    sysIdRoutine = new SysIdRoutine(
         new SysIdRoutine.Config(
             null,
             Volts.of(4),
@@ -48,72 +65,98 @@ public class ShooterSubsystem extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Shooter", inputs);
 
-    // Read current velocity from logged inputs
-    AngularVelocity currentRPM = RotationsPerSecond.of(inputs.masterVelocityRPS);
+    systemState = handleStateTransitions();
+    applyStates();
 
-    // Update stability counter (debouncing logic)
-    boolean isTargetPositive = m_targetRPM.gt(RPM.zero());
-    if (m_isEnabled && isTargetPositive) {
-      if (currentRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
-        m_stabilityCounter =
-            Math.min(m_stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
-      } else {
-        m_stabilityCounter = 0;
-      }
-    } else {
-      m_stabilityCounter = 0;
-    }
-
-    // Apply control to motors
-    if (m_isEnabled && isTargetPositive) {
-      io.setVelocity(m_targetRPM.in(RotationsPerSecond));
-    } else {
-      io.stop();
-    }
-
-    // Telemetry via AdvantageKit
-    Logger.recordOutput("Shooter/TargetRPM", m_targetRPM.in(RPM));
-    Logger.recordOutput("Shooter/CurrentRPM", currentRPM.in(RPM));
-    Logger.recordOutput("Shooter/ErrorRPM", m_targetRPM.minus(currentRPM).in(RPM));
-    Logger.recordOutput("Shooter/IsEnabled", m_isEnabled);
+    Logger.recordOutput("Shooter/WantedState", wantedState);
+    Logger.recordOutput("Shooter/SystemState", systemState);
+    Logger.recordOutput("Shooter/TargetRPM", targetRPM.in(RPM));
+    Logger.recordOutput("Shooter/CurrentRPM", getCurrentRPM().in(RPM));
     Logger.recordOutput("Shooter/IsReady", isReady());
-    Logger.recordOutput("Shooter/StabilityCounter", m_stabilityCounter);
+    Logger.recordOutput("Shooter/StabilityCounter", stabilityCounter);
   }
 
-  private void setTargetRPM(AngularVelocity rpm) {
-    AngularVelocity clampedRPM =
-        Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_SPEED);
+  // ==================== STATE TRANSITIONS ====================
 
-    if (!clampedRPM.isNear(m_targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
-      m_stabilityCounter = 0;
+  private SystemState handleStateTransitions() {
+    AngularVelocity currentRPM = getCurrentRPM();
+
+    switch (wantedState) {
+      case SPIN_UP:
+      case HOLD_RPM:
+        if (targetRPM.gt(RPM.zero())) {
+          if (currentRPM.isNear(targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
+            stabilityCounter =
+                Math.min(stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
+          } else {
+            stabilityCounter = 0;
+          }
+          if (stabilityCounter >= ShooterConstants.STABILITY_CYCLES_REQUIRED) {
+            return SystemState.AT_SPEED;
+          }
+          return SystemState.SPINNING_UP;
+        }
+        return SystemState.IDLE;
+
+      case SHOOT:
+        if (targetRPM.gt(RPM.zero())) {
+          if (currentRPM.isNear(targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
+            stabilityCounter =
+                Math.min(stabilityCounter + 1, ShooterConstants.STABILITY_CYCLES_REQUIRED);
+          } else {
+            stabilityCounter = 0;
+          }
+          return SystemState.SHOOTING;
+        }
+        return SystemState.IDLE;
+
+      case OFF:
+      default:
+        stabilityCounter = 0;
+        return SystemState.IDLE;
     }
-
-    m_targetRPM = clampedRPM;
-    m_isEnabled = clampedRPM.gt(RPM.zero());
   }
 
-  private void spinUp() {
-    setTargetRPM(ShooterConstants.SHOOTER_SPINUP_SPEED);
+  private void applyStates() {
+    switch (systemState) {
+      case SPINNING_UP:
+      case AT_SPEED:
+      case SHOOTING:
+        io.setVelocity(targetRPM.in(RotationsPerSecond));
+        break;
+      case IDLE:
+      default:
+        io.stop();
+        break;
+    }
   }
 
-  public void stop() {
-    m_targetRPM = RPM.zero();
-    m_isEnabled = false;
-    m_stabilityCounter = 0;
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
+  }
+
+  public void setWantedState(WantedState state, AngularVelocity rpm) {
+    this.wantedState = state;
+    this.targetRPM = Constants.clamp(rpm, RPM.zero(), ShooterConstants.SHOOTER_MAX_SPEED);
+  }
+
+  public WantedState getWantedState() {
+    return wantedState;
+  }
+
+  public SystemState getSystemState() {
+    return systemState;
   }
 
   public boolean isReady() {
-    return m_isEnabled
-        && m_targetRPM.gt(RPM.zero())
-        && m_stabilityCounter >= ShooterConstants.STABILITY_CYCLES_REQUIRED;
+    return systemState == SystemState.AT_SPEED || systemState == SystemState.SHOOTING;
   }
 
   public boolean isAtSetpoint() {
-    if (!m_isEnabled || m_targetRPM.lt(RPM.zero())) {
-      return false;
-    }
-    return m_targetRPM.isNear(
-        RotationsPerSecond.of(inputs.masterVelocityRPS), ShooterConstants.SHOOTER_SPEED_TOLERANCE);
+    return getCurrentRPM().isNear(targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)
+        && targetRPM.gt(RPM.zero());
   }
 
   public AngularVelocity getCurrentRPM() {
@@ -121,12 +164,52 @@ public class ShooterSubsystem extends SubsystemBase {
   }
 
   public AngularVelocity getTargetRPM() {
-    return m_targetRPM;
+    return targetRPM;
   }
 
-  public boolean isEnabled() {
-    return m_isEnabled;
+  public boolean isAt(AngularVelocity target) {
+    if (target.lt(RPM.zero())) return false;
+    return getCurrentRPM().isNear(target, ShooterConstants.ON_TARGET_RPM_PERCENT);
   }
+
+  // ==================== COMMAND FACTORIES ====================
+
+  public Command spinUpCommand() {
+    return runOnce(() -> setWantedState(WantedState.SPIN_UP, ShooterConstants.SHOOTER_SPINUP_SPEED))
+        .withName("Shooter Spin Up");
+  }
+
+  public Command spinUpAndWaitCommand() {
+    return run(() -> setWantedState(WantedState.SPIN_UP, ShooterConstants.SHOOTER_SPINUP_SPEED))
+        .until(this::isReady)
+        .withName("Shooter Spin Up & Wait");
+  }
+
+  public Command stopCommand() {
+    return runOnce(() -> setWantedState(WantedState.OFF)).withName("Shooter Stop");
+  }
+
+  public Command holdRPMCommand(AngularVelocity rpm) {
+    return startEnd(
+            () -> setWantedState(WantedState.HOLD_RPM, rpm), () -> setWantedState(WantedState.OFF))
+        .withName("Shooter Hold " + rpm + " RPM");
+  }
+
+  public Command holdRPMCommand(java.util.function.Supplier<AngularVelocity> rpmSupplier) {
+    return run(() -> setWantedState(WantedState.HOLD_RPM, rpmSupplier.get()))
+        .finallyDo(interrupted -> setWantedState(WantedState.OFF))
+        .withName("Shooter Dynamic RPM");
+  }
+
+  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return sysIdRoutine.quasistatic(direction);
+  }
+
+  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+    return sysIdRoutine.dynamic(direction);
+  }
+
+  // ==================== TELEMETRY ====================
 
   public double getMasterSupplyCurrentAmps() {
     return inputs.masterSupplyCurrentAmps;
@@ -150,40 +233,5 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public double getSlaveVoltageVolts() {
     return inputs.slaveVoltageVolts;
-  }
-
-  public Command spinUpCommand() {
-    return runOnce(this::spinUp).withName("Shooter Spin Up");
-  }
-
-  public Command spinUpAndWaitCommand() {
-    return run(this::spinUp).until(this::isReady).withName("Shooter Spin Up & Wait");
-  }
-
-  public Command stopCommand() {
-    return runOnce(this::stop).withName("Shooter Stop");
-  }
-
-  public Command holdRPMCommand(AngularVelocity rpm) {
-    return startEnd(() -> setTargetRPM(rpm), this::stop).withName("Shooter Hold " + rpm + " RPM");
-  }
-
-  public Command holdRPMCommand(Supplier<AngularVelocity> rpmSupplier) {
-    return run(() -> setTargetRPM(rpmSupplier.get()))
-        .finallyDo(interrupted -> stop())
-        .withName("Shooter Dynamic RPM");
-  }
-
-  public boolean isAt(AngularVelocity target) {
-    if (target.lt(RPM.zero())) return false;
-    return getCurrentRPM().isNear(target, ShooterConstants.ON_TARGET_RPM_PERCENT);
-  }
-
-  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-    return m_sysIdRoutine.quasistatic(direction);
-  }
-
-  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-    return m_sysIdRoutine.dynamic(direction);
   }
 }

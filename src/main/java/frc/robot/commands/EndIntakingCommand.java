@@ -27,8 +27,8 @@ public class EndIntakingCommand extends Command {
   @Override
   public void initialize() {
     // initializes by stowing pivot and stopping intake wheels
-    pivot.stowPivot();
-    wheels.stop();
+    pivot.setWantedState(PivotSubsystem.WantedState.STOW);
+    wheels.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
   }
 
   /** Only finishes once stowed completely */

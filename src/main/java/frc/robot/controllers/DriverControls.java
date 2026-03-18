@@ -88,12 +88,12 @@ public final class DriverControls {
         .whileTrue(
             Commands.startEnd(
                 () -> {
-                  pivot.deployPivot();
-                  intake.intakeIn();
+                  pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY);
+                  intake.setWantedState(IntakeWheelsSubsystem.WantedState.INTAKE);
                   stateMachine.setGameState(GameState.COLLECTING);
                 },
                 () -> {
-                  intake.stop();
+                  intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
                   if (stateMachine.getGameState() == GameState.COLLECTING) {
                     stateMachine.setGameState(GameState.IDLE);
                   }

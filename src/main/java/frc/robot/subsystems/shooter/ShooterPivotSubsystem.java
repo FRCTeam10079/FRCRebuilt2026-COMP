@@ -28,24 +28,198 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   private final ShooterPivotIO io;
   private final ShooterPivotIOInputsAutoLogged inputs = new ShooterPivotIOInputsAutoLogged();
 
+  // ==================== STATE MACHINE ====================
+
+  public enum WantedState {
+    HOME,
+    IDLE,
+    TRACK_ANGLE,
+    HOLD_ANGLE,
+    MANUAL
+  }
+
+  private enum SystemState {
+    HOMING,
+    HOMED,
+    IDLE,
+    TRACKING,
+    AT_ANGLE,
+    TRENCH_LOWERED,
+    MANUAL_OVERRIDE
+  }
+
+  private WantedState wantedState = WantedState.IDLE;
+  private WantedState previousWantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLE;
+
   // State tracking
-  private boolean m_isHomed = true;
-  private Angle m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
+  private boolean isHomed = true;
+  private Angle targetAngle = ShooterPivotConstants.MIN_ANGLE;
+  private double manualOutput = 0.0;
+
+  // Homing
+  private int homingStallCounter = 0;
 
   // Trench auto-lower
-  private final Supplier<Pose2d> m_poseSupplier;
-  private boolean m_trenchMode = false;
+  private final Supplier<Pose2d> poseSupplier;
+  private boolean trenchMode = false;
+
+  // Angle supplier for TRACK_ANGLE mode
+  private Supplier<Angle> angleSupplier = () -> ShooterPivotConstants.MIN_ANGLE;
 
   public ShooterPivotSubsystem(ShooterPivotIO io, Supplier<Pose2d> poseSupplier) {
     this.io = io;
-    m_poseSupplier = poseSupplier;
+    this.poseSupplier = poseSupplier;
+  }
+
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("ShooterPivot", inputs);
+
+    systemState = handleStateTransitions();
+    applyStates();
+
+    previousWantedState = wantedState;
+
+    Logger.recordOutput("ShooterPivot/WantedState", wantedState);
+    Logger.recordOutput("ShooterPivot/SystemState", systemState);
+    Logger.recordOutput("ShooterPivot/isInTrenchZone", isInTrenchZone());
+    Logger.recordOutput("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
+    Logger.recordOutput("ShooterPivot/TargetAngleDegrees", targetAngle.in(Degrees));
+    Logger.recordOutput("ShooterPivot/Position", inputs.positionRotations);
+    Logger.recordOutput("ShooterPivot/Velocity", inputs.velocityRPS);
+    Logger.recordOutput("ShooterPivot/IsHomed", isHomed);
+    Logger.recordOutput("ShooterPivot/AtTarget", isAtTarget());
+    Logger.recordOutput("ShooterPivot/TrenchMode", trenchMode);
+  }
+
+  // ==================== STATE TRANSITIONS ====================
+
+  private SystemState handleStateTransitions() {
+    switch (wantedState) {
+      case HOME:
+        if (previousWantedState != WantedState.HOME) {
+          isHomed = false;
+          homingStallCounter = 0;
+        }
+        if (Amps.of(inputs.statorCurrentAmps).gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD)) {
+          homingStallCounter++;
+        } else {
+          homingStallCounter = 0;
+        }
+        if (homingStallCounter >= ShooterPivotConstants.HOMING_STALL_CYCLES) {
+          io.setEncoderPosition(0);
+          isHomed = true;
+          enableSoftwareLimits();
+          targetAngle = ShooterPivotConstants.MIN_ANGLE;
+          homingStallCounter = 0;
+          wantedState = WantedState.IDLE;
+          return SystemState.HOMED;
+        }
+        return SystemState.HOMING;
+
+      case TRACK_ANGLE:
+        targetAngle = Constants.clamp(
+            angleSupplier.get(), ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+        // Fall through to angle check
+        if (isInTrenchZone()) {
+          trenchMode = true;
+          if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+            targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+          }
+          return SystemState.TRENCH_LOWERED;
+        }
+        trenchMode = false;
+        if (isAtAngle(targetAngle)) {
+          return SystemState.AT_ANGLE;
+        }
+        return SystemState.TRACKING;
+
+      case HOLD_ANGLE:
+        if (isInTrenchZone()) {
+          trenchMode = true;
+          if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+            targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+          }
+          return SystemState.TRENCH_LOWERED;
+        }
+        trenchMode = false;
+        if (isAtAngle(targetAngle)) {
+          return SystemState.AT_ANGLE;
+        }
+        return SystemState.TRACKING;
+
+      case MANUAL:
+        return SystemState.MANUAL_OVERRIDE;
+
+      case IDLE:
+      default:
+        trenchMode = false;
+        return SystemState.IDLE;
+    }
+  }
+
+  private void applyStates() {
+    switch (systemState) {
+      case HOMING:
+        io.setDutyCycle(ShooterPivotConstants.HOMING_SPEED);
+        break;
+      case HOMED:
+      case IDLE:
+        io.setNeutral();
+        break;
+      case TRACKING:
+      case AT_ANGLE:
+      case TRENCH_LOWERED:
+        io.setMotionMagicPosition(ShooterPivotConstants.degreesToMotorRotations(
+                targetAngle.minus(ShooterPivotConstants.MIN_ANGLE))
+            .in(Rotations));
+        break;
+      case MANUAL_OVERRIDE:
+        io.setDutyCycle(manualOutput);
+        break;
+    }
+  }
+
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
+  }
+
+  public void setWantedState(WantedState state, Angle angle) {
+    this.wantedState = state;
+    this.targetAngle =
+        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+  }
+
+  public void setAngleSupplier(Supplier<Angle> supplier) {
+    this.angleSupplier = supplier;
+  }
+
+  public void setManualOutput(double output) {
+    this.manualOutput = MathUtil.clamp(
+        output, -ShooterPivotConstants.MANUAL_MAX_OUTPUT, ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+  }
+
+  public WantedState getWantedState() {
+    return wantedState;
+  }
+
+  public boolean isHomed() {
+    return isHomed;
+  }
+
+  public boolean hasHomeCompleted() {
+    return isHomed;
   }
 
   // ==================== TRENCH ZONE DETECTION ====================
 
   public boolean isInTrenchZone() {
-    if (m_poseSupplier == null) return false;
-    Pose2d pose = m_poseSupplier.get();
+    if (poseSupplier == null) return false;
+    Pose2d pose = poseSupplier.get();
     if (pose == null) return false;
 
     Distance x = Meters.of(pose.getX());
@@ -53,7 +227,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
     Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
 
-    if (m_trenchMode) {
+    if (trenchMode) {
       boolean inX =
           x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
       boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
@@ -68,73 +242,88 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     }
   }
 
-  // ==================== POSITION CONTROL ====================
-
-  public void setAngle(Angle angle) {
-    if (m_trenchMode) {
-      m_trenchMode = isInTrenchZone();
-    } else if (isInTrenchZone()) {
-      lowerForTrenchZone();
-    } else {
-      setAngleUnchecked(
-          Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE));
-    }
-  }
-
-  private void setAngleUnchecked(Angle angle) {
-    m_targetAngleDegrees = angle;
-    io.setMotionMagicPosition(ShooterPivotConstants.degreesToMotorRotations(
-            m_targetAngleDegrees.minus(ShooterPivotConstants.MIN_ANGLE))
-        .in(Rotations));
-  }
-
-  private void lowerForTrenchZone() {
-    m_trenchMode = true;
-    if (m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-      setAngleUnchecked(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
-    }
-  }
+  // ==================== POSITION QUERIES ====================
 
   public Angle getCurrentAngle() {
     return ShooterPivotConstants.motorRotationsToDegrees(Rotations.of(inputs.positionRotations))
         .plus(ShooterPivotConstants.MIN_ANGLE);
   }
 
-  public boolean isAtAngle(Angle targetDegrees) {
-    return getCurrentAngle().isNear(targetDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE);
+  public boolean isAtAngle(Angle target) {
+    return getCurrentAngle().isNear(target, ShooterPivotConstants.SHOOTING_TOLERANCE);
   }
 
   public boolean isAtTarget() {
-    return isAtAngle(m_targetAngleDegrees);
+    return isAtAngle(targetAngle);
   }
 
-  public boolean isHomed() {
-    return m_isHomed;
+  public Angle getTargetAngle() {
+    return targetAngle;
   }
 
-  public Angle getTargetAngleDegrees() {
-    return m_targetAngleDegrees;
+  public void reZeroIfNeeded() {
+    if (inputs.positionRotations < 0.0) {
+      io.setEncoderPosition(0);
+    }
   }
 
-  // ==================== MANUAL / RAW CONTROL ====================
+  // ==================== HOMING HELPERS ====================
 
-  public void setOutput(double output) {
-    double clamped = MathUtil.clamp(
-        output, -ShooterPivotConstants.MANUAL_MAX_OUTPUT, ShooterPivotConstants.MANUAL_MAX_OUTPUT);
-    io.setDutyCycle(clamped);
+  private void enableSoftwareLimits() {
+    var softLimits = new SoftwareLimitSwitchConfigs()
+        .withForwardSoftLimitEnable(true)
+        .withReverseSoftLimitEnable(true)
+        .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
+            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
+    io.applySoftwareLimits(softLimits);
   }
 
-  public void stop() {
-    io.setNeutral();
+  // ==================== COMMAND FACTORIES ====================
+
+  public Command homeCommand() {
+    return Commands.sequence(
+            Commands.runOnce(() -> setWantedState(WantedState.HOME)),
+            Commands.waitUntil(this::isHomed),
+            Commands.runOnce(() -> setWantedState(WantedState.IDLE)))
+        .withName("ShooterPivot Home");
   }
 
-  public double getPosition() {
-    return inputs.positionRotations;
+  public Command trackAngleCommand(Supplier<Angle> supplier) {
+    return Commands.sequence(
+            Commands.runOnce(() -> {
+              setAngleSupplier(supplier);
+              setWantedState(WantedState.TRACK_ANGLE);
+            }),
+            run(() -> {}) // stay scheduled so the state machine runs
+            )
+        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
+        .withName("ShooterPivot Track Angle");
   }
 
-  public double getVelocity() {
-    return inputs.velocityRPS;
+  public Command goToAngleCommand(Angle angle) {
+    return Commands.sequence(
+            Commands.runOnce(() -> setWantedState(WantedState.HOLD_ANGLE, angle)),
+            Commands.waitUntil(this::isAtTarget))
+        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
+        .withName("ShooterPivot GoTo " + angle.in(Degrees) + "deg");
   }
+
+  public Command manualControlCommand(DoubleSupplier axisSupplier) {
+    return run(() -> {
+          double raw = axisSupplier.getAsDouble();
+          double deadbanded = MathUtil.applyDeadband(raw, ShooterPivotConstants.MANUAL_DEADBAND);
+          setManualOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+          setWantedState(WantedState.MANUAL);
+        })
+        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
+        .withName("ShooterPivot Manual");
+  }
+
+  public Command zeroEncoderCommand() {
+    return runOnce(() -> io.setEncoderPosition(0)).withName("ShooterPivot Zero Encoder");
+  }
+
+  // ==================== TELEMETRY ====================
 
   public double getSupplyCurrentAmps() {
     return inputs.supplyCurrentAmps;
@@ -146,101 +335,5 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   public double getMotorVoltageVolts() {
     return inputs.voltageVolts;
-  }
-
-  public void reZeroIfNeeded() {
-    if (inputs.positionRotations < 0.0) {
-      io.setEncoderPosition(0);
-    }
-  }
-
-  // ==================== HOMING ====================
-
-  private void enableSoftwareLimits() {
-    var softLimits = new SoftwareLimitSwitchConfigs()
-        .withForwardSoftLimitEnable(true)
-        .withReverseSoftLimitEnable(true)
-        .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
-    io.applySoftwareLimits(softLimits);
-  }
-
-  public Command homeCommand() {
-    final int[] stallCounter = {0};
-
-    return Commands.sequence(
-            Commands.runOnce(() -> {
-              m_isHomed = false;
-              stallCounter[0] = 0;
-            }),
-            run(() -> {
-                  io.setDutyCycle(ShooterPivotConstants.HOMING_SPEED);
-
-                  if (Amps.of(inputs.statorCurrentAmps)
-                      .gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD)) {
-                    stallCounter[0]++;
-                  } else {
-                    stallCounter[0] = 0;
-                  }
-                })
-                .until(() -> stallCounter[0] >= ShooterPivotConstants.HOMING_STALL_CYCLES),
-            Commands.runOnce(() -> {
-              io.setEncoderPosition(0);
-              m_isHomed = true;
-              enableSoftwareLimits();
-              m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
-            }),
-            Commands.runOnce(this::stop))
-        .withName("ShooterPivot Home");
-  }
-
-  // ==================== COMMANDS ====================
-
-  public Command trackAngleCommand(Supplier<Angle> angleSupplier) {
-    return run(() -> setAngle(angleSupplier.get()))
-        .finallyDo(interrupted -> stop())
-        .withName("ShooterPivot Track Angle");
-  }
-
-  public Command goToAngleCommand(Angle angleDegrees) {
-    return run(() -> setAngle(angleDegrees))
-        .finallyDo(interrupted -> stop())
-        .withName("ShooterPivot GoTo " + angleDegrees + "deg");
-  }
-
-  public Command manualControlCommand(DoubleSupplier axisSupplier) {
-    return run(() -> {
-          double raw = axisSupplier.getAsDouble();
-          double deadbanded = MathUtil.applyDeadband(raw, ShooterPivotConstants.MANUAL_DEADBAND);
-          setOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
-        })
-        .finallyDo(interrupted -> stop())
-        .withName("ShooterPivot Manual");
-  }
-
-  public Command zeroEncoderCommand() {
-    return runOnce(() -> io.setEncoderPosition(0)).withName("ShooterPivot Zero Encoder");
-  }
-
-  @Override
-  public void periodic() {
-    io.updateInputs(inputs);
-    Logger.processInputs("ShooterPivot", inputs);
-
-    // Trench safety: actively lower pivot when entering trench zone
-    if (m_trenchMode) {
-      m_trenchMode = isInTrenchZone();
-    } else if (isInTrenchZone()) {
-      lowerForTrenchZone();
-    }
-
-    Logger.recordOutput("ShooterPivot/isInTrenchZone", isInTrenchZone());
-    Logger.recordOutput("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
-    Logger.recordOutput("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees.in(Degrees));
-    Logger.recordOutput("ShooterPivot/Position", getPosition());
-    Logger.recordOutput("ShooterPivot/Velocity", getVelocity());
-    Logger.recordOutput("ShooterPivot/IsHomed", m_isHomed);
-    Logger.recordOutput("ShooterPivot/AtTarget", isAtTarget());
-    Logger.recordOutput("ShooterPivot/TrenchMode", m_trenchMode);
   }
 }

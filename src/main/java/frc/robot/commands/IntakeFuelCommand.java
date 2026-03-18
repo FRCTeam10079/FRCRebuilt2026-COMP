@@ -27,8 +27,8 @@ public class IntakeFuelCommand extends Command {
   @Override
   public void initialize() {
     // initializes by deploying pivot and beginning the intake sequence
-    pivot.deployPivot();
-    wheels.intakeIn();
+    pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY);
+    wheels.setWantedState(IntakeWheelsSubsystem.WantedState.INTAKE);
   }
 
   /** Only finishes once deployed completely */

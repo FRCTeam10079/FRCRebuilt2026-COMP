@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants.IndexerConstants;
 import frc.robot.Constants.ShooterPivotConstants;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterInterpolationTable;
@@ -83,11 +82,11 @@ public final class OperatorControls {
     // B - Hold reverse intake + indexer
     operator
         .b()
-        .whileTrue(Commands.startEnd(pivot::deployPivot, pivot::stowPivot, pivot)
-            .alongWith(
-                intake.intakeOutCommand(),
-                indexer.runAtSpeedsCommand(
-                    IndexerConstants.kFeederReverseRPM, IndexerConstants.kSpindexerReverseRPM)));
+        .whileTrue(Commands.startEnd(
+                () -> pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY),
+                () -> pivot.setWantedState(PivotSubsystem.WantedState.STOW),
+                pivot)
+            .alongWith(intake.intakeOutCommand(), indexer.reverseCommand()));
 
     // ==================== SHOOTER PIVOT ====================
     // Default: auto-aim tracking from distance-based setpoint

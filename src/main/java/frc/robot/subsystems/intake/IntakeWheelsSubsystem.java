@@ -9,15 +9,29 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeConstants;
 import org.littletonrobotics.junction.Logger;
 
-/**
- * Intake wheels subsystem for collecting game pieces.
- *
- * <p>Uses IO abstraction for hardware independence.
- */
 public class IntakeWheelsSubsystem extends SubsystemBase {
 
   private final IntakeWheelsIO io;
   private final IntakeWheelsIOInputsAutoLogged inputs = new IntakeWheelsIOInputsAutoLogged();
+
+  // ==================== STATE MACHINE ====================
+
+  public enum WantedState {
+    OFF,
+    INTAKE,
+    EJECT,
+    REVERSE
+  }
+
+  private enum SystemState {
+    IDLE,
+    INTAKING,
+    EJECTING,
+    REVERSING
+  }
+
+  private WantedState wantedState = WantedState.OFF;
+  private SystemState systemState = SystemState.IDLE;
 
   public IntakeWheelsSubsystem(IntakeWheelsIO io) {
     this.io = io;
@@ -27,22 +41,66 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("IntakeWheels", inputs);
+
+    systemState = handleStateTransitions();
+    applyStates();
+
+    Logger.recordOutput("IntakeWheels/WantedState", wantedState);
+    Logger.recordOutput("IntakeWheels/SystemState", systemState);
   }
 
-  /** Run intake wheels inward to collect game pieces. */
-  public void intakeIn() {
-    io.setVelocity(IntakeConstants.Wheels.INTAKE_IN_RPM / 60.0);
+  // ==================== STATE TRANSITIONS ====================
+
+  private SystemState handleStateTransitions() {
+    return switch (wantedState) {
+      case INTAKE -> SystemState.INTAKING;
+      case EJECT, REVERSE -> SystemState.REVERSING;
+      case OFF -> SystemState.IDLE;
+    };
   }
 
-  /** Reverse intake wheels to eject stuck game pieces. */
-  private void intakeOut() {
-    io.setVelocity(IntakeConstants.Wheels.INTAKE_OUT_RPM / 60.0);
+  private void applyStates() {
+    switch (systemState) {
+      case INTAKING:
+        io.setVelocity(IntakeConstants.Wheels.INTAKE_IN_RPM / 60.0);
+        break;
+      case REVERSING:
+        io.setVelocity(IntakeConstants.Wheels.INTAKE_OUT_RPM / 60.0);
+        break;
+      case IDLE:
+      default:
+        io.stop();
+        break;
+    }
   }
 
-  /** Stop the intake wheels. */
-  public void stop() {
-    io.stop();
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
   }
+
+  public WantedState getWantedState() {
+    return wantedState;
+  }
+
+  // ==================== COMMAND FACTORIES ====================
+
+  public Command intakeInCommand() {
+    return startEnd(() -> setWantedState(WantedState.INTAKE), () -> setWantedState(WantedState.OFF))
+        .withName("Intake In");
+  }
+
+  public Command intakeOutCommand() {
+    return startEnd(() -> setWantedState(WantedState.EJECT), () -> setWantedState(WantedState.OFF))
+        .withName("Intake Out");
+  }
+
+  public Command stopCommand() {
+    return runOnce(() -> setWantedState(WantedState.OFF)).withName("Intake Stop");
+  }
+
+  // ==================== TELEMETRY ====================
 
   public double getSupplyCurrentAmps() {
     return inputs.supplyCurrentAmps;
@@ -54,19 +112,5 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
 
   public double getMotorVoltageVolts() {
     return inputs.voltageVolts;
-  }
-
-  // ==================== COMMAND FACTORIES ====================
-
-  public Command intakeInCommand() {
-    return startEnd(this::intakeIn, this::stop).withName("Intake In");
-  }
-
-  public Command intakeOutCommand() {
-    return startEnd(this::intakeOut, this::stop).withName("Intake Out");
-  }
-
-  public Command stopCommand() {
-    return runOnce(this::stop).withName("Intake Stop");
   }
 }

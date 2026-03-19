@@ -138,7 +138,7 @@ public class ShootOnTheMoveDrive extends Command {
         0,
         0);
     pidRotate = new PIDController(
-        8.0, 3, 0); // search this
+        16.0, 3, 0); // search this
 
     // Enable continuous input for rotation (-PI to PI are same point)
     pidRotate.enableContinuousInput(-Math.PI, Math.PI);

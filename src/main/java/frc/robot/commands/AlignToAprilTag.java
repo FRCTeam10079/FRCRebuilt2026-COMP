@@ -27,11 +27,15 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 /**
  * Command to align the robot to an AprilTag using vision
  *
- * <p>This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag) 2. Calculates
- * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control to drive the robot
+ * <p>
+ * This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag)
+ * 2. Calculates
+ * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control
+ * to drive the robot
  * to the target pose 4. Rotates to face opposite the tag (facing the tag)
  *
- * <p>For REBUILT 2026 - Generic AprilTag alignment for any field element
+ * <p>
+ * For REBUILT 2026 - Generic AprilTag alignment for any field element
  */
 public class AlignToAprilTag extends Command {
 
@@ -49,8 +53,8 @@ public class AlignToAprilTag extends Command {
   private final PIDController pidRotate;
 
   // Swerve drive request - field centric with velocity control
-  private final SwerveRequest.FieldCentric driveRequest =
-      new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.Velocity);
+  private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric()
+      .withDriveRequestType(DriveRequestType.Velocity);
 
   // Stop request
   private final SwerveRequest stop;
@@ -78,8 +82,8 @@ public class AlignToAprilTag extends Command {
   /**
    * Creates a new AlignToAprilTag command
    *
-   * @param drivetrain The swerve drivetrain subsystem
-   * @param vision The vision subsystem
+   * @param drivetrain    The swerve drivetrain subsystem
+   * @param vision        The vision subsystem
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public AlignToAprilTag(
@@ -104,7 +108,7 @@ public class AlignToAprilTag extends Command {
         DrivetrainConstants.ALIGN_PID_KI,
         DrivetrainConstants.ALIGN_PID_KD);
     pidRotate = new PIDController(
-        DrivetrainConstants.ALIGN_ROTATION_KP, 0, DrivetrainConstants.ALIGN_ROTATION_KD);
+        8.0, 3.0, 0);
 
     // Enable continuous input for rotation (-PI to PI are same point)
     pidRotate.enableContinuousInput(-Math.PI, Math.PI);
@@ -151,7 +155,8 @@ public class AlignToAprilTag extends Command {
 
     for (int id : allianceTags) {
       double[] tagData = AprilTagMaps.aprilTagMap.get(id);
-      if (tagData == null) continue;
+      if (tagData == null)
+        continue;
       Pose2d tagPose = new Pose2d(
           tagData[0] * Constants.INCHES_TO_METERS,
           tagData[1] * Constants.INCHES_TO_METERS,
@@ -237,10 +242,8 @@ public class AlignToAprilTag extends Command {
     targetRotation = MathUtil.angleModulus(targetRotation);
 
     // Rotate the offset from tag-relative to field-relative
-    double rotatedOffsetX =
-        (offsetX * Math.cos(targetRotation)) - (offsetY * Math.sin(targetRotation));
-    double rotatedOffsetY =
-        (offsetX * Math.sin(targetRotation)) + (offsetY * Math.cos(targetRotation));
+    double rotatedOffsetX = (offsetX * Math.cos(targetRotation)) - (offsetY * Math.sin(targetRotation));
+    double rotatedOffsetY = (offsetX * Math.sin(targetRotation)) + (offsetY * Math.cos(targetRotation));
 
     // Calculate final target pose
     targetPose = new Pose2d(
@@ -315,7 +318,7 @@ public class AlignToAprilTag extends Command {
     double velocityYaw = pidRotate.calculate(currentPose.getRotation().getRadians());
     velocityYaw = MathUtil.clamp(velocityYaw, -2.0, 2.0);
 
-    return new double[] {velocityX, velocityY, velocityYaw};
+    return new double[] { velocityX, velocityY, velocityYaw };
   }
 
   /** Calculate distance between two poses */

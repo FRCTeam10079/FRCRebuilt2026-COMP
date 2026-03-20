@@ -75,7 +75,7 @@ public class ShootOnTheMoveDrive extends Command {
 
   // Swerve drive request - field centric with velocity control
   private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric()
-      .withDriveRequestType(DriveRequestType.Velocity);
+      .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
   // Stop request
   private final SwerveRequest stop;
@@ -270,6 +270,7 @@ public class ShootOnTheMoveDrive extends Command {
         .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 2.0))
         .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 2.0))
         .withRotationalRate(velocities[2]));
+
   }
 
   private Pose2d calculateTagPose() {

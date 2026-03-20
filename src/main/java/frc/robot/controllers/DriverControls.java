@@ -158,12 +158,8 @@ public final class DriverControls {
 
     controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
 
-    controller.povLeft().whileTrue(
-        new ShootOnTheMoveDrive(drivetrain, vision, controller::getLeftY, controller::getLeftX)
-
-            .alongWith(
-                ShooterFactory.forceShoot(ShootOnTheMoveDrive.getShooterSetpointSupplier(), shooter, shooterPivot,
-                    indexer)));
+    controller.leftBumper().whileTrue(
+        new ShootOnTheMoveDrive(drivetrain, vision, controller::getLeftY, controller::getLeftX));
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot

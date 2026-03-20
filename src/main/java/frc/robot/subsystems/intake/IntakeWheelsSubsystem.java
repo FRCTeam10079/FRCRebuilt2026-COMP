@@ -32,7 +32,7 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
       new TalonFX(IntakeConstants.Wheels.SLAVE_MOTOR_ID, Constants.kCANBus);
 
   private final VelocityVoltage m_velocityRequest =
-      new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
+      new VelocityVoltage(0).withSlot(0).withEnableFOC(false);
 
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
@@ -42,7 +42,7 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
     configureMotors();
 
     // Follower setup (slave follows master)
-    m_followerRequest = new Follower(IntakeConstants.Wheels.MOTOR_ID, MotorAlignmentValue.Aligned);
+    m_followerRequest = new Follower(IntakeConstants.Wheels.MOTOR_ID, MotorAlignmentValue.Opposed);
 
     m_slaveMotor.setControl(m_followerRequest);
   }

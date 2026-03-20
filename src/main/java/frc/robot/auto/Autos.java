@@ -45,7 +45,7 @@ public class Autos {
 
     // PathPlanner chooser — populates from deploy/pathplanner/autos/
     pathPlannerChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData("Auto Chooser", pathPlannerChooser);
+    SmartDashboard.putData("Auto Mode", pathPlannerChooser);
 
     // Choreo chooser — manually populated with known trajectories
     configureChoreoChooser();
@@ -76,27 +76,11 @@ public class Autos {
    * </ol>
    */
   public Command getSelected() {
-    // 1) Choreo
-    String choreoName = choreoChooser.getSelected();
-    if (choreoName != null && !choreoName.isBlank()) {
-      switch (choreoName) {
-        case "Right_OutPost":
-          return rightSideOp();
-        case "LeftSideDepot":
-          return leftSideDepot();
-        default:
-          return getChoreoAuto(choreoName);
-      }
-    }
-
-    // 2) PathPlanner
     Command ppAuto = pathPlannerChooser.getSelected();
-    if (ppAuto != null) {
-      return ppAuto;
+    if (ppAuto == null) {
+      return getRecoveryPath();
     }
-
-    // 3) Fallback
-    return getRecoveryPath();
+    return ppAuto;
   }
 
   /**
@@ -115,10 +99,11 @@ public class Autos {
 
   // OLD AutoRoutine-based implementation:
   // public Command getChoreoAuto(String trajectoryName) {
-  //   AutoRoutine routine = choreoAutoFactory.newRoutine("SelectedChoreo");
-  //   AutoTrajectory trajectory = routine.trajectory(trajectoryName);
-  //   routine.active().onTrue(Commands.sequence(trajectory.resetOdometry(), trajectory.cmd()));
-  //   return routine.cmd().withName("Choreo: " + trajectoryName);
+  // AutoRoutine routine = choreoAutoFactory.newRoutine("SelectedChoreo");
+  // AutoTrajectory trajectory = routine.trajectory(trajectoryName);
+  // routine.active().onTrue(Commands.sequence(trajectory.resetOdometry(),
+  // trajectory.cmd()));
+  // return routine.cmd().withName("Choreo: " + trajectoryName);
   // }
 
   /**
@@ -155,18 +140,19 @@ public class Autos {
 
   // OLD AutoRoutine-based implementation:
   // public AutoRoutine RightSideOp() {
-  //   AutoRoutine routine = choreoAutoFactory.newRoutine("RighSideOp");
-  //   AutoTrajectory rStartToOp = routine.trajectory("rStartToOp");
-  //   AutoTrajectory OpToRScore = routine.trajectory("OpToRScore");
-  //   AutoTrajectory RScoreToNeutral = routine.trajectory("RScoreToNeutral");
-  //   routine.active().onTrue(
-  //       Commands.sequence(
-  //           rStartToOp.resetOdometry(),
-  //           Commands.parallel(rStartToOp.cmd(), autoCommands.deployPivot()),
-  //           Commands.parallel(OpToRScore.cmd(), autoCommands.spinUpShooter()),
-  //           Commands.parallel(autoCommands.runIndexer(), autoCommands.shoot().withTimeout(5.0)),
-  //           RScoreToNeutral.cmd().withTimeout(4.0).andThen(autoCommands.intake())));
-  //   return routine;
+  // AutoRoutine routine = choreoAutoFactory.newRoutine("RighSideOp");
+  // AutoTrajectory rStartToOp = routine.trajectory("rStartToOp");
+  // AutoTrajectory OpToRScore = routine.trajectory("OpToRScore");
+  // AutoTrajectory RScoreToNeutral = routine.trajectory("RScoreToNeutral");
+  // routine.active().onTrue(
+  // Commands.sequence(
+  // rStartToOp.resetOdometry(),
+  // Commands.parallel(rStartToOp.cmd(), autoCommands.deployPivot()),
+  // Commands.parallel(OpToRScore.cmd(), autoCommands.spinUpShooter()),
+  // Commands.parallel(autoCommands.runIndexer(),
+  // autoCommands.shoot().withTimeout(5.0)),
+  // RScoreToNeutral.cmd().withTimeout(4.0).andThen(autoCommands.intake())));
+  // return routine;
   // }
 
   /**
@@ -192,24 +178,25 @@ public class Autos {
 
   // OLD AutoRoutine-based implementation:
   // public AutoRoutine LeftSideDepot() {
-  //   AutoRoutine routine = choreoAutoFactory.newRoutine("LeftSideDepot");
-  //   AutoTrajectory lStartToNeutral = routine.trajectory("lStartToNeutral");
-  //   AutoTrajectory LneutralToLscore = routine.trajectory("LneutralToLscore");
-  //   AutoTrajectory LscoreToDepot = routine.trajectory("LscoreToDepot");
-  //   AutoTrajectory DepotToLscore = routine.trajectory("DepotToLscore");
-  //   routine.active().onTrue(
-  //       Commands.sequence(
-  //           lStartToNeutral.resetOdometry(),
-  //           Commands.parallel(lStartToNeutral.cmd(), autoCommands.deployPivot()),
-  //           Commands.parallel(LneutralToLscore.cmd(), autoCommands.spinUpShooter()),
-  //           Commands.parallel(autoCommands.runIndexer(), autoCommands.shoot().withTimeout(5.0)),
-  //           Commands.sequence(
-  //               LscoreToDepot.cmd(),
-  //               DepotToLscore.cmd(),
-  //               autoCommands.spinUpShooter(),
-  //               autoCommands.runIndexer(),
-  //               autoCommands.shoot())));
-  //   return routine;
+  // AutoRoutine routine = choreoAutoFactory.newRoutine("LeftSideDepot");
+  // AutoTrajectory lStartToNeutral = routine.trajectory("lStartToNeutral");
+  // AutoTrajectory LneutralToLscore = routine.trajectory("LneutralToLscore");
+  // AutoTrajectory LscoreToDepot = routine.trajectory("LscoreToDepot");
+  // AutoTrajectory DepotToLscore = routine.trajectory("DepotToLscore");
+  // routine.active().onTrue(
+  // Commands.sequence(
+  // lStartToNeutral.resetOdometry(),
+  // Commands.parallel(lStartToNeutral.cmd(), autoCommands.deployPivot()),
+  // Commands.parallel(LneutralToLscore.cmd(), autoCommands.spinUpShooter()),
+  // Commands.parallel(autoCommands.runIndexer(),
+  // autoCommands.shoot().withTimeout(5.0)),
+  // Commands.sequence(
+  // LscoreToDepot.cmd(),
+  // DepotToLscore.cmd(),
+  // autoCommands.spinUpShooter(),
+  // autoCommands.runIndexer(),
+  // autoCommands.shoot())));
+  // return routine;
   // }
 
 }

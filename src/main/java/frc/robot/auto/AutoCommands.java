@@ -14,6 +14,7 @@ import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.EndIntakingCommand;
 import frc.robot.commands.IntakeFuelCommand;
+import frc.robot.commands.PrintStuff;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -220,6 +221,7 @@ public class AutoCommands {
     NamedCommands.registerCommand("Intake down", intakeFuel());
     NamedCommands.registerCommand("Shoot", shoot());
     NamedCommands.registerCommand("Intake", intake());
+    NamedCommands.registerCommand("Print stuff", new PrintStuff());
 
     DataLogManager.log("[AutoCommands] Named commands registered for PathPlanner");
   }

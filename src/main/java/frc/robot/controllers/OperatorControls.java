@@ -4,9 +4,9 @@
 
 package frc.robot.controllers;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.Degrees;
 
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -21,7 +21,6 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.GameState;
-import frc.robot.statemachine.HubShiftState;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
@@ -146,39 +145,29 @@ public final class OperatorControls {
 
     // D-Pad Up/Down tuning: nudge angle up/down.
     SmartDashboard.putString("Tuning/Shooter/ActiveMode", "ANGLE");
-    operator
-    .povUp()
-    .onTrue(Commands.runOnce(() -> {
-    double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    double tuningDistanceMeters =
-    ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    double currentAngle =
-    ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    double newAngle = currentAngle + angleStepDeg;
-    ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE +");
-    SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    rawDistanceMeters);
-    SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    tuningDistanceMeters);
-    SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
+    operator.povUp().onTrue(Commands.runOnce(() -> {
+      double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
+      double tuningDistanceMeters = ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
+      double currentAngle =
+          ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
+      double newAngle = currentAngle + angleStepDeg;
+      ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
+      SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE +");
+      SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters", rawDistanceMeters);
+      SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters", tuningDistanceMeters);
+      SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
     }));
-    operator
-    .povDown()
-    .onTrue(Commands.runOnce(() -> {
-    double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    double tuningDistanceMeters =
-    ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    double currentAngle =
-    ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    double newAngle = currentAngle - angleStepDeg;
-    ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE -");
-    SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    rawDistanceMeters);
-    SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    tuningDistanceMeters);
-    SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
+    operator.povDown().onTrue(Commands.runOnce(() -> {
+      double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
+      double tuningDistanceMeters = ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
+      double currentAngle =
+          ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
+      double newAngle = currentAngle - angleStepDeg;
+      ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
+      SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE -");
+      SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters", rawDistanceMeters);
+      SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters", tuningDistanceMeters);
+      SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
     }));
 
     // ==================== FORCE SHOOT OVERRIDE ====================

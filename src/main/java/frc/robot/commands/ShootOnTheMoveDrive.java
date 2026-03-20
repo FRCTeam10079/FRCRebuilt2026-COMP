@@ -17,6 +17,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -212,6 +213,13 @@ public class ShootOnTheMoveDrive extends Command {
 
     double distanceToHub;
 
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(drivetrain.getState().Speeds,
+        drivetrain.getState().Pose.getRotation());
+
+    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
+
+    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
+
     boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
 
     if (isRed) {
@@ -221,9 +229,9 @@ public class ShootOnTheMoveDrive extends Command {
       distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
       correctedHubPose = new Pose2d(
-          hubPose.getX() + (drivetrain.getState().Speeds.vxMetersPerSecond
+          hubPose.getX() - (xVelFieldCentric
               * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY() + (drivetrain.getState().Speeds.vyMetersPerSecond
+          hubPose.getY() - (yVelFieldCentric
               * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
           new Rotation2d(0));
 
@@ -234,9 +242,9 @@ public class ShootOnTheMoveDrive extends Command {
       distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
       correctedHubPose = new Pose2d(
-          hubPose.getX() - (drivetrain.getState().Speeds.vxMetersPerSecond
+          hubPose.getX() - (xVelFieldCentric
               * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY() - (drivetrain.getState().Speeds.vyMetersPerSecond
+          hubPose.getY() - (yVelFieldCentric
               * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
           new Rotation2d(0));
 
@@ -373,6 +381,13 @@ public class ShootOnTheMoveDrive extends Command {
 
     Pose2d hubPose;
 
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(drivetrain.getState().Speeds,
+        drivetrain.getState().Pose.getRotation());
+
+    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
+
+    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
+
     boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
 
     if (isRed) {
@@ -394,9 +409,9 @@ public class ShootOnTheMoveDrive extends Command {
     double distanceToAprilTag = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
     Pose2d correctedPose = new Pose2d(
-        currentPose.getX() - (drivetrain.getState().Speeds.vxMetersPerSecond
+        currentPose.getX() + (xVelFieldCentric
             * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
-        currentPose.getY() - (drivetrain.getState().Speeds.vyMetersPerSecond
+        currentPose.getY() + (yVelFieldCentric
             * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
         drivetrain.getState().Pose.getRotation());
     return correctedPose;

@@ -33,7 +33,7 @@ public class IntakeConstants {
      */
     public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.5);
 
-    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.05);
+    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.25);
 
     /**
      * How long (seconds) the pivot must be at setpoint before switching to idle

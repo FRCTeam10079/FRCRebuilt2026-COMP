@@ -239,6 +239,18 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     return m_pivotMotor.getVelocity().getValueAsDouble();
   }
 
+  public double getSupplyCurrentAmps() {
+    return m_pivotMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getStatorCurrentAmps() {
+    return m_pivotMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getMotorVoltageVolts() {
+    return m_pivotMotor.getMotorVoltage().getValueAsDouble();
+  }
+
   public void reZeroIfNeeded() {
     if (m_pivotMotor.getPosition().getValueAsDouble() < 0.0) {
       m_pivotMotor.setPosition(0);

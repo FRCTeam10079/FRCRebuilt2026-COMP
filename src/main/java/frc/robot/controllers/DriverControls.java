@@ -62,10 +62,17 @@ public final class DriverControls {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier) {
 
+    // Toggle to invert driver translation controls (left stick X/Y).
+    final boolean[] invertTranslation = {false};
+    Supplier<Double> translationY =
+        () -> invertTranslation[0] ? -controller.getLeftY() : controller.getLeftY();
+    Supplier<Double> translationX =
+        () -> invertTranslation[0] ? -controller.getLeftX() : controller.getLeftX();
+
     // ==================== DEFAULT DRIVE ====================
     drivetrain.setDefaultCommand(drivetrain.smoothTeleopDriveCommand(
-        () -> controller.getLeftY(),
-        () -> controller.getLeftX(),
+        translationY::get,
+        translationX::get,
         // controller::getLeftY,
         // controller::getLeftX,
         () -> controller.getRightX(),
@@ -104,8 +111,8 @@ public final class DriverControls {
         .rightBumper()
         .whileTrue(ShooterFactory.aimAtHub(
                 drivetrain,
-                controller::getLeftY,
-                controller::getLeftX,
+                translationY::get,
+                translationX::get,
                 () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
                 Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
                 Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
@@ -153,7 +160,7 @@ public final class DriverControls {
     // A - Align to AprilTag (CENTER)
     controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
 
-    controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
+    controller.b().onTrue(Commands.runOnce(() -> invertTranslation[0] = !invertTranslation[0]));
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot

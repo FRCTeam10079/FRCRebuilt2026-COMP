@@ -10,6 +10,8 @@ import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.
@@ -33,6 +35,7 @@ public final class ShooterInterpolationTable {
   // Maps distance (meters) -> flywheel RPM
   private static InterpolatingTreeMap<Double, Double> rpmTable =
       new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static final NavigableSet<Double> rpmKeys = new TreeSet<>();
 
   static {
     // -------------------------------------------------------
@@ -40,12 +43,12 @@ public final class ShooterInterpolationTable {
     // Distance (m) -> RPM
     // -------------------------------------------------------
     // Close range: low RPM, steep angle (fuel doesn't need much speed)
-    rpmTable.put(1.0, 2000.0);
-    rpmTable.put(2.2, 2050.0);
+    putRpm(1.0, 2000.0);
+    putRpm(2.2, 2050.0);
     // rpmTable.put(2.5, 2100.0);
-    rpmTable.put(3.0, 2325.0);
+    rpmTable.put(3.0, 2355.0);
     // rpmTable.put(3.5, 2500.0);
-    rpmTable.put(4.5, 2600.0);
+    rpmTable.put(4.5, 2625.0);
     // rpmTable.put(4.5, 3300.0);
     // rpmTable.put(5.0, 2500.0);
     // rpmTable.put(5.5, 3900.0);
@@ -56,6 +59,7 @@ public final class ShooterInterpolationTable {
   // Maps distance (meters) -> pivot angle (degrees from horizontal)
   private static InterpolatingTreeMap<Double, Double> angleTable =
       new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static final NavigableSet<Double> angleKeys = new TreeSet<>();
 
   static {
     // -------------------------------------------------------
@@ -64,12 +68,12 @@ public final class ShooterInterpolationTable {
     // At close range, need steeper angle (closer to 80deg) to lob upward
     // At far range, need shallower angle (closer to 60deg) for flatter trajectory
     // -------------------------------------------------------
-    angleTable.put(1.0, 60.0);
-    angleTable.put(2.0, 60.0);
+    putAngle(1.0, 60.0);
+    putAngle(2.0, 60.0);
     // angleTable.put(2.5, 60.0);
-    angleTable.put(3.2, 63.0);
+    putAngle(3.2, 64.0);
     // angleTable.put(3.5, 64.0);
-    angleTable.put(4.5, 72.0);
+    putAngle(4.5, 72.5);
     // Don't need 5, max is 4.5
   }
 
@@ -141,14 +145,45 @@ public final class ShooterInterpolationTable {
   }
 
   public static void hotSwapRPMValues(Double key, Double newValue) {
-    rpmTable.put(key, newValue);
+    putRpm(key, newValue);
 
     System.out.println(rpmTable.get(key));
   }
 
   public static void hotSwapAngleValues(Double key, Double newValue) {
-    angleTable.put(key, newValue);
+    putAngle(key, newValue);
 
     System.out.println(angleTable.get(key));
+  }
+
+  public static double getClosestRPMKey(double distanceMeters) {
+    return getClosestKey(rpmKeys, distanceMeters);
+  }
+
+  public static double getClosestAngleKey(double distanceMeters) {
+    return getClosestKey(angleKeys, distanceMeters);
+  }
+
+  private static double getClosestKey(NavigableSet<Double> keys, double queryMeters) {
+    if (keys.isEmpty()) {
+      return queryMeters;
+    }
+
+    Double lower = keys.floor(queryMeters);
+    Double upper = keys.ceiling(queryMeters);
+
+    if (lower == null) return upper;
+    if (upper == null) return lower;
+    return (queryMeters - lower) <= (upper - queryMeters) ? lower : upper;
+  }
+
+  private static void putRpm(Double key, Double value) {
+    rpmTable.put(key, value);
+    rpmKeys.add(key);
+  }
+
+  private static void putAngle(Double key, Double value) {
+    angleTable.put(key, value);
+    angleKeys.add(key);
   }
 }

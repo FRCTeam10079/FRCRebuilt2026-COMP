@@ -164,7 +164,8 @@ public class RobotContainer {
         shooter,
         shooterPivot,
         m_stateMachine,
-        m_setpointSupplier);
+        m_setpointSupplier,
+        () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose));
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }
@@ -182,6 +183,22 @@ public class RobotContainer {
   /** Get the state machine instance */
   public RobotStateMachine getStateMachine() {
     return m_stateMachine;
+  }
+
+  public IntakeWheelsSubsystem getIntake() {
+    return intake;
+  }
+
+  public PivotSubsystem getPivot() {
+    return pivot;
+  }
+
+  public IndexerSubsystem getIndexer() {
+    return indexer;
+  }
+
+  public ClimberSubsystem getClimber() {
+    return climber;
   }
 
   /**

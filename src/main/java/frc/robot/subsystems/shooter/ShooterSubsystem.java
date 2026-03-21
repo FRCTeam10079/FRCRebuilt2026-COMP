@@ -271,6 +271,30 @@ public class ShooterSubsystem extends SubsystemBase {
     return m_isEnabled;
   }
 
+  public double getMasterSupplyCurrentAmps() {
+    return m_masterMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getSlaveSupplyCurrentAmps() {
+    return m_slaveMotor.getSupplyCurrent().getValueAsDouble();
+  }
+
+  public double getMasterStatorCurrentAmps() {
+    return m_masterMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getSlaveStatorCurrentAmps() {
+    return m_slaveMotor.getStatorCurrent().getValueAsDouble();
+  }
+
+  public double getMasterVoltageVolts() {
+    return m_masterMotor.getMotorVoltage().getValueAsDouble();
+  }
+
+  public double getSlaveVoltageVolts() {
+    return m_slaveMotor.getMotorVoltage().getValueAsDouble();
+  }
+
   /**
    * Command to spin up the shooter to the default RPM Ends immediately after setting the target
    * (does not wait for ready)

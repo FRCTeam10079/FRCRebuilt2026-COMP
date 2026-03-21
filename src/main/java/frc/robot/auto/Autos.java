@@ -76,18 +76,6 @@ public class Autos {
    * </ol>
    */
   public Command getSelected() {
-    // 1) Choreo
-    String choreoName = choreoChooser.getSelected();
-    if (choreoName != null && !choreoName.isBlank()) {
-      switch (choreoName) {
-        case "Right_OutPost":
-          return rightSideOp();
-        case "LeftSideDepot":
-          return leftSideDepot();
-        default:
-          return getChoreoAuto(choreoName);
-      }
-    }
 
     // 2) PathPlanner
     Command ppAuto = pathPlannerChooser.getSelected();

@@ -25,7 +25,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State
+ * Machine for
  * comprehensive robot control
  */
 public class Robot extends LoggedRobot {
@@ -36,6 +37,7 @@ public class Robot extends LoggedRobot {
   // MASTER STATE MACHINE - Controls EVERYTHING
   private final RobotStateMachine m_stateMachine;
   private final PowerDiagnosticsLogger m_powerDiagnosticsLogger;
+  private int m_periodicCycleCount = 0;
 
   public Robot() {
     // ==================== ADVANTAGEKIT LOGGING ====================
@@ -84,7 +86,7 @@ public class Robot extends LoggedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
+      pub.set(new String[] { "mjpg:http://" + llName + ".local:5800/stream.mjpg" });
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }
@@ -106,7 +108,13 @@ public class Robot extends LoggedRobot {
     // Run command scheduler
     CommandScheduler.getInstance().run();
 
-    m_powerDiagnosticsLogger.logPeriodic();
+    // Throttle power diagnostics to every 5th cycle (~100ms) to reduce loop
+    // overruns
+    m_periodicCycleCount++;
+    if (m_periodicCycleCount >= 5) {
+      m_periodicCycleCount = 0;
+      m_powerDiagnosticsLogger.logPeriodic();
+    }
   }
 
   @Override

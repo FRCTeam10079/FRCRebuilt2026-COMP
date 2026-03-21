@@ -25,7 +25,7 @@ public final class Constants {
    * AdvantageKit logging mode. Auto-detects REAL vs SIM. Set to REPLAY manually when replaying a
    * log file.
    */
-  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
 
   public enum Mode {
     /** Running on a real robot. */

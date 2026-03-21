@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Rotations;
 
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -73,6 +74,16 @@ public class PivotSubsystem extends SubsystemBase {
   // ==================== STATE TRANSITIONS ====================
 
   private SystemState handleStateTransitions() {
+    // When robot is disabled, force IDLE to prevent motors from trying to hold
+    // position
+    if (DriverStation.isDisabled()) {
+      stallTimer.stop();
+      stallTimer.reset();
+      atSetpointTimer.stop();
+      atSetpointTimer.reset();
+      return SystemState.IDLE;
+    }
+
     switch (wantedState) {
       case DEPLOY:
         pivotSetpoint = IntakeConstants.Pivot.INTAKE_POSITION;
@@ -179,15 +190,15 @@ public class PivotSubsystem extends SubsystemBase {
 
   public Command deployCommand() {
     return Commands.sequence(
-            Commands.runOnce(() -> setWantedState(WantedState.DEPLOY)),
-            Commands.waitUntil(this::reachedSetpoint))
+        Commands.runOnce(() -> setWantedState(WantedState.DEPLOY)),
+        Commands.waitUntil(this::reachedSetpoint))
         .withName("Pivot Deploy");
   }
 
   public Command stowCommand() {
     return Commands.sequence(
-            Commands.runOnce(() -> setWantedState(WantedState.STOW)),
-            Commands.waitUntil(() -> reachedSetpoint() || isStalled()))
+        Commands.runOnce(() -> setWantedState(WantedState.STOW)),
+        Commands.waitUntil(() -> reachedSetpoint() || isStalled()))
         .withName("Pivot Stow");
   }
 

@@ -101,14 +101,14 @@ public class RobotContainer {
         break;
 
       case SIM:
-        // Dummy IOs - all inputs stay at defaults (0.0), no hardware access
-        indexer = new IndexerSubsystem(new IndexerIO() {});
-        shooter = new ShooterSubsystem(new ShooterIO() {});
-        shooterPivot =
-            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
-        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
-        pivot = new PivotSubsystem(new PivotIO() {});
-        climber = new ClimberSubsystem(new ClimberIO() {});
+        // Sim IOs - first-order physics models for each mechanism
+        indexer = new IndexerSubsystem(new frc.robot.subsystems.indexer.IndexerIOSim());
+        shooter = new ShooterSubsystem(new frc.robot.subsystems.shooter.ShooterIOSim());
+        shooterPivot = new ShooterPivotSubsystem(
+            new frc.robot.subsystems.shooter.ShooterPivotIOSim(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new frc.robot.subsystems.intake.IntakeWheelsIOSim());
+        pivot = new PivotSubsystem(new frc.robot.subsystems.intake.PivotIOSim());
+        climber = new ClimberSubsystem(new frc.robot.subsystems.climber.ClimberIOSim());
         break;
 
       case REPLAY:

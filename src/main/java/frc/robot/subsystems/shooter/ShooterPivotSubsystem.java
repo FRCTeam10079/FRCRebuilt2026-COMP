@@ -190,8 +190,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   public void setWantedState(WantedState state, Angle angle) {
     this.wantedState = state;
-    this.targetAngle =
+    Angle clamped =
         Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+    this.targetAngle = clamped;
+    this.angleSupplier = () -> clamped;
   }
 
   public void setAngleSupplier(Supplier<Angle> supplier) {

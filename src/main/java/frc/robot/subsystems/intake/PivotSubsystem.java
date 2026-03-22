@@ -190,15 +190,15 @@ public class PivotSubsystem extends SubsystemBase {
 
   public Command deployCommand() {
     return Commands.sequence(
-        Commands.runOnce(() -> setWantedState(WantedState.DEPLOY)),
-        Commands.waitUntil(this::reachedSetpoint))
+            Commands.runOnce(() -> setWantedState(WantedState.DEPLOY)),
+            Commands.waitUntil(this::reachedSetpoint))
         .withName("Pivot Deploy");
   }
 
   public Command stowCommand() {
     return Commands.sequence(
-        Commands.runOnce(() -> setWantedState(WantedState.STOW)),
-        Commands.waitUntil(() -> reachedSetpoint() || isStalled()))
+            Commands.runOnce(() -> setWantedState(WantedState.STOW)),
+            Commands.waitUntil(() -> reachedSetpoint() || isStalled()))
         .withName("Pivot Stow");
   }
 

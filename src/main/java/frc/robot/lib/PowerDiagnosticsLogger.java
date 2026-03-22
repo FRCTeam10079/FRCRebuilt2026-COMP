@@ -120,40 +120,62 @@ public class PowerDiagnosticsLogger {
     int pdhChannels = m_powerDistribution != null ? m_powerDistribution.getNumChannels() : 0;
     m_channelCurrentEntries = new DoubleLogEntry[pdhChannels];
     for (int channel = 0; channel < m_channelCurrentEntries.length; channel++) {
-      m_channelCurrentEntries[channel] = new DoubleLogEntry(log, "/power/pdh/channel" + channel + "CurrentAmps");
+      m_channelCurrentEntries[channel] =
+          new DoubleLogEntry(log, "/power/pdh/channel" + channel + "CurrentAmps");
     }
 
-    m_intakeSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/intake/supplyCurrentAmps");
-    m_intakeStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/intake/statorCurrentAmps");
+    m_intakeSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/intake/supplyCurrentAmps");
+    m_intakeStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/intake/statorCurrentAmps");
     m_intakeVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/intake/motorVoltageVolts");
 
-    m_intakePivotSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/intakePivot/supplyCurrentAmps");
-    m_intakePivotStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/intakePivot/statorCurrentAmps");
-    m_intakePivotVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/intakePivot/motorVoltageVolts");
+    m_intakePivotSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/intakePivot/supplyCurrentAmps");
+    m_intakePivotStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/intakePivot/statorCurrentAmps");
+    m_intakePivotVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/intakePivot/motorVoltageVolts");
 
-    m_indexerFeederSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/indexer/feederSupplyCurrentAmps");
-    m_indexerSpindexerSupplyCurrentEntry = new DoubleLogEntry(log,
-        "/power/subsystems/indexer/spindexerSupplyCurrentAmps");
-    m_indexerFeederStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/indexer/feederStatorCurrentAmps");
-    m_indexerSpindexerStatorCurrentEntry = new DoubleLogEntry(log,
-        "/power/subsystems/indexer/spindexerStatorCurrentAmps");
-    m_indexerFeederVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/indexer/feederVoltageVolts");
-    m_indexerSpindexerVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/indexer/spindexerVoltageVolts");
-    m_indexerTotalSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/indexer/totalSupplyCurrentAmps");
+    m_indexerFeederSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/feederSupplyCurrentAmps");
+    m_indexerSpindexerSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/spindexerSupplyCurrentAmps");
+    m_indexerFeederStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/feederStatorCurrentAmps");
+    m_indexerSpindexerStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/spindexerStatorCurrentAmps");
+    m_indexerFeederVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/feederVoltageVolts");
+    m_indexerSpindexerVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/spindexerVoltageVolts");
+    m_indexerTotalSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/indexer/totalSupplyCurrentAmps");
 
-    m_shooterMasterSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/masterSupplyCurrentAmps");
-    m_shooterSlaveSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/slaveSupplyCurrentAmps");
-    m_shooterMasterStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/masterStatorCurrentAmps");
-    m_shooterSlaveStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/slaveStatorCurrentAmps");
-    m_shooterMasterVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/masterVoltageVolts");
-    m_shooterSlaveVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/slaveVoltageVolts");
-    m_shooterTotalSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooter/totalSupplyCurrentAmps");
+    m_shooterMasterSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/masterSupplyCurrentAmps");
+    m_shooterSlaveSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/slaveSupplyCurrentAmps");
+    m_shooterMasterStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/masterStatorCurrentAmps");
+    m_shooterSlaveStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/slaveStatorCurrentAmps");
+    m_shooterMasterVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/masterVoltageVolts");
+    m_shooterSlaveVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/slaveVoltageVolts");
+    m_shooterTotalSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooter/totalSupplyCurrentAmps");
 
-    m_shooterPivotSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooterPivot/supplyCurrentAmps");
-    m_shooterPivotStatorCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/shooterPivot/statorCurrentAmps");
-    m_shooterPivotVoltageEntry = new DoubleLogEntry(log, "/power/subsystems/shooterPivot/motorVoltageVolts");
+    m_shooterPivotSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooterPivot/supplyCurrentAmps");
+    m_shooterPivotStatorCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooterPivot/statorCurrentAmps");
+    m_shooterPivotVoltageEntry =
+        new DoubleLogEntry(log, "/power/subsystems/shooterPivot/motorVoltageVolts");
 
-    m_mechanismsTotalSupplyCurrentEntry = new DoubleLogEntry(log, "/power/subsystems/totalMechanismSupplyCurrentAmps");
+    m_mechanismsTotalSupplyCurrentEntry =
+        new DoubleLogEntry(log, "/power/subsystems/totalMechanismSupplyCurrentAmps");
     m_diagnosticSummaryEntry = new StringLogEntry(log, "/power/diagnostics/summary");
     m_diagnosticEventEntry = new StringLogEntry(log, "/power/diagnostics/events");
 
@@ -238,22 +260,22 @@ public class PowerDiagnosticsLogger {
     m_mechanismsTotalSupplyCurrentEntry.append(mechanismsTotalSupplyCurrent);
 
     double[] mechanismCurrents = {
-        intakeSupply,
-        intakePivotSupply,
-        feederSupply,
-        spindexerSupply,
-        shooterMasterSupply,
-        shooterSlaveSupply,
-        shooterPivotSupply
+      intakeSupply,
+      intakePivotSupply,
+      feederSupply,
+      spindexerSupply,
+      shooterMasterSupply,
+      shooterSlaveSupply,
+      shooterPivotSupply
     };
     String[] mechanismNames = {
-        "intake",
-        "intakePivot",
-        "indexerFeeder",
-        "indexerSpindexer",
-        "shooterMaster",
-        "shooterSlave",
-        "shooterPivot"
+      "intake",
+      "intakePivot",
+      "indexerFeeder",
+      "indexerSpindexer",
+      "shooterMaster",
+      "shooterSlave",
+      "shooterPivot"
     };
 
     logDiagnosticEvents(
@@ -333,7 +355,8 @@ public class PowerDiagnosticsLogger {
     String pdhTotal = Double.isNaN(m_lastPdhTotalCurrentAmps)
         ? "na"
         : String.format("%.1f", m_lastPdhTotalCurrentAmps);
-    String pdhVoltage = Double.isNaN(m_lastPdhVoltageVolts) ? "na" : String.format("%.2f", m_lastPdhVoltageVolts);
+    String pdhVoltage =
+        Double.isNaN(m_lastPdhVoltageVolts) ? "na" : String.format("%.2f", m_lastPdhVoltageVolts);
 
     String flags = "none";
     if (batteryVoltage <= BATTERY_LOW_THRESHOLD_VOLTS) {
@@ -445,7 +468,7 @@ public class PowerDiagnosticsLogger {
       }
     }
 
-    return new int[] { first, second, third };
+    return new int[] {first, second, third};
   }
 
   private void logFailureRateLimited(double nowSeconds, String message) {

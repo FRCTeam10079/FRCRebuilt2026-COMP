@@ -22,6 +22,7 @@ import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.climber.ClimberIO;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -73,6 +74,9 @@ public class RobotContainer {
 
   private final Telemetry m_telemetry =
       new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+
+  // ==================== SUPERSTRUCTURE ====================
+  private final Superstructure superstructure;
 
   // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
@@ -152,6 +156,25 @@ public class RobotContainer {
       return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
     });
 
+    // ==================== SUPERSTRUCTURE ====================
+    superstructure = new Superstructure(
+        shooter,
+        shooterPivot,
+        indexer,
+        intake,
+        pivot,
+        climber,
+        m_stateMachine,
+        m_setpointSupplier,
+        () -> {
+          double targetHeading =
+              ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+          double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
+          Angle error = Radians.of(
+              Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
+          return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
+        });
+
     // Initialize the pathfinding system
     initializePathfinding();
 
@@ -167,7 +190,15 @@ public class RobotContainer {
     // Choreo.
     // Must be registered BEFORE any PathPlanner autos/paths are created.
     autoCommands = new AutoCommands(
-        intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
+        superstructure,
+        intake,
+        pivot,
+        indexer,
+        shooter,
+        shooterPivot,
+        drivetrain,
+        vision,
+        m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
@@ -194,24 +225,12 @@ public class RobotContainer {
    */
   private void configureBindings() {
     DriverControls.configure(
-        m_driverController,
-        drivetrain,
-        vision,
-        intake,
-        pivot,
-        shooter,
-        shooterPivot,
-        indexer,
-        m_stateMachine,
-        m_setpointSupplier);
+        m_driverController, drivetrain, vision, superstructure, m_stateMachine, m_setpointSupplier);
     OperatorControls.configure(
         m_operatorController,
-        intake,
-        pivot,
-        indexer,
-        climber,
-        shooter,
+        superstructure,
         shooterPivot,
+        climber,
         m_stateMachine,
         m_setpointSupplier,
         () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose));
@@ -248,6 +267,10 @@ public class RobotContainer {
 
   public ClimberSubsystem getClimber() {
     return climber;
+  }
+
+  public Superstructure getSuperstructure() {
+    return superstructure;
   }
 
   /**

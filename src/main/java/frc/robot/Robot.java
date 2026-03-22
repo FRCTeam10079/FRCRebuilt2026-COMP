@@ -25,8 +25,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State
- * Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
  * comprehensive robot control
  */
 public class Robot extends LoggedRobot {
@@ -86,7 +85,7 @@ public class Robot extends LoggedRobot {
       StringArrayPublisher pub = nt.getTable("/CameraPublisher/" + llName)
           .getStringArrayTopic("streams")
           .publish();
-      pub.set(new String[] { "mjpg:http://" + llName + ".local:5800/stream.mjpg" });
+      pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
       DataLogManager.log(llName + " stream URL published to NetworkTables");
     }
   }

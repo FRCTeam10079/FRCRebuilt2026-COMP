@@ -30,27 +30,25 @@ import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * Driver controller bindings (Port 0). All driver button->command mappings live
- * here so
+ * Driver controller bindings (Port 0). All driver button->command mappings live here so
  * RobotContainer stays lean.
  */
 public final class DriverControls {
 
-  private DriverControls() {
-  } // Static utility class
+  private DriverControls() {} // Static utility class
 
   /**
    * Bind all driver controls.
    *
-   * @param controller       the driver's Xbox controller
-   * @param drivetrain       swerve drivetrain subsystem
-   * @param vision           vision subsystem (for alignment commands)
-   * @param intake           intake wheels subsystem
-   * @param pivot            intake pivot subsystem
-   * @param shooter          shooter subsystem
-   * @param shooterPivot     shooter pivot subsystem
-   * @param indexer          indexer subsystem
-   * @param stateMachine     global robot state machine
+   * @param controller the driver's Xbox controller
+   * @param drivetrain swerve drivetrain subsystem
+   * @param vision vision subsystem (for alignment commands)
+   * @param intake intake wheels subsystem
+   * @param pivot intake pivot subsystem
+   * @param shooter shooter subsystem
+   * @param shooterPivot shooter pivot subsystem
+   * @param indexer indexer subsystem
+   * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
@@ -95,8 +93,8 @@ public final class DriverControls {
                   }
                 },
                 intake)
-        // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
-        );
+            // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
+            );
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
@@ -106,12 +104,12 @@ public final class DriverControls {
     controller
         .rightBumper()
         .whileTrue(ShooterFactory.aimAtHub(
-            drivetrain,
-            controller::getLeftY,
-            controller::getLeftX,
-            () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-            Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-            Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
+                drivetrain,
+                controller::getLeftY,
+                controller::getLeftX,
+                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
             .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
@@ -158,8 +156,10 @@ public final class DriverControls {
 
     controller.b().onTrue(Commands.runOnce(drivetrain::resetFieldHeading));
 
-    controller.leftBumper().whileTrue(
-        new ShootOnTheMoveDrive(drivetrain, vision, controller::getLeftY, controller::getLeftX));
+    controller
+        .leftBumper()
+        .whileTrue(new ShootOnTheMoveDrive(
+            drivetrain, vision, controller::getLeftY, controller::getLeftX));
 
     // ==================== STOW PIVOT ====================
     // D-pad Down - Stow intake pivot

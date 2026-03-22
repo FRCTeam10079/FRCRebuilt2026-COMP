@@ -7,12 +7,8 @@ package frc.robot.commands;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -38,19 +34,17 @@ import frc.robot.statemachine.DrivetrainMode;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 /**
  * Command to align the robot to an AprilTag using vision
  *
- * <p>
- * This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag)
- * 2. Calculates
- * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control
- * to drive the robot
+ * <p>This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag) 2. Calculates
+ * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control to drive the robot
  * to the target pose 4. Rotates to face opposite the tag (facing the tag)
  *
- * <p>
- * For REBUILT 2026 - Generic AprilTag alignment for any field element
+ * <p>For REBUILT 2026 - Generic AprilTag alignment for any field element
  */
 public class ShootOnTheMoveDrive extends Command {
 
@@ -75,8 +69,8 @@ public class ShootOnTheMoveDrive extends Command {
   DoubleSupplier yInputSupplier;
 
   // Swerve drive request - field centric with velocity control
-  private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric()
-      .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+  private final SwerveRequest.FieldCentric driveRequest =
+      new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
   // Stop request
   private final SwerveRequest stop;
@@ -106,12 +100,14 @@ public class ShootOnTheMoveDrive extends Command {
   /**
    * Creates a new AlignToAprilTag command
    *
-   * @param drivetrain    The swerve drivetrain subsystem
-   * @param vision        The vision subsystem
+   * @param drivetrain The swerve drivetrain subsystem
+   * @param vision The vision subsystem
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public ShootOnTheMoveDrive(
-      CommandSwerveDrivetrain drivetrain, VisionSubsystem vision, DoubleSupplier xInputSupplier,
+      CommandSwerveDrivetrain drivetrain,
+      VisionSubsystem vision,
+      DoubleSupplier xInputSupplier,
       DoubleSupplier yInputSupplier) {
     this.drivetrain = drivetrain;
     this.vision = vision;
@@ -130,16 +126,9 @@ public class ShootOnTheMoveDrive extends Command {
     sotmSetpointSupplier = ShooterMath.createSetpointSupplier(() -> this.getCorrectedRobotPose());
 
     // Initialize PID controllers with values from Constants
-    pidX = new PIDController(
-        0,
-        0,
-        0);
-    pidY = new PIDController(
-        0,
-        0,
-        0);
-    pidRotate = new PIDController(
-        8.0, 0, 1); // search this
+    pidX = new PIDController(0, 0, 0);
+    pidY = new PIDController(0, 0, 0);
+    pidRotate = new PIDController(8.0, 0, 1); // search this
 
     // Enable continuous input for rotation (-PI to PI are same point)
     pidRotate.enableContinuousInput(-Math.PI, Math.PI);
@@ -149,7 +138,6 @@ public class ShootOnTheMoveDrive extends Command {
 
     // This command requires the drivetrain
     addRequirements(drivetrain);
-
   }
 
   @Override
@@ -192,7 +180,6 @@ public class ShootOnTheMoveDrive extends Command {
     if (robotPose == null) {
       return;
     }
-
   }
 
   @Override
@@ -213,8 +200,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     double distanceToHub;
 
-    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(drivetrain.getState().Speeds,
-        drivetrain.getState().Pose.getRotation());
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
+        drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
 
     double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
 
@@ -229,10 +216,10 @@ public class ShootOnTheMoveDrive extends Command {
       distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
       correctedHubPose = new Pose2d(
-          hubPose.getX() - (xVelFieldCentric
-              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY() - (yVelFieldCentric
-              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getX()
+              - (xVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getY()
+              - (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
           new Rotation2d(0));
 
     } else {
@@ -242,43 +229,37 @@ public class ShootOnTheMoveDrive extends Command {
       distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
       correctedHubPose = new Pose2d(
-          hubPose.getX() - (xVelFieldCentric
-              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY() - (yVelFieldCentric
-              * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getX()
+              - (xVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
+          hubPose.getY()
+              - (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
           new Rotation2d(0));
-
     }
 
     // Calculate velocities using PID
     double[] velocities = calculatePIDVelocities(currentPose, correctedHubPose);
 
-    SmartDashboard.putNumber("AlignToAprilTag/VelocityX", drivetrain.getState().Speeds.vyMetersPerSecond);
+    SmartDashboard.putNumber(
+        "AlignToAprilTag/VelocityX", drivetrain.getState().Speeds.vyMetersPerSecond);
 
-    SmartDashboard.putNumber("AlignToAprilTag/ToF", ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
+    SmartDashboard.putNumber(
+        "AlignToAprilTag/ToF", ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
 
-    SmartDashboard.putNumberArray(
-        "AprilTagPose",
-        new double[] {
-            aprilTagPose.getX(),
-            aprilTagPose.getY(),
-            aprilTagPose.getRotation().getDegrees()
-        });
+    SmartDashboard.putNumberArray("AprilTagPose", new double[] {
+      aprilTagPose.getX(), aprilTagPose.getY(), aprilTagPose.getRotation().getDegrees()
+    });
 
-    SmartDashboard.putNumberArray(
-        "CorrectedPose",
-        new double[] {
-            correctedHubPose.getX(),
-            correctedHubPose.getY(),
-            correctedHubPose.getRotation().getDegrees()
-        });
+    SmartDashboard.putNumberArray("CorrectedPose", new double[] {
+      correctedHubPose.getX(),
+      correctedHubPose.getY(),
+      correctedHubPose.getRotation().getDegrees()
+    });
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
         .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 2.0))
         .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 2.0))
         .withRotationalRate(velocities[2]));
-
   }
 
   private Pose2d calculateTagPose() {
@@ -304,8 +285,7 @@ public class ShootOnTheMoveDrive extends Command {
 
     for (int id : allianceTags) {
       double[] tagData = AprilTagMaps.aprilTagMap.get(id);
-      if (tagData == null)
-        continue;
+      if (tagData == null) continue;
       Pose2d tagPose = new Pose2d(
           tagData[0] * Constants.INCHES_TO_METERS,
           tagData[1] * Constants.INCHES_TO_METERS,
@@ -381,8 +361,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     Pose2d hubPose;
 
-    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(drivetrain.getState().Speeds,
-        drivetrain.getState().Pose.getRotation());
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
+        drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
 
     double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
 
@@ -397,7 +377,6 @@ public class ShootOnTheMoveDrive extends Command {
     } else {
 
       hubPose = new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
-
     }
     // Pose2d aprilTagPose = calculateTagPose();
 
@@ -409,10 +388,10 @@ public class ShootOnTheMoveDrive extends Command {
     double distanceToAprilTag = currentPose.getTranslation().getDistance(hubPose.getTranslation());
 
     Pose2d correctedPose = new Pose2d(
-        currentPose.getX() + (xVelFieldCentric
-            * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
-        currentPose.getY() + (yVelFieldCentric
-            * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
+        currentPose.getX()
+            + (xVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
+        currentPose.getY()
+            + (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
         drivetrain.getState().Pose.getRotation());
     return correctedPose;
   }
@@ -436,10 +415,7 @@ public class ShootOnTheMoveDrive extends Command {
     // (offsetX * Math.sin(targetRotation)) + (offsetY * Math.cos(targetRotation));
 
     // Calculate final target pose
-    targetPose = new Pose2d(
-        currentPose.getX(),
-        currentPose.getY(),
-        new Rotation2d(targetRotation));
+    targetPose = new Pose2d(currentPose.getX(), currentPose.getY(), new Rotation2d(targetRotation));
 
     // Set PID setpoints
     pidX.setSetpoint(targetPose.getX());
@@ -468,7 +444,7 @@ public class ShootOnTheMoveDrive extends Command {
     SmartDashboard.putNumber("AlignToAprilTag/TargetX", targetPose.getX());
     SmartDashboard.putNumber("AlignToAprilTag/TargetY", targetPose.getY());
 
-    return new double[] { velocityX, velocityY, velocityYaw };
+    return new double[] {velocityX, velocityY, velocityYaw};
   }
 
   /** Calculate distance between two poses */
@@ -493,8 +469,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     // Calculate position and yaw error
     double distance = targetPose.getTranslation().getDistance(currentPose.getTranslation());
-    double yawError = Math
-        .abs(MathUtil.angleModulus(targetPose.getRotation().getRadians() - currentPose.getRotation().getRadians()));
+    double yawError = Math.abs(MathUtil.angleModulus(
+        targetPose.getRotation().getRadians() - currentPose.getRotation().getRadians()));
 
     // Check if within tolerance
     boolean positionReached = distance <= positionTolerance;

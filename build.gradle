@@ -151,8 +151,8 @@ tasks.withType(JavaCompile) {
 // Makes it so createVersionFile MUST be ran everytime java is complied
 project.compileJava.dependsOn(createVersionFile)
 gversion {
-  srcDir       = "src/main/java/"
-  classPackage = "frc.robot"
+  srcDir       = "src/main/java"
+  classPackage = "frc.robot.generated"
   className    = "BuildConstants"
   dateFormat   = "yyyy-MM-dd HH:mm:ss z"
   timeZone     = "America/Los_Angeles" // Use preferred time zone

@@ -2,6 +2,7 @@ plugins {
   id "java"
   id "edu.wpi.first.GradleRIO" version "2026.2.1"
   id "com.diffplug.spotless" version "8.1.0"
+  id "com.peterabeles.gversion" version "1.10"
 }
 
 spotless {
@@ -146,3 +147,43 @@ wpi.java.configureTestTasks(test)
 tasks.withType(JavaCompile) {
   options.compilerArgs.add '-XDstringConcat=inline'
 }
+
+// Makes it so createVersionFile MUST be ran everytime java is complied
+project.compileJava.dependsOn(createVersionFile)
+gversion {
+  srcDir       = "src/main/java/"
+  classPackage = "frc.robot"
+  className    = "BuildConstants"
+  dateFormat   = "yyyy-MM-dd HH:mm:ss z"
+  timeZone     = "America/Los_Angeles" // Use preferred time zone
+  indent       = "  "
+}
+
+// Forces it so if we are gonna deploy it commits locally immediately
+// This only triggers if we are deploying
+tasks.register('eventDeploy') {
+  doLast {
+    if (project.gradle.startParameter.taskNames.any({ it.toLowerCase().contains("deploy") })) {
+      def branch = 'git branch --show-current'.execute().text.trim()
+      def commitMessage = "Automated commit before deploy at '${new Date().toString()}'"
+
+      exec {
+        workingDir(projectDir)
+        executable 'git'
+        args 'add', '-A'
+      }
+      exec {
+        workingDir(projectDir)
+        executable 'git'
+        args 'commit', '-m', commitMessage
+        ignoreExitValue = true
+      }
+
+      println "Committed to branch: '$branch'"
+      println "Commit message: '$commitMessage'"
+    } else {
+      println "Not running deploy task, skipping commit"
+    }
+  }
+}
+createVersionFile.dependsOn(eventDeploy)

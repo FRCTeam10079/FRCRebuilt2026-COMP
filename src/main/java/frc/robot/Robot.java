@@ -40,7 +40,20 @@ public class Robot extends LoggedRobot {
 
   public Robot() {
     // ==================== ADVANTAGEKIT LOGGING ====================
-    Logger.recordMetadata("ProjectName", "FRCRebuilt2026-COMP");
+    // https://docs.advantagekit.org/getting-started/installation/version-control#usage
+    // ^ explains how to use these values to make replays more consistent
+    Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+    Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+    Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+    Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+    Logger.recordMetadata(
+        "GitDirty",
+        switch (BuildConstants.DIRTY) {
+          case 0 -> "All changes committed";
+          case 1 -> "Uncommitted changes";
+          default -> "Unknown";
+        });
 
     switch (Constants.currentMode) {
       case REAL:

@@ -150,8 +150,12 @@ tasks.withType(JavaCompile) {
 
 // Makes it so createVersionFile MUST be ran everytime java is complied
 project.compileJava.dependsOn(createVersionFile)
+
+def generatedSrc = project.getLayout().getBuildDirectory().get().dir("generated")
+sourceSets.main.java.srcDirs += generatedSrc
+
 gversion {
-  srcDir       = "src/main/java"
+  srcDir       = generatedSrc
   classPackage = "frc.robot.generated"
   className    = "BuildConstants"
   dateFormat   = "yyyy-MM-dd HH:mm:ss z"

@@ -7,46 +7,101 @@ package frc.robot.subsystems.climber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.ClimberConstants;
+import org.littletonrobotics.junction.Logger;
 
-/**
- * Stub subsystem for the climber mechanism.
- *
- * <p>Hardware has not been wired yet. All command factories currently return
- * {@code Commands.none()} so the rest of the robot code can reference them without null-checks.
- * Replace the stubs with real motor control once the climber is physically installed.
- */
 public class ClimberSubsystem extends SubsystemBase {
 
-  /** Create a new ClimberSubsystem. Motor configuration is deferred until hardware is wired. */
-  public ClimberSubsystem() {
-    configureMotors();
+  private final ClimberIO io;
+  private final ClimberIOInputsAutoLogged inputs = new ClimberIOInputsAutoLogged();
+
+  // ==================== STATE MACHINE ====================
+
+  public enum WantedState {
+    IDLE,
+    EXTEND,
+    RETRACT,
+    CLIMB
   }
 
-  /** Configure climber motor(s). TODO: add TalonFX setup once hardware is ready. */
-  private void configureMotors() {
-    // TODO: instantiate TalonFX with ClimberConstants.CLIMBER_MOTOR_ID on
-    // CLIMBER_CANBUS
+  private enum SystemState {
+    IDLE,
+    EXTENDING,
+    RETRACTING,
+    CLIMBING
   }
 
-  // ==================== COMMAND FACTORIES ====================
+  private WantedState wantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLE;
 
-  /** Extend the climber arm. TODO: replace with real motor control. */
-  public Command extendCommand() {
-    return Commands.none().withName("Climber Extend (stub)");
-  }
-
-  /** Retract the climber arm. TODO: replace with real motor control. */
-  public Command retractCommand() {
-    return Commands.none().withName("Climber Retract (stub)");
-  }
-
-  /** Stop the climber. TODO: replace with real motor control. */
-  public Command stopCommand() {
-    return Commands.none().withName("Climber Stop (stub)");
+  public ClimberSubsystem(ClimberIO io) {
+    this.io = io;
   }
 
   @Override
   public void periodic() {
-    // TODO: publish climber telemetry (position, current, etc.)
+    io.updateInputs(inputs);
+    Logger.processInputs("Climber", inputs);
+
+    systemState = handleStateTransitions();
+    applyStates();
+
+    Logger.recordOutput("Climber/WantedState", wantedState);
+    Logger.recordOutput("Climber/SystemState", systemState);
+  }
+
+  // ==================== STATE TRANSITIONS ====================
+
+  private SystemState handleStateTransitions() {
+    return switch (wantedState) {
+      case EXTEND -> SystemState.EXTENDING;
+      case RETRACT -> SystemState.RETRACTING;
+      case CLIMB -> SystemState.CLIMBING;
+      case IDLE -> SystemState.IDLE;
+    };
+  }
+
+  private void applyStates() {
+    switch (systemState) {
+      case EXTENDING:
+        io.setVoltage(ClimberConstants.CLIMBER_EXTEND_SPEED * 12.0);
+        break;
+      case RETRACTING:
+      case CLIMBING:
+        io.setVoltage(ClimberConstants.CLIMBER_RETRACT_SPEED * 12.0);
+        break;
+      case IDLE:
+      default:
+        io.stop();
+        break;
+    }
+  }
+
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
+  }
+
+  public WantedState getWantedState() {
+    return wantedState;
+  }
+
+  // ==================== COMMAND FACTORIES ====================
+
+  public Command extendCommand() {
+    return startEnd(
+            () -> setWantedState(WantedState.EXTEND), () -> setWantedState(WantedState.IDLE))
+        .withName("Climber Extend");
+  }
+
+  public Command retractCommand() {
+    return startEnd(
+            () -> setWantedState(WantedState.RETRACT), () -> setWantedState(WantedState.IDLE))
+        .withName("Climber Retract");
+  }
+
+  public Command stopCommand() {
+    return Commands.runOnce(() -> setWantedState(WantedState.IDLE)).withName("Climber Stop");
   }
 }

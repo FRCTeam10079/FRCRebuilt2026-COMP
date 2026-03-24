@@ -76,6 +76,8 @@ public class Autos {
    * </ol>
    */
   public Command getSelected() {
+
+    // 2) PathPlanner
     Command ppAuto = pathPlannerChooser.getSelected();
     if (ppAuto == null) {
       return getRecoveryPath();

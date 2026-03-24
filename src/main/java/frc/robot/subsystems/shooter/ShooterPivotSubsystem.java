@@ -4,27 +4,16 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Rotations;
 
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -32,90 +21,199 @@ import frc.robot.Constants;
 import frc.robot.Constants.ShooterPivotConstants;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
-/**
- * Shooter pivot subsystem with closed-loop MotionMagic position control.
- *
- * <p>Features: - MotionMagicVoltage for smooth profiled positioning - Gravity feedforward (kG *
- * cos) to hold position against gravity - Hard-stop homing routine to calibrate the integrated
- * encoder - Software limits to protect the mechanism - Manual override fallback for operator
- * control
- */
 public class ShooterPivotSubsystem extends SubsystemBase {
 
-  private final TalonFX m_pivotMotor = new TalonFX(ShooterPivotConstants.MOTOR_ID);
+  private final ShooterPivotIO io;
+  private final ShooterPivotIOInputsAutoLogged inputs = new ShooterPivotIOInputsAutoLogged();
 
-  // Control requests
-  private final MotionMagicVoltage m_motionMagicRequest = new MotionMagicVoltage(0.0);
-  private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0.0);
-  private final NeutralOut m_neutralRequest = new NeutralOut();
-  StatusSignal<Angle> positionSignal = m_pivotMotor.getPosition();
+  // ==================== STATE MACHINE ====================
+
+  public enum WantedState {
+    HOME,
+    IDLE,
+    TRACK_ANGLE,
+    HOLD_ANGLE,
+    MANUAL
+  }
+
+  private enum SystemState {
+    HOMING,
+    HOMED,
+    IDLE,
+    TRACKING,
+    AT_ANGLE,
+    TRENCH_LOWERED,
+    MANUAL_OVERRIDE
+  }
+
+  private WantedState wantedState = WantedState.IDLE;
+  private WantedState previousWantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLE;
 
   // State tracking
-  private boolean m_isHomed = true;
-  private Angle m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
+  private boolean isHomed = true;
+  private Angle targetAngle = ShooterPivotConstants.MIN_ANGLE;
+  private double manualOutput = 0.0;
+
+  // Homing
+  private int homingStallCounter = 0;
 
   // Trench auto-lower
-  private final Supplier<Pose2d> m_poseSupplier;
-  private boolean m_trenchMode = false;
+  private final Supplier<Pose2d> poseSupplier;
+  private boolean trenchMode = false;
 
-  public ShooterPivotSubsystem(Supplier<Pose2d> poseSupplier) {
-    m_poseSupplier = poseSupplier;
-    configureMotor();
+  // Angle supplier for TRACK_ANGLE mode
+  private Supplier<Angle> angleSupplier = () -> ShooterPivotConstants.MIN_ANGLE;
+
+  public ShooterPivotSubsystem(ShooterPivotIO io, Supplier<Pose2d> poseSupplier) {
+    this.io = io;
+    this.poseSupplier = poseSupplier;
   }
 
-  private void configureMotor() {
-    TalonFXConfiguration config = new TalonFXConfiguration();
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("ShooterPivot", inputs);
 
-    // Motor output
-    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    systemState = handleStateTransitions();
+    applyStates();
 
-    // Current limits
-    config.CurrentLimits = new CurrentLimitsConfigs()
-        .withSupplyCurrentLimit(ShooterPivotConstants.SUPPLY_CURRENT_LIMIT)
-        .withStatorCurrentLimit(ShooterPivotConstants.STATOR_CURRENT_LIMIT);
+    previousWantedState = wantedState;
 
-    // PID + FF gains (Slot 0)
-    config.Slot0 = new Slot0Configs()
-        .withKP(ShooterPivotConstants.KP)
-        .withKI(ShooterPivotConstants.KI)
-        .withKD(ShooterPivotConstants.KD)
-        .withKS(ShooterPivotConstants.KS)
-        .withKV(ShooterPivotConstants.KV)
-        .withKG(ShooterPivotConstants.KG)
-        .withGravityType(GravityTypeValue.Arm_Cosine);
-
-    // MotionMagic profile
-    config.MotionMagic = new MotionMagicConfigs()
-        .withMotionMagicCruiseVelocity(ShooterPivotConstants.MOTION_MAGIC_CRUISE_VELOCITY)
-        .withMotionMagicAcceleration(ShooterPivotConstants.MOTION_MAGIC_ACCELERATION)
-        .withMotionMagicJerk(ShooterPivotConstants.MOTION_MAGIC_JERK);
-
-    // Software limits (in motor rotations)
-    // Initially disabled until homing is complete
-    config.SoftwareLimitSwitch = new SoftwareLimitSwitchConfigs()
-        .withForwardSoftLimitEnable(true)
-        .withReverseSoftLimitEnable(true)
-        .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
-            ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
-
-    m_pivotMotor.getConfigurator().apply(config);
+    Logger.recordOutput("ShooterPivot/WantedState", wantedState);
+    Logger.recordOutput("ShooterPivot/SystemState", systemState);
+    Logger.recordOutput("ShooterPivot/isInTrenchZone", isInTrenchZone());
+    Logger.recordOutput("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
+    Logger.recordOutput("ShooterPivot/TargetAngleDegrees", targetAngle.in(Degrees));
+    Logger.recordOutput("ShooterPivot/Position", inputs.positionRotations);
+    Logger.recordOutput("ShooterPivot/Velocity", inputs.velocityRPS);
+    Logger.recordOutput("ShooterPivot/IsHomed", isHomed);
+    Logger.recordOutput("ShooterPivot/AtTarget", isAtTarget());
+    Logger.recordOutput("ShooterPivot/TrenchMode", trenchMode);
   }
 
-  // ==================== POSITION CONTROL ====================
+  // ==================== STATE TRANSITIONS ====================
+
+  private SystemState handleStateTransitions() {
+    switch (wantedState) {
+      case HOME:
+        if (previousWantedState != WantedState.HOME) {
+          isHomed = false;
+          homingStallCounter = 0;
+        }
+        if (Amps.of(inputs.statorCurrentAmps).gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD)) {
+          homingStallCounter++;
+        } else {
+          homingStallCounter = 0;
+        }
+        if (homingStallCounter >= ShooterPivotConstants.HOMING_STALL_CYCLES) {
+          io.setEncoderPosition(0);
+          isHomed = true;
+          enableSoftwareLimits();
+          targetAngle = ShooterPivotConstants.MIN_ANGLE;
+          homingStallCounter = 0;
+          wantedState = WantedState.IDLE;
+          return SystemState.HOMED;
+        }
+        return SystemState.HOMING;
+
+      case TRACK_ANGLE:
+        targetAngle = Constants.clamp(
+            angleSupplier.get(), ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+        return evaluateAngleTrackingState();
+
+      case HOLD_ANGLE:
+        return evaluateAngleTrackingState();
+
+      case MANUAL:
+        return SystemState.MANUAL_OVERRIDE;
+
+      case IDLE:
+      default:
+        trenchMode = false;
+        return SystemState.IDLE;
+    }
+  }
+
+  private SystemState evaluateAngleTrackingState() {
+    if (isInTrenchZone()) {
+      trenchMode = true;
+      if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+        targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+      }
+      return SystemState.TRENCH_LOWERED;
+    }
+    trenchMode = false;
+    if (isAtAngle(targetAngle)) {
+      return SystemState.AT_ANGLE;
+    }
+    return SystemState.TRACKING;
+  }
+
+  private void applyStates() {
+    switch (systemState) {
+      case HOMING:
+        io.setDutyCycle(ShooterPivotConstants.HOMING_SPEED);
+        break;
+      case HOMED:
+      case IDLE:
+        io.setNeutral();
+        break;
+      case TRACKING:
+      case AT_ANGLE:
+      case TRENCH_LOWERED:
+        io.setMotionMagicPosition(ShooterPivotConstants.degreesToMotorRotations(
+                targetAngle.minus(ShooterPivotConstants.MIN_ANGLE))
+            .in(Rotations));
+        break;
+      case MANUAL_OVERRIDE:
+        io.setDutyCycle(manualOutput);
+        break;
+    }
+  }
+
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
+  }
+
+  public void setWantedState(WantedState state, Angle angle) {
+    this.wantedState = state;
+    Angle clamped =
+        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+    this.targetAngle = clamped;
+    this.angleSupplier = () -> clamped;
+  }
+
+  public void setAngleSupplier(Supplier<Angle> supplier) {
+    this.angleSupplier = supplier;
+  }
+
+  public void setManualOutput(double output) {
+    this.manualOutput = MathUtil.clamp(
+        output, -ShooterPivotConstants.MANUAL_MAX_OUTPUT, ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+  }
+
+  public WantedState getWantedState() {
+    return wantedState;
+  }
+
+  public boolean isHomed() {
+    return isHomed;
+  }
+
+  public boolean hasHomeCompleted() {
+    return isHomed;
+  }
 
   // ==================== TRENCH ZONE DETECTION ====================
 
-  /**
-   * Check if the robot is in or approaching the trench zone, with hysteresis.
-   *
-   * <p>Uses wider approach thresholds to ENTER trench mode and tighter thresholds to EXIT, which
-   * prevents oscillation at the boundary.
-   */
   public boolean isInTrenchZone() {
-    // Yeah... we have a bug in here.
-    if (m_poseSupplier == null) return false;
-    Pose2d pose = m_poseSupplier.get();
+    if (poseSupplier == null) return false;
+    Pose2d pose = poseSupplier.get();
     if (pose == null) return false;
 
     Distance x = Meters.of(pose.getX());
@@ -123,15 +221,13 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
     Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
 
-    if (m_trenchMode) {
-      // Exit thresholds (actual trench zone = tighter)
+    if (trenchMode) {
       boolean inX =
           x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
       boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
           || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
       return inX && inY;
     } else {
-      // Entry thresholds (approach zone = wider by margin)
       boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
           && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
       boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
@@ -140,252 +236,97 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     }
   }
 
-  // ==================== POSITION CONTROL ====================
+  // ==================== POSITION QUERIES ====================
 
-  /**
-   * Command the pivot to a specific angle using MotionMagic.
-   *
-   * <p>When the robot is in the trench zone, the angle is capped at TRENCH_LOWER_ANGLE regardless
-   * of the requested target. This acts as a safety interlock so no command can accidentally raise
-   * the pivot into the trench beam.
-   *
-   * @param angle target angle (60-80deg range)
-   */
-  public void setAngle(Angle angle) {
-    // Trench safety: cap angle when in trench zone
-    if (m_trenchMode) {
-      m_trenchMode = isInTrenchZone();
-    } else if (isInTrenchZone()) {
-      lowerForTrenchZone();
-    } else {
-      // Clamp to safe range
-      setAngleUnchecked(
-          Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE));
-    }
-  }
-
-  private void setAngleUnchecked(Angle angle) {
-    m_targetAngleDegrees = angle;
-    m_pivotMotor.setControl(
-        m_motionMagicRequest.withPosition(ShooterPivotConstants.degreesToMotorRotations(
-            m_targetAngleDegrees.minus(ShooterPivotConstants.MIN_ANGLE))));
-  }
-
-  /** Ensure that the pivot is lowering when it is in the trench zone. */
-  private void lowerForTrenchZone() {
-    m_trenchMode = true;
-    if (m_targetAngleDegrees.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-      setAngleUnchecked(ShooterPivotConstants.TRENCH_LOWER_ANGLE);
-    }
-  }
-
-  /**
-   * Get the current pivot angle.
-   *
-   * @return pivot angle (relative to hard stop zero)
-   */
   public Angle getCurrentAngle() {
-    return ShooterPivotConstants.motorRotationsToDegrees(positionSignal.getValue())
+    return ShooterPivotConstants.motorRotationsToDegrees(Rotations.of(inputs.positionRotations))
         .plus(ShooterPivotConstants.MIN_ANGLE);
   }
 
-  /**
-   * Check if the pivot is at the target angle within shooting tolerance.
-   *
-   * @param targetDegrees the target angle
-   * @return true if within tolerance
-   */
-  public boolean isAtAngle(Angle targetDegrees) {
-    return getCurrentAngle().isNear(targetDegrees, ShooterPivotConstants.SHOOTING_TOLERANCE);
+  public boolean isAtAngle(Angle target) {
+    return getCurrentAngle().isNear(target, ShooterPivotConstants.SHOOTING_TOLERANCE);
   }
 
-  /** Check if the pivot is at its current target within shooting tolerance. */
   public boolean isAtTarget() {
-    return isAtAngle(m_targetAngleDegrees);
+    return isAtAngle(targetAngle);
   }
 
-  /** @return whether the pivot has been homed via hard-stop detection. */
-  public boolean isHomed() {
-    return m_isHomed;
-  }
-
-  /** @return the current target angle. */
-  public Angle getTargetAngleDegrees() {
-    return m_targetAngleDegrees;
-  }
-
-  // ==================== MANUAL / RAW CONTROL ====================
-
-  /**
-   * Set raw duty cycle output (for manual override or homing).
-   *
-   * @param output duty cycle (-1 to 1), clamped to safe range
-   */
-  public void setOutput(double output) {
-    double clamped = MathUtil.clamp(
-        output, -ShooterPivotConstants.MANUAL_MAX_OUTPUT, ShooterPivotConstants.MANUAL_MAX_OUTPUT);
-    m_pivotMotor.setControl(m_dutyCycleRequest.withOutput(clamped));
-  }
-
-  public void stop() {
-    m_pivotMotor.setControl(m_neutralRequest);
-  }
-
-  public double getPosition() {
-    return m_pivotMotor.getPosition().getValueAsDouble();
-  }
-
-  public double getVelocity() {
-    return m_pivotMotor.getVelocity().getValueAsDouble();
-  }
-
-  public double getSupplyCurrentAmps() {
-    return m_pivotMotor.getSupplyCurrent().getValueAsDouble();
-  }
-
-  public double getStatorCurrentAmps() {
-    return m_pivotMotor.getStatorCurrent().getValueAsDouble();
-  }
-
-  public double getMotorVoltageVolts() {
-    return m_pivotMotor.getMotorVoltage().getValueAsDouble();
+  public Angle getTargetAngle() {
+    return targetAngle;
   }
 
   public void reZeroIfNeeded() {
-    if (m_pivotMotor.getPosition().getValueAsDouble() < 0.0) {
-      m_pivotMotor.setPosition(0);
+    if (inputs.positionRotations < 0.0) {
+      io.setEncoderPosition(0);
     }
   }
 
-  // ==================== HOMING ====================
+  // ==================== HOMING HELPERS ====================
 
-  /** Enable software limits after homing is complete. Called internally after a successful home. */
   private void enableSoftwareLimits() {
     var softLimits = new SoftwareLimitSwitchConfigs()
         .withForwardSoftLimitEnable(true)
         .withReverseSoftLimitEnable(true)
         .withForwardSoftLimitThreshold(ShooterPivotConstants.degreesToMotorRotations(
             ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
-    m_pivotMotor.getConfigurator().apply(softLimits);
+    io.applySoftwareLimits(softLimits);
   }
 
-  /**
-   * Create a command that homes the pivot by driving into the hard stop.
-   *
-   * <p>The motor drives slowly in the negative direction. When the stator current exceeds the
-   * threshold for enough consecutive cycles, the motor is at the hard stop. The encoder is then
-   * zeroed, and software limits are enabled.
-   *
-   * <p>Uses hard-stop zeroing approach (drive into stop, detect stall via current spike).
-   *
-   * @return a command that completes when homing is done
-   */
+  // ==================== COMMAND FACTORIES ====================
+
   public Command homeCommand() {
-    final int[] stallCounter = {0};
-
     return Commands.sequence(
-            // Reset state
-            Commands.runOnce(() -> {
-              m_isHomed = false;
-              stallCounter[0] = 0;
-            }),
-            // Drive into hard stop
-            run(() -> {
-                  m_pivotMotor.setControl(
-                      m_dutyCycleRequest.withOutput(ShooterPivotConstants.HOMING_SPEED));
-
-                  Current statorCurrent = m_pivotMotor.getStatorCurrent().getValue();
-                  if (statorCurrent.gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD)) {
-                    stallCounter[0]++;
-                  } else {
-                    stallCounter[0] = 0;
-                  }
-                })
-                .until(() -> stallCounter[0] >= ShooterPivotConstants.HOMING_STALL_CYCLES),
-            // Zero encoder & enable limits
-            Commands.runOnce(() -> {
-              m_pivotMotor.setPosition(0);
-              m_isHomed = true;
-              enableSoftwareLimits();
-              m_targetAngleDegrees = ShooterPivotConstants.MIN_ANGLE;
-            }),
-            // Stop motor
-            Commands.runOnce(this::stop))
+            Commands.runOnce(() -> setWantedState(WantedState.HOME)),
+            Commands.waitUntil(this::isHomed),
+            Commands.runOnce(() -> setWantedState(WantedState.IDLE)))
         .withName("ShooterPivot Home");
   }
 
-  // ==================== COMMANDS ====================
-
-  /**
-   * Command to continuously track a target angle from a supplier. This is the main auto-aim command
-   * used during shooting.
-   *
-   * @param angleSupplier supplier that provides the target angle
-   * @return a command that continuously sets the pivot angle
-   */
-  public Command trackAngleCommand(Supplier<Angle> angleSupplier) {
-    return run(() -> setAngle(angleSupplier.get()))
-        .finallyDo(interrupted -> stop())
+  public Command trackAngleCommand(Supplier<Angle> supplier) {
+    return Commands.runEnd(
+            () -> {
+              setAngleSupplier(supplier);
+              setWantedState(WantedState.TRACK_ANGLE);
+            },
+            () -> setWantedState(WantedState.IDLE),
+            this)
         .withName("ShooterPivot Track Angle");
   }
 
-  /**
-   * Command to go to a fixed angle and hold it.
-   *
-   * @param angleDegrees the target angle
-   * @return a command that holds the angle until cancelled
-   */
-  public Command goToAngleCommand(Angle angleDegrees) {
-    return run(() -> setAngle(angleDegrees))
-        .finallyDo(interrupted -> stop())
-        .withName("ShooterPivot GoTo " + angleDegrees + "deg");
+  public Command goToAngleCommand(Angle angle) {
+    return Commands.sequence(
+            Commands.runOnce(() -> setWantedState(WantedState.HOLD_ANGLE, angle)),
+            Commands.waitUntil(this::isAtTarget))
+        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
+        .withName("ShooterPivot GoTo " + angle.in(Degrees) + "deg");
   }
 
-  /**
-   * Manual operator control fallback (duty cycle based). Retained for emergency manual override.
-   *
-   * @param axisSupplier joystick axis supplier (-1 to 1)
-   * @return a command for manual control
-   */
   public Command manualControlCommand(DoubleSupplier axisSupplier) {
     return run(() -> {
           double raw = axisSupplier.getAsDouble();
           double deadbanded = MathUtil.applyDeadband(raw, ShooterPivotConstants.MANUAL_DEADBAND);
-          setOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+          setManualOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+          setWantedState(WantedState.MANUAL);
         })
-        .finallyDo(interrupted -> stop())
+        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
         .withName("ShooterPivot Manual");
   }
 
   public Command zeroEncoderCommand() {
-    return runOnce(() -> m_pivotMotor.setPosition(0)).withName("ShooterPivot Zero Encoder");
+    return runOnce(() -> io.setEncoderPosition(0)).withName("ShooterPivot Zero Encoder");
   }
 
-  @Override
-  public void periodic() {
-    // Trench safety: actively lower pivot when entering trench zone,
-    // even if no command is currently calling setAngle()
-    if (m_trenchMode) {
-      m_trenchMode = isInTrenchZone();
-    } else if (isInTrenchZone()) {
-      lowerForTrenchZone();
-    }
+  // ==================== TELEMETRY ====================
 
-    SmartDashboard.putBoolean("ShooterPivot/isInTrenchZone", isInTrenchZone());
-    SmartDashboard.putNumber("ShooterPivot/AngleDegrees", getCurrentAngle().in(Degrees));
-    SmartDashboard.putNumber("ShooterPivot/TargetAngleDegrees", m_targetAngleDegrees.in(Degrees));
-    SmartDashboard.putNumber("ShooterPivot/Position (rot)", getPosition());
-    SmartDashboard.putNumber("ShooterPivot/Velocity (rps)", getVelocity());
-    SmartDashboard.putBoolean("ShooterPivot/IsHomed", m_isHomed);
-    SmartDashboard.putBoolean("ShooterPivot/AtTarget", isAtTarget());
-    SmartDashboard.putNumber(
-        "ShooterPivot/SupplyCurrent", m_pivotMotor.getSupplyCurrent().getValueAsDouble());
-    SmartDashboard.putNumber(
-        "ShooterPivot/StatorCurrent", m_pivotMotor.getStatorCurrent().getValueAsDouble());
-    SmartDashboard.putNumber(
-        "ShooterPivot/MotorVoltage", m_pivotMotor.getMotorVoltage().getValueAsDouble());
-    SmartDashboard.putNumber(
-        "ShooterPivot/DutyCycle", m_pivotMotor.getDutyCycle().getValueAsDouble());
-    SmartDashboard.putBoolean("ShooterPivot/TrenchMode", m_trenchMode);
+  public double getSupplyCurrentAmps() {
+    return inputs.supplyCurrentAmps;
+  }
+
+  public double getStatorCurrentAmps() {
+    return inputs.statorCurrentAmps;
+  }
+
+  public double getMotorVoltageVolts() {
+    return inputs.voltageVolts;
   }
 }

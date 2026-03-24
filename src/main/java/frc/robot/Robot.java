@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.Meters;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -18,12 +17,18 @@ import frc.robot.lib.PowerDiagnosticsLogger;
 import frc.robot.lib.ShooterMath;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
  * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
  * comprehensive robot control
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
@@ -31,10 +36,37 @@ public class Robot extends TimedRobot {
   // MASTER STATE MACHINE - Controls EVERYTHING
   private final RobotStateMachine m_stateMachine;
   private final PowerDiagnosticsLogger m_powerDiagnosticsLogger;
+  private int m_periodicCycleCount = 0;
 
   public Robot() {
-    // Start structured data logging - logs are written to /home/lvuser/logs on the
-    // roboRIO.
+    // ==================== ADVANTAGEKIT LOGGING ====================
+    Logger.recordMetadata("ProjectName", "FRCRebuilt2026-COMP");
+
+    switch (Constants.currentMode) {
+      case REAL:
+        // Running on a real robot, log to a USB stick ("/U/logs")
+        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+
+      case SIM:
+        // Running a simulator, log to NT
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+
+      case REPLAY:
+        // Replaying a log, set up replay source
+        setUseTiming(false); // Run as fast as possible
+        String logPath = LogFileUtil.findReplayLog();
+        Logger.setReplaySource(new WPILOGReader(logPath));
+        Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+        break;
+    }
+
+    // Start AdvantageKit logger
+    Logger.start();
+
+    // Start structured data logging
     DataLogManager.start();
 
     m_robotContainer = new RobotContainer();
@@ -75,7 +107,12 @@ public class Robot extends TimedRobot {
     // Run command scheduler
     CommandScheduler.getInstance().run();
 
-    m_powerDiagnosticsLogger.logPeriodic();
+    // Throttle power diagnostics to every 5th cycle (~100ms) to reduce loop
+    // overruns
+    if (m_periodicCycleCount++ >= 4) {
+      m_periodicCycleCount = 0;
+      m_powerDiagnosticsLogger.logPeriodic();
+    }
   }
 
   @Override

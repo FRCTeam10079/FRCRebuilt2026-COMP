@@ -12,10 +12,10 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
-import frc.robot.commands.EndIntakingCommand;
-import frc.robot.commands.IntakeFuelCommand;
-import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterSetpoint;
+import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.CurrentSuperState;
+import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
@@ -35,6 +35,7 @@ import java.util.function.Supplier;
  */
 public class AutoCommands {
 
+  private final Superstructure superstructure;
   private final IntakeWheelsSubsystem intake;
   private final PivotSubsystem pivot;
   private final IndexerSubsystem indexer;
@@ -45,6 +46,7 @@ public class AutoCommands {
   private final Supplier<ShooterSetpoint> setpointSupplier;
 
   public AutoCommands(
+      Superstructure superstructure,
       IntakeWheelsSubsystem intake,
       PivotSubsystem pivot,
       IndexerSubsystem indexer,
@@ -53,6 +55,7 @@ public class AutoCommands {
       CommandSwerveDrivetrain drivetrain,
       VisionSubsystem vision,
       Supplier<ShooterSetpoint> setpointSupplier) {
+    this.superstructure = superstructure;
     this.intake = intake;
     this.pivot = pivot;
     this.indexer = indexer;
@@ -92,14 +95,16 @@ public class AutoCommands {
     return pivot.stowCommand();
   }
 
-  /** Deploy pivot + spin intake. Ends when pivot is deployed. */
+  /** Deploy pivot + spin intake via Superstructure COLLECT state. Runs until cancelled. */
   public Command intakeFuel() {
-    return new IntakeFuelCommand(pivot, intake);
+    return Commands.startEnd(
+        () -> superstructure.setWantedSuperState(WantedSuperState.COLLECT),
+        () -> superstructure.setWantedSuperState(WantedSuperState.IDLE));
   }
 
-  /** Stow pivot + stop intake. Ends when pivot is stowed. */
+  /** Return to IDLE (stow pivot + stop intake) via Superstructure. */
   public Command endIntaking() {
-    return new EndIntakingCommand(pivot, intake);
+    return Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW));
   }
 
   // ==================== INDEXER ====================
@@ -132,48 +137,51 @@ public class AutoCommands {
   }
 
   /**
-   * Distance-based auto shoot: spin up + track pivot + feed when on-target. In auto, heading is
-   * assumed correct from the trajectory, so heading check is always true.
+   * Distance-based auto shoot via Superstructure. Sets SHOOT state and waits for the Superstructure
+   * to transition to SHOOTING (on-target), then holds for a feed duration before returning to IDLE.
+   * In auto, heading is assumed correct from the trajectory, so this uses FORCE_SHOOT.
    */
   public Command shoot() {
-    return ShooterFactory.autoShoot(setpointSupplier, shooter, shooterPivot, indexer);
+    return Commands.sequence(
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)),
+        Commands.waitUntil(
+            () -> superstructure.getCurrentSuperState() == CurrentSuperState.FORCE_SHOOTING),
+        Commands.waitSeconds(
+            Constants.ShooterConstants.AUTO_SHOOT_TIMEOUT.in(edu.wpi.first.units.Units.Seconds)),
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE)));
   }
 
-  /** Fixed fender shot for close-range scoring positions in auto. */
+  /** Fixed fender shot via Superstructure. Uses force-shoot for close-range. */
   public Command fenderShot() {
-    return ShooterFactory.fenderShot(shooter, shooterPivot, indexer);
+    return shoot(); // Same flow - Superstructure picks setpoint from distance
   }
 
   // ==================== VISION ALIGNMENT ====================
 
-  /** Align to AprilTag — CENTER position. */
+  /** Align to AprilTag - CENTER position. */
   public Command alignCenter() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER);
+    return align(AlignPosition.CENTER);
   }
 
-  /** Align to AprilTag — LEFT position. */
+  /** Align to AprilTag - LEFT position. */
   public Command alignLeft() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT);
+    return align(AlignPosition.LEFT);
   }
 
-  /** Align to AprilTag — RIGHT position. */
+  /** Align to AprilTag - RIGHT position. */
   public Command alignRight() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT);
+    return align(AlignPosition.RIGHT);
+  }
+
+  private Command align(AlignPosition position) {
+    return new AlignToAprilTag(drivetrain, vision, position);
   }
 
   // ==================== STOP ALL ====================
 
-  /** Stop all mechanisms at once. */
+  /** Stop all mechanisms via Superstructure IDLE state. */
   public Command stopAll() {
-    return Commands.runOnce(
-        () -> {
-          intake.stop();
-          indexer.stop();
-          shooter.stop();
-        },
-        intake,
-        indexer,
-        shooter);
+    return Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE));
   }
 
   // ==================== BULK REGISTRATION ====================

@@ -11,6 +11,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Unit;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.RobotBase;
 
 /**
  * Constants for FRC 2026 REBUILT season Contains game-specific values, timing, and robot
@@ -19,6 +20,21 @@ import edu.wpi.first.units.measure.Angle;
 public final class Constants {
 
   public static final CANBus kCANBus = new CANBus("rio");
+
+  /**
+   * AdvantageKit logging mode. Auto-detects REAL vs SIM. Set to REPLAY manually when replaying a
+   * log file.
+   */
+  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+
+  public enum Mode {
+    /** Running on a real robot. */
+    REAL,
+    /** Running a simulator. */
+    SIM,
+    /** Replaying from a log file. */
+    REPLAY
+  }
 
   public static final class GameConstants extends frc.robot.constants.GameConstants {}
 

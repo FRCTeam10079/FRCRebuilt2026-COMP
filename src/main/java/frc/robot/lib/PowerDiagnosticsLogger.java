@@ -16,8 +16,9 @@ import frc.robot.subsystems.shooter.ShooterSubsystem;
 public class PowerDiagnosticsLogger {
   private static final double LOG_PERIOD_SECONDS = 0.1;
   private static final double FAILURE_LOG_PERIOD_SECONDS = 2.0;
-  private static final double PDH_RETRY_BASE_SECONDS = 0.5;
-  private static final double PDH_RETRY_MAX_SECONDS = 5.0;
+  private static final double PDH_RETRY_BASE_SECONDS = 5.0;
+  private static final double PDH_RETRY_MAX_SECONDS = 30.0;
+  private static final int PDH_MAX_FAILURES = 3;
   private static final double SUMMARY_LOG_PERIOD_SECONDS = 1.0;
   private static final double BATTERY_LOW_THRESHOLD_VOLTS = 9.0;
   private static final double HIGH_MECHANISM_CURRENT_THRESHOLD_AMPS = 120.0;
@@ -298,7 +299,8 @@ public class PowerDiagnosticsLogger {
       return;
     }
 
-    if (!m_pdhTelemetryEnabled && nowSeconds < m_nextPdhRetryTimestampSeconds) {
+    if (!m_pdhTelemetryEnabled
+        && (m_pdhFailureCount >= PDH_MAX_FAILURES || nowSeconds < m_nextPdhRetryTimestampSeconds)) {
       return;
     }
 

@@ -17,20 +17,17 @@ import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
-import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
-import frc.robot.subsystems.indexer.IndexerSubsystem;
-import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
-import frc.robot.subsystems.intake.PivotSubsystem;
-import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
-import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
 
 /**
- * Driver controller bindings (Port 0). All driver button->command mappings live here so
- * RobotContainer stays lean.
+ * Driver controller bindings (Port 0). All mechanism actions route through the
+ * {@link Superstructure} so it can coordinate subsystems. Drivetrain commands (heading lock, brake,
+ * vision align) remain direct since the Superstructure does not manage the drivetrain.
  */
 public final class DriverControls {
 
@@ -42,23 +39,15 @@ public final class DriverControls {
    * @param controller the driver's Xbox controller
    * @param drivetrain swerve drivetrain subsystem
    * @param vision vision subsystem (for alignment commands)
-   * @param intake intake wheels subsystem
-   * @param pivot intake pivot subsystem
-   * @param shooter shooter subsystem
-   * @param shooterPivot shooter pivot subsystem
-   * @param indexer indexer subsystem
-   * @param stateMachine global robot state machine
+   * @param superstructure the Superstructure coordinator
+   * @param stateMachine global robot state machine (for fuel feedback triggers)
    * @param setpointSupplier memoized distance-based setpoint supplier
    */
   public static void configure(
       CommandXboxController controller,
       CommandSwerveDrivetrain drivetrain,
       VisionSubsystem vision,
-      IntakeWheelsSubsystem intake,
-      PivotSubsystem pivot,
-      ShooterSubsystem shooter,
-      ShooterPivotSubsystem shooterPivot,
-      IndexerSubsystem indexer,
+      Superstructure superstructure,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier) {
 
@@ -79,76 +68,49 @@ public final class DriverControls {
         Constants.DrivetrainConstants.MAX_SPEED_MPS,
         Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
 
-    // ==================== INTAKE ====================
-    // Left Trigger - Hold to deploy pivot + run intake wheels
-    // Release stops wheels but pivot stays deployed so balls
-    // aren't disturbed. Press X to stow pivot when ready.
+    // ==================== INTAKE (through Superstructure) ====================
+    // Left Trigger - Hold to collect (deploy pivot + run intake wheels + index)
+    // Release returns to IDLE. Superstructure handles subsystem coordination.
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(
-            Commands.startEnd(
-                () -> {
-                  pivot.deployPivot();
-                  intake.intakeIn();
-                  stateMachine.setGameState(GameState.COLLECTING);
-                },
-                () -> {
-                  intake.stop();
-                  if (stateMachine.getGameState() == GameState.COLLECTING) {
-                    stateMachine.setGameState(GameState.IDLE);
-                  }
-                },
-                intake)
-            // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
-            );
+        .onTrue(
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.COLLECT));
 
-    // ==================== SHOOTING (DISTANCE-BASED) ====================
-    // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot
-    // angle
-    // The driver controls translation while the drivetrain auto-rotates toward the
-    // hub.
+    // ==================== SHOOTING (through Superstructure) ====================
+    // Right Bumper - Hold to aim at hub (heading lock) + pre-spin via
+    // Superstructure
+    // Drivetrain heading lock is direct (Superstructure doesn't manage drivetrain).
+    // Superstructure handles shooter + pivot coordination via AIM state.
     controller
         .rightBumper()
-        .whileTrue(ShooterFactory.aimAtHub(
-                drivetrain,
-                translationY::get,
-                translationX::get,
-                () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-                Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-                Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC)
-            .alongWith(ShooterFactory.aimAndSpinUp(setpointSupplier, shooter, shooterPivot))
-            .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
-            .finallyDo(() -> {
-              if (stateMachine.getGameState() == GameState.SCORING) {
-                stateMachine.setGameState(GameState.IDLE);
-              }
-            }));
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.AIM)))
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.AIM));
 
-    // Right Trigger - Hold to shoot (waits for on-target, then auto-feeds)
-    // Assumes aim-at-hub is engaged via right bumper, OR driver is manually aiming.
+    // Heading lock while RB is held (drivetrain-only, parallel to Superstructure
+    // AIM)
+    controller
+        .rightBumper()
+        .whileTrue(createAimAtHubCommand(drivetrain, translationY, translationX));
+
+    // Right Trigger - Hold to force-shoot (aim + feed when flywheel ready)
+    // When released: falls back to AIM if RB is still held, otherwise IDLE.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .whileTrue(ShooterFactory.forceShoot(setpointSupplier, shooter, shooterPivot, indexer)
+        .onTrue(Commands.runOnce(
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
+        .onFalse(Commands.runOnce(() -> {
+          if (controller.rightBumper().getAsBoolean()) {
+            superstructure.setWantedSuperState(WantedSuperState.AIM);
+          } else {
+            superstructure.setWantedSuperState(WantedSuperState.IDLE);
+          }
+        }));
 
-            // align old
-            // () -> {
-            // Heading is "on target" when we're close to the hub bearing
-            // Angle targetHeading =
-            // ShooterMath.getHeadingToHub(drivetrain.getState().Pose);
-            // Angle currentHeading = drivetrain.getState().Pose.getRotation().getMeasure();
-            // return Constants.angleDistance(currentHeading, targetHeading)
-            // .lte(Constants.ShooterConstants.HEADING_TOLERANCE);
-            // }
-            .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
-            .finallyDo(() -> {
-              if (stateMachine.getGameState() == GameState.SCORING) {
-                stateMachine.setGameState(GameState.IDLE);
-              }
-            })
-            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
-
-    // Rumble while shooter is ready and right trigger is held
-    new Trigger(shooter::isReady)
+    // Rumble while actively shooting
+    new Trigger(() -> superstructure.getCurrentSuperState()
+                == Superstructure.CurrentSuperState.FORCE_SHOOTING
+            || superstructure.getCurrentSuperState() == Superstructure.CurrentSuperState.SHOOTING)
         .and(controller.rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD))
         .onTrue(Commands.runOnce(() -> controller
             .getHID()
@@ -162,9 +124,12 @@ public final class DriverControls {
 
     controller.b().onTrue(Commands.runOnce(() -> invertTranslation[0] = !invertTranslation[0]));
 
-    // ==================== STOW PIVOT ====================
+    // ==================== STOW (through Superstructure) ====================
     // D-pad Down - Stow intake pivot
-    controller.povDown().whileTrue(pivot.stowCommand());
+    controller
+        .povDown()
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.STOW));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -181,5 +146,27 @@ public final class DriverControls {
             Commands.waitSeconds(0.15),
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)),
             Commands.waitSeconds(0.45)));
+  }
+
+  private static Command createAimAtHubCommand(
+      CommandSwerveDrivetrain drivetrain,
+      Supplier<Double> translationY,
+      Supplier<Double> translationX) {
+    return ShooterFactory.aimAtHub(
+        drivetrain,
+        translationY::get,
+        translationX::get,
+        () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+        Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+        Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC);
+  }
+
+  private static Command setIdleIfStill(
+      Superstructure superstructure, WantedSuperState expectedState) {
+    return Commands.runOnce(() -> {
+      if (superstructure.getWantedSuperState() == expectedState) {
+        superstructure.setWantedSuperState(WantedSuperState.IDLE);
+      }
+    });
   }
 }

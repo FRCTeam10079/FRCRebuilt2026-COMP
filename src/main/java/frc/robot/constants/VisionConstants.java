@@ -19,8 +19,9 @@ public class VisionConstants {
   public static final double HEADING_DIVERGENCE_THRESHOLD_DEG = 45.0;
 
   // Angular velocity rejection threshold (deg/sec).
-  // Official Limelight example uses 360deg/s.
-  public static final double MAX_ANGULAR_VELOCITY_DEG_PER_SEC = 360.0;
+  // Tightened to 72.0 deg/s to prevent bad readings while spinning fast
+  // (Most teams use 45-90 deg/s, 360 was practically never hit)
+  public static final double MAX_ANGULAR_VELOCITY_DEG_PER_SEC = 72.0;
 
   // ==================== STANDARD DEVIATION MODEL
   // ====================
@@ -42,6 +43,12 @@ public class VisionConstants {
   // MT1 pose ambiguity rejection threshold (per-fiducial).
   // 6328 uses 0.4; higher = more ambiguous = less trustworthy.
   public static final double MT1_AMBIGUITY_THRESHOLD = 0.4;
+
+  // Max distance in meters for single-tag (MT1) recognition to be accepted
+  public static final double MAX_MT1_DISTANCE_METERS = 3.0;
+
+  // Max deviation from odometry for vision to be accepted
+  public static final double MAX_VISION_INNOVATION_METERS = 0.4;
 
   public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
   public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;

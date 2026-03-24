@@ -122,33 +122,10 @@ public class ShooterPivotSubsystem extends SubsystemBase {
       case TRACK_ANGLE:
         targetAngle = Constants.clamp(
             angleSupplier.get(), ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
-        // Fall through to angle check
-        if (isInTrenchZone()) {
-          trenchMode = true;
-          if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-            targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
-          }
-          return SystemState.TRENCH_LOWERED;
-        }
-        trenchMode = false;
-        if (isAtAngle(targetAngle)) {
-          return SystemState.AT_ANGLE;
-        }
-        return SystemState.TRACKING;
+        return evaluateAngleTrackingState();
 
       case HOLD_ANGLE:
-        if (isInTrenchZone()) {
-          trenchMode = true;
-          if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
-            targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
-          }
-          return SystemState.TRENCH_LOWERED;
-        }
-        trenchMode = false;
-        if (isAtAngle(targetAngle)) {
-          return SystemState.AT_ANGLE;
-        }
-        return SystemState.TRACKING;
+        return evaluateAngleTrackingState();
 
       case MANUAL:
         return SystemState.MANUAL_OVERRIDE;
@@ -158,6 +135,21 @@ public class ShooterPivotSubsystem extends SubsystemBase {
         trenchMode = false;
         return SystemState.IDLE;
     }
+  }
+
+  private SystemState evaluateAngleTrackingState() {
+    if (isInTrenchZone()) {
+      trenchMode = true;
+      if (targetAngle.gt(ShooterPivotConstants.TRENCH_LOWER_ANGLE)) {
+        targetAngle = ShooterPivotConstants.TRENCH_LOWER_ANGLE;
+      }
+      return SystemState.TRENCH_LOWERED;
+    }
+    trenchMode = false;
+    if (isAtAngle(targetAngle)) {
+      return SystemState.AT_ANGLE;
+    }
+    return SystemState.TRACKING;
   }
 
   private void applyStates() {
@@ -291,14 +283,13 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   }
 
   public Command trackAngleCommand(Supplier<Angle> supplier) {
-    return Commands.sequence(
-            Commands.runOnce(() -> {
+    return Commands.runEnd(
+            () -> {
               setAngleSupplier(supplier);
               setWantedState(WantedState.TRACK_ANGLE);
-            }),
-            run(() -> {}) // stay scheduled so the state machine runs
-            )
-        .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
+            },
+            () -> setWantedState(WantedState.IDLE),
+            this)
         .withName("ShooterPivot Track Angle");
   }
 

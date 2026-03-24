@@ -41,6 +41,8 @@ public class Robot extends LoggedRobot {
 
   public Robot() {
     // ==================== ADVANTAGEKIT LOGGING ====================
+    // Start structured data logging
+    // ==================== ADVANTAGEKIT LOGGING ====================
     // https://docs.advantagekit.org/getting-started/installation/version-control#usage
     // ^ explains how to use these values to make replays more consistent
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -51,9 +53,9 @@ public class Robot extends LoggedRobot {
     Logger.recordMetadata(
         "GitDirty",
         switch (BuildConstants.DIRTY) {
-          case 0 -> "All changes committed";
-          case 1 -> "Uncommitted changes";
-          default -> "Unknown";
+            case 0 -> "All changes committed";
+            case 1 -> "Uncommitted changes";
+            default -> "Unknown";
         });
 
     switch (Constants.currentMode) {
@@ -80,7 +82,6 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
-    // Start structured data logging
     DataLogManager.start();
 
     m_robotContainer = new RobotContainer();
@@ -123,8 +124,7 @@ public class Robot extends LoggedRobot {
 
     // Throttle power diagnostics to every 5th cycle (~100ms) to reduce loop
     // overruns
-    m_periodicCycleCount++;
-    if (m_periodicCycleCount >= 5) {
+    if (m_periodicCycleCount++ >= 4) {
       m_periodicCycleCount = 0;
       m_powerDiagnosticsLogger.logPeriodic();
     }

@@ -299,10 +299,9 @@ public class PowerDiagnosticsLogger {
       return;
     }
 
-    if (!m_pdhTelemetryEnabled) {
-      if (m_pdhFailureCount >= PDH_MAX_FAILURES || nowSeconds < m_nextPdhRetryTimestampSeconds) {
-        return;
-      }
+    if (!m_pdhTelemetryEnabled
+        && (m_pdhFailureCount >= PDH_MAX_FAILURES || nowSeconds < m_nextPdhRetryTimestampSeconds)) {
+      return;
     }
 
     try {

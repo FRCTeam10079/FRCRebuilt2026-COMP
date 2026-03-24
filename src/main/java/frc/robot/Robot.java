@@ -40,9 +40,7 @@ public class Robot extends LoggedRobot {
   private int m_periodicCycleCount = 0;
 
   public Robot() {
-    // ==================== ADVANTAGEKIT LOGGING ====================
-    // Start structured data logging
-    // ==================== ADVANTAGEKIT LOGGING ====================
+    // ==================== ADVANTAGEKIT LOGGING ===================
     // https://docs.advantagekit.org/getting-started/installation/version-control#usage
     // ^ explains how to use these values to make replays more consistent
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -82,6 +80,7 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
+    // Start structured data logging
     DataLogManager.start();
 
     m_robotContainer = new RobotContainer();

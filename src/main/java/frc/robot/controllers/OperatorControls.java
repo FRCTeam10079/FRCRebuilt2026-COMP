@@ -74,8 +74,7 @@ public final class OperatorControls {
         .onTrue(
             Commands.runOnce(() -> stateMachine.setHubShiftState(HubShiftState.MY_HUB_INACTIVE)));
 
-    // ==================== UNJAM / EJECT (through Superstructure)
-    // ====================
+    // ======== UNJAM / EJECT (through Superstructure) ========
     // B - Hold reverse intake + indexer
     operator
         .b()
@@ -145,8 +144,7 @@ public final class OperatorControls {
       SmartDashboard.putNumber("Tuning/Shooter/NewRpm", newRpm);
     }));
 
-    // ==================== FORCE SHOOT OVERRIDE (through Superstructure)
-    // ====================
+    // ========== FORCE SHOOT OVERRIDE (through Superstructure) ==========
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.
     operator
         .rightTrigger(0.5)
@@ -158,8 +156,7 @@ public final class OperatorControls {
           }
         }));
 
-    // ==================== CLIMB SAFETY (through Superstructure)
-    // ====================
+    // ======== CLIMB SAFETY (through Superstructure) ========
     // Start + Back together -> L1 climb sequence arm (safety interlock)
     new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
         .onTrue(Commands.sequence(

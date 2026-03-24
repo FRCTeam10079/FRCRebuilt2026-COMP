@@ -23,6 +23,7 @@ import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -93,14 +94,14 @@ public final class OperatorControls {
     operator
         .leftBumper()
         .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-        .whileTrue(shooterPivot.manualControlCommand(() -> -operator.getLeftY()))
+        .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
         .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
     // Right Bumper - Hold to control shooter pivot with left stick Y
     operator
         .rightBumper()
         .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-        .whileTrue(shooterPivot.manualControlCommand(() -> -operator.getLeftY()))
+        .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
         .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
@@ -144,43 +145,6 @@ public final class OperatorControls {
       SmartDashboard.putNumber("Tuning/Shooter/NewRpm", newRpm);
     }));
 
-    // D-Pad LEFT/RIGHT tuning: nudge angle up/down.
-    // SmartDashboard.putString("Tuning/Shooter/ActiveMode", "ANGLE");
-    // operator
-    // .povLeft()
-    // .onTrue(Commands.runOnce(() -> {
-    // double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    // double tuningDistanceMeters =
-    // ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    // double currentAngle =
-    // ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    // double newAngle = currentAngle + angleStepDeg;
-    // ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    // SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE +");
-    // SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    // rawDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    // tuningDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
-    // }));
-    // operator
-    // .povRight()
-    // .onTrue(Commands.runOnce(() -> {
-    // double rawDistanceMeters = hubDistanceSupplier.get().in(Meters);
-    // double tuningDistanceMeters =
-    // ShooterInterpolationTable.getClosestAngleKey(rawDistanceMeters);
-    // double currentAngle =
-    // ShooterInterpolationTable.getAngle(Meters.of(tuningDistanceMeters)).in(Degrees);
-    // double newAngle = currentAngle - angleStepDeg;
-    // ShooterInterpolationTable.hotSwapAngleValues(tuningDistanceMeters, newAngle);
-    // SmartDashboard.putString("Tuning/Shooter/LastChange", "ANGLE -");
-    // SmartDashboard.putNumber("Tuning/Shooter/RawDistanceMeters",
-    // rawDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/DistanceKeyMeters",
-    // tuningDistanceMeters);
-    // SmartDashboard.putNumber("Tuning/Shooter/NewAngleDeg", newAngle);
-    // }));
-
     // ==================== FORCE SHOOT OVERRIDE (through Superstructure)
     // ====================
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.
@@ -204,5 +168,9 @@ public final class OperatorControls {
               stateMachine.setClimbState(ClimbState.CLIMBING_L1);
             }),
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB))));
+  }
+
+  private static DoubleSupplier negate(DoubleSupplier supplier) {
+    return () -> -supplier.getAsDouble();
   }
 }

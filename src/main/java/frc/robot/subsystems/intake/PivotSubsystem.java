@@ -114,19 +114,9 @@ public class PivotSubsystem extends SubsystemBase {
           return SystemState.STOWED;
         }
 
-        // Stall detection while stowing
-        if (Amps.of(inputs.statorCurrentAmps).gt(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD)) {
-          if (!stallTimer.isRunning()) {
-            stallTimer.start();
-          }
-          if (stallTimer.hasElapsed(
-              IntakeConstants.Pivot.STALL_TIME_THRESHOLD.in(edu.wpi.first.units.Units.Seconds))) {
-            pivotSetpoint = getPivotPosition();
-            return SystemState.STALLED;
-          }
-        } else {
-          stallTimer.stop();
-          stallTimer.reset();
+        if (hasStowStalled()) {
+          pivotSetpoint = getPivotPosition();
+          return SystemState.STALLED;
         }
         return SystemState.STOWING;
 
@@ -138,6 +128,20 @@ public class PivotSubsystem extends SubsystemBase {
         atSetpointTimer.reset();
         return SystemState.IDLE;
     }
+  }
+
+  private boolean hasStowStalled() {
+    if (Amps.of(inputs.statorCurrentAmps).gt(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD)) {
+      if (!stallTimer.isRunning()) {
+        stallTimer.start();
+      }
+      return stallTimer.hasElapsed(
+          IntakeConstants.Pivot.STALL_TIME_THRESHOLD.in(edu.wpi.first.units.Units.Seconds));
+    }
+
+    stallTimer.stop();
+    stallTimer.reset();
+    return false;
   }
 
   private void applyStates() {

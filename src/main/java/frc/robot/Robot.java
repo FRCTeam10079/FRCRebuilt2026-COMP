@@ -109,8 +109,7 @@ public class Robot extends LoggedRobot {
 
     // Throttle power diagnostics to every 5th cycle (~100ms) to reduce loop
     // overruns
-    m_periodicCycleCount++;
-    if (m_periodicCycleCount >= 5) {
+    if (m_periodicCycleCount++ >= 4) {
       m_periodicCycleCount = 0;
       m_powerDiagnosticsLogger.logPeriodic();
     }

@@ -160,17 +160,21 @@ public class AutoCommands {
 
   /** Align to AprilTag - CENTER position. */
   public Command alignCenter() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER);
+    return align(AlignPosition.CENTER);
   }
 
   /** Align to AprilTag - LEFT position. */
   public Command alignLeft() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.LEFT);
+    return align(AlignPosition.LEFT);
   }
 
   /** Align to AprilTag - RIGHT position. */
   public Command alignRight() {
-    return new AlignToAprilTag(drivetrain, vision, AlignPosition.RIGHT);
+    return align(AlignPosition.RIGHT);
+  }
+
+  private Command align(AlignPosition position) {
+    return new AlignToAprilTag(drivetrain, vision, position);
   }
 
   // ==================== STOP ALL ====================

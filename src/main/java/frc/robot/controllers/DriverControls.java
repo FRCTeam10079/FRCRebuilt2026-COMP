@@ -6,6 +6,7 @@ package frc.robot.controllers;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -74,11 +75,7 @@ public final class DriverControls {
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .onTrue(
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
-        .onFalse(Commands.runOnce(() -> {
-          if (superstructure.getWantedSuperState() == WantedSuperState.COLLECT) {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.COLLECT));
 
     // ==================== SHOOTING (through Superstructure) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin via
@@ -88,23 +85,13 @@ public final class DriverControls {
     controller
         .rightBumper()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.AIM)))
-        .onFalse(Commands.runOnce(() -> {
-          if (superstructure.getWantedSuperState() == WantedSuperState.AIM) {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.AIM));
 
     // Heading lock while RB is held (drivetrain-only, parallel to Superstructure
     // AIM)
     controller
         .rightBumper()
-        .whileTrue(ShooterFactory.aimAtHub(
-            drivetrain,
-            translationY::get,
-            translationX::get,
-            () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
-            Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
-            Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC));
+        .whileTrue(createAimAtHubCommand(drivetrain, translationY, translationX));
 
     // Right Trigger - Hold to force-shoot (aim + feed when flywheel ready)
     // When released: falls back to AIM if RB is still held, otherwise IDLE.
@@ -142,11 +129,7 @@ public final class DriverControls {
     controller
         .povDown()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
-        .onFalse(Commands.runOnce(() -> {
-          if (superstructure.getWantedSuperState() == WantedSuperState.STOW) {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.STOW));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -163,5 +146,27 @@ public final class DriverControls {
             Commands.waitSeconds(0.15),
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)),
             Commands.waitSeconds(0.45)));
+  }
+
+  private static Command createAimAtHubCommand(
+      CommandSwerveDrivetrain drivetrain,
+      Supplier<Double> translationY,
+      Supplier<Double> translationX) {
+    return ShooterFactory.aimAtHub(
+        drivetrain,
+        translationY::get,
+        translationX::get,
+        () -> ShooterMath.getHeadingToHub(drivetrain.getState().Pose),
+        Constants.DrivetrainConstants.MAX_ALIGNING_SPEED_MPS,
+        Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC);
+  }
+
+  private static Command setIdleIfStill(
+      Superstructure superstructure, WantedSuperState expectedState) {
+    return Commands.runOnce(() -> {
+      if (superstructure.getWantedSuperState() == expectedState) {
+        superstructure.setWantedSuperState(WantedSuperState.IDLE);
+      }
+    });
   }
 }

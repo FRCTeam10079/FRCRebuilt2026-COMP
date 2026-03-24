@@ -23,21 +23,21 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
-import frc.robot.subsystems.climber.ClimberIO;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.climber.NoOpClimberIO;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
-import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOTalonFX;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
-import frc.robot.subsystems.intake.IntakeWheelsIO;
+import frc.robot.subsystems.indexer.NoOpIndexerIO;
 import frc.robot.subsystems.intake.IntakeWheelsIOTalonFX;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
-import frc.robot.subsystems.intake.PivotIO;
+import frc.robot.subsystems.intake.NoOpIntakeWheelsIO;
+import frc.robot.subsystems.intake.NoOpPivotIO;
 import frc.robot.subsystems.intake.PivotIOTalonFX;
 import frc.robot.subsystems.intake.PivotSubsystem;
-import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.NoOpShooterIO;
+import frc.robot.subsystems.shooter.NoOpShooterPivotIO;
 import frc.robot.subsystems.shooter.ShooterIOTalonFX;
-import frc.robot.subsystems.shooter.ShooterPivotIO;
 import frc.robot.subsystems.shooter.ShooterPivotIOTalonFX;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
@@ -97,7 +97,7 @@ public class RobotContainer {
             new ShooterPivotIOTalonFX(), () -> drivetrain.getState().Pose);
         intake = new IntakeWheelsSubsystem(new IntakeWheelsIOTalonFX());
         pivot = new PivotSubsystem(new PivotIOTalonFX());
-        climber = new ClimberSubsystem(new ClimberIO() {});
+        climber = new ClimberSubsystem(new NoOpClimberIO());
         break;
 
       case SIM:
@@ -113,23 +113,23 @@ public class RobotContainer {
 
       case REPLAY:
         // Replay - same as SIM (Logger will inject real data from the log file)
-        indexer = new IndexerSubsystem(new IndexerIO() {});
-        shooter = new ShooterSubsystem(new ShooterIO() {});
+        indexer = new IndexerSubsystem(new NoOpIndexerIO());
+        shooter = new ShooterSubsystem(new NoOpShooterIO());
         shooterPivot =
-            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
-        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
-        pivot = new PivotSubsystem(new PivotIO() {});
-        climber = new ClimberSubsystem(new ClimberIO() {});
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
+        pivot = new PivotSubsystem(new NoOpPivotIO());
+        climber = new ClimberSubsystem(new NoOpClimberIO());
         break;
 
       default:
-        indexer = new IndexerSubsystem(new IndexerIO() {});
-        shooter = new ShooterSubsystem(new ShooterIO() {});
+        indexer = new IndexerSubsystem(new NoOpIndexerIO());
+        shooter = new ShooterSubsystem(new NoOpShooterIO());
         shooterPivot =
-            new ShooterPivotSubsystem(new ShooterPivotIO() {}, () -> drivetrain.getState().Pose);
-        intake = new IntakeWheelsSubsystem(new IntakeWheelsIO() {});
-        pivot = new PivotSubsystem(new PivotIO() {});
-        climber = new ClimberSubsystem(new ClimberIO() {});
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
+        pivot = new PivotSubsystem(new NoOpPivotIO());
+        climber = new ClimberSubsystem(new NoOpClimberIO());
         break;
     }
 

@@ -143,6 +143,12 @@ public class Robot extends LoggedRobot {
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+    // Critical for post-match log review: confirms what auto actually executed vs
+    // what the driver
+    // selected.
+    Logger.recordOutput(
+        "Auto/SelectedCommandName",
+        m_autonomousCommand != null ? m_autonomousCommand.getName() : "<null>");
 
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);

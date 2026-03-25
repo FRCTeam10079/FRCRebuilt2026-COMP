@@ -239,9 +239,8 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyStow() {
+    // STOW is pivot-only so it never interrupts active shooting/indexing behavior.
     pivot.setWantedState(PivotSubsystem.WantedState.STOW);
-    intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
-    trackPivotContinuously();
   }
 
   private void applyAim() {

@@ -129,7 +129,7 @@ public final class DriverControls {
     controller
         .povDown()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
-        .onFalse(setIdleIfStill(superstructure, WantedSuperState.STOW));
+        .onFalse(restoreDriverHeldState(controller, superstructure));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -165,6 +165,26 @@ public final class DriverControls {
       Superstructure superstructure, WantedSuperState expectedState) {
     return Commands.runOnce(() -> {
       if (superstructure.getWantedSuperState() == expectedState) {
+        superstructure.setWantedSuperState(WantedSuperState.IDLE);
+      }
+    });
+  }
+
+  private static Command restoreDriverHeldState(
+      CommandXboxController controller, Superstructure superstructure) {
+    return Commands.runOnce(() -> {
+      // Rebuild intent from live button states because trigger onTrue is edge-only.
+      if (controller
+          .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
+          .getAsBoolean()) {
+        superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT);
+      } else if (controller.rightBumper().getAsBoolean()) {
+        superstructure.setWantedSuperState(WantedSuperState.AIM);
+      } else if (controller
+          .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
+          .getAsBoolean()) {
+        superstructure.setWantedSuperState(WantedSuperState.COLLECT);
+      } else {
         superstructure.setWantedSuperState(WantedSuperState.IDLE);
       }
     });

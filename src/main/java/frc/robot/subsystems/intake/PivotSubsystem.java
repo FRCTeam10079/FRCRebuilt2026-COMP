@@ -148,10 +148,13 @@ public class PivotSubsystem extends SubsystemBase {
     switch (systemState) {
       case DEPLOYING:
       case STOWING:
+      // Intentionally keep holding STOWED with Motion Magic so the pivot does not
+      // sag/flop out during acceleration; NeutralOut is only safe when deployed; I
+      // think...
+      case STOWED:
         io.setMotionMagicPosition(pivotSetpoint);
         break;
       case DEPLOYED:
-      case STOWED:
       case IDLE:
       case STALLED:
         io.setNeutral();

@@ -84,13 +84,13 @@ public class ShooterPivotConstants {
   // field!
 
   /** Field width in meters (from WPILib AprilTag JSON). */
-  public static final Distance FIELD_WIDTH_METERS = Meters.of(8.069);
+  public static final Distance FIELD_WIDTH = Meters.of(8.069);
 
   /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
-  public static final Distance TRENCH_X_MIN = Meters.of(4.5);
+  public static final Distance TRENCH_X_BLUE = Meters.of(4.5);
 
   /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
-  public static final Distance TRENCH_X_MAX = Meters.of(12.0);
+  public static final Distance TRENCH_X_RED = Meters.of(12.0);
 
   /**
    * Y-distance from the side wall within which the robot is considered "under the trench". Trench
@@ -100,6 +100,8 @@ public class ShooterPivotConstants {
 
   /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
   public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
+
+  public static final Distance TRENCH_MARGIN = Meters.of(0.1);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE

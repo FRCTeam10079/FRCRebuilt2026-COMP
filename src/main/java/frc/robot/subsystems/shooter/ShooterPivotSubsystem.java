@@ -113,31 +113,28 @@ public class ShooterPivotSubsystem extends SubsystemBase {
    * prevents oscillation at the boundary.
    */
   public boolean isInTrenchZone() {
-    // Yeah... we have a bug in here.
+    // NOTE: Technically, if the robot does not cross 0.4m in 20ms, the condition for trench mode
+    // will no longer be met and the angle will no longer be locked.
     if (m_poseSupplier == null) return false;
     Pose2d pose = m_poseSupplier.get();
     if (pose == null) return false;
 
     Distance x = Meters.of(pose.getX());
     Distance y = Meters.of(pose.getY());
-    Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
-    Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance margin = m_trenchMode
+        ? ShooterPivotConstants.TRENCH_MARGIN
+        : ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
 
-    if (m_trenchMode) {
-      // Exit thresholds (actual trench zone = tighter)
-      boolean inX =
-          x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
-      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
-          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
-      return inX && inY;
-    } else {
-      // Entry thresholds (approach zone = wider by margin)
-      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
-          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
-      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
-          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(margin));
-      return inX && inY;
-    }
+    boolean inXBlue = x.gte(ShooterPivotConstants.TRENCH_X_BLUE.minus(margin))
+        && x.lte(ShooterPivotConstants.TRENCH_X_BLUE.plus(margin));
+    boolean inXRed = x.gte(ShooterPivotConstants.TRENCH_X_RED.minus(margin))
+        && x.lte(ShooterPivotConstants.TRENCH_X_RED.plus(margin));
+    boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
+        || y.gte(ShooterPivotConstants.FIELD_WIDTH
+            .minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
+            .minus(margin));
+
+    return (inXBlue || inXRed) && inY;
   }
 
   public boolean isInTrenchMode() {
@@ -311,13 +308,13 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   /**
    * Command to go to a fixed angle and hold it.
    *
-   * @param angleDegrees the target angle
+   * @param angle the target angle
    * @return a command that holds the angle until cancelled
    */
-  public Command goToAngleCommand(Angle angleDegrees) {
-    return run(() -> setAngle(angleDegrees))
+  public Command goToAngleCommand(Angle angle) {
+    return run(() -> setAngle(angle))
         .finallyDo(interrupted -> stop())
-        .withName("ShooterPivot GoTo " + angleDegrees + "deg");
+        .withName("ShooterPivot GoTo " + angle + "deg");
   }
 
   /**

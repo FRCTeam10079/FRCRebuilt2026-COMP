@@ -88,11 +88,11 @@ public class IndexerSubsystem extends SubsystemBase {
 
     if (!m_trenchMode) {
       // 2. Send commands to motors
-      setSpeedsRPS();
+      updateSpeedsRPS();
     }
   }
 
-  private void setSpeedsRPS() {
+  private void updateSpeedsRPS() {
     m_feederMotor.setControl(m_feederRequest.withVelocity(m_feederRPS));
     m_spindexerMotor.setControl(m_spindexerRequest.withVelocity(m_spindexerRPS));
   }
@@ -162,7 +162,7 @@ public class IndexerSubsystem extends SubsystemBase {
         m_trenchMode = true;
       }
     } else if (m_trenchMode) {
-      setSpeedsRPS();
+      updateSpeedsRPS();
       m_trenchMode = false;
     }
   }

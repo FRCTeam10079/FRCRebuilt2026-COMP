@@ -109,9 +109,19 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
+    // Hard distance gate on single tags
+    if (mt1.tagCount == 1 && avgTagDist > 2.5) {
+      Logger.recordOutput(logPrefix + "Status", "REJECTED_DISTANCE");
+      totalRejected++;
+      return;
+    }
+
     // Innovation gate: reject if vision pose is too far from current odometry pose
     double innovationMeters = pose.getTranslation().getDistance(odoPose.getTranslation());
-    if (innovationMeters > VisionConstants.MAX_VISION_INNOVATION_METERS) {
+    double innovationThreshold = mt1.tagCount >= 2 ? 1.0 : 0.75;
+    innovationThreshold += avgTagDist * 0.15; // widen gate proportionally with distance
+    
+    if (innovationMeters > innovationThreshold) {
       Logger.recordOutput(logPrefix + "Status", "REJECTED_INNOVATION");
       totalRejected++;
       return;
@@ -194,42 +204,32 @@ public class VisionSubsystem extends SubsystemBase {
       if (VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED) {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
 
-        if (mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
+        if (!hasBootstrappedHeading && mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
           double mt1HeadingDeg = mt1.pose.getRotation().getDegrees();
-          double divergenceDeg =
-              Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));
 
           Logger.recordOutput("Vision/" + name + "/Disabled/MT1HeadingDeg", mt1HeadingDeg);
-          Logger.recordOutput("Vision/" + name + "/Disabled/HeadingDivergenceDeg", divergenceDeg);
 
-          if (divergenceDeg > VisionConstants.MT1_HEADING_CORRECTION_THRESHOLD_DEG) {
-            // This path bypasses processCamera(), so gate protections must be applied
-            // manually; use
-            // distance as the primary protection because odometry is static while disabled.
-            if (mt1.avgTagDist > VisionConstants.MAX_MT1_DISTANCE_METERS) {
-              Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", false);
-              Logger.recordOutput("Vision/" + name + "/Disabled/Status", "REJECTED_DISTANCE");
-              totalRejected++;
-              continue;
-            }
-            Pose2d correctedPose = new Pose2d(currentPose.getTranslation(), mt1.pose.getRotation());
-            drivetrain.resetPose(correctedPose);
-
-            hasBootstrappedHeading = true;
-            headingCorrections++;
-            DataLogManager.log("[Vision] Auto-corrected heading from MT1 multi-tag: "
-                + String.format("%.1f", currentHeadingDeg)
-                + "° -> "
-                + String.format("%.1f", mt1HeadingDeg)
-                + "° (divergence: "
-                + String.format("%.1f", divergenceDeg)
-                + "°, camera: "
-                + name
-                + ")");
-            Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", true);
-
-            break;
+          // This path bypasses processCamera(), so gate protections must be applied
+          // manually; use
+          // distance as the primary protection because odometry is static while disabled.
+          if (mt1.avgTagDist > VisionConstants.MAX_MT1_DISTANCE_METERS) {
+            Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", false);
+            Logger.recordOutput("Vision/" + name + "/Disabled/Status", "REJECTED_DISTANCE");
+            totalRejected++;
+            continue;
           }
+          
+          drivetrain.resetPose(mt1.pose);
+
+          hasBootstrappedHeading = true;
+          headingCorrections++;
+          DataLogManager.log("[Vision] Auto-seeded full pose from MT1 multi-tag: X=" 
+              + String.format("%.2f", mt1.pose.getX()) + " Y=" + String.format("%.2f", mt1.pose.getY()) 
+              + " Theta=" + String.format("%.1f", mt1.pose.getRotation().getDegrees())
+              + "° (camera: " + name + ")");
+          Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", true);
+
+          break;
         }
       }
     }

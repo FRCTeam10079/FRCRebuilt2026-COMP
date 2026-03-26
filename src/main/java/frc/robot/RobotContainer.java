@@ -22,11 +22,23 @@ import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.climber.NoOpClimberIO;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
+import frc.robot.subsystems.indexer.IndexerIOTalonFX;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
+import frc.robot.subsystems.indexer.NoOpIndexerIO;
+import frc.robot.subsystems.intake.IntakeWheelsIOTalonFX;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
+import frc.robot.subsystems.intake.NoOpIntakeWheelsIO;
+import frc.robot.subsystems.intake.NoOpPivotIO;
+import frc.robot.subsystems.intake.PivotIOTalonFX;
 import frc.robot.subsystems.intake.PivotSubsystem;
+import frc.robot.subsystems.shooter.NoOpShooterIO;
+import frc.robot.subsystems.shooter.NoOpShooterPivotIO;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
+import frc.robot.subsystems.shooter.ShooterPivotIOTalonFX;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
@@ -52,23 +64,19 @@ public class RobotContainer {
 
   // Vision
   public final VisionSubsystem vision;
-  // Indexer
-  private final IndexerSubsystem indexer = new IndexerSubsystem();
-
-  // Mechanisms
-
-  public final ShooterSubsystem shooter = new ShooterSubsystem();
-  public final ShooterPivotSubsystem shooterPivot =
-      new ShooterPivotSubsystem(() -> drivetrain.getState().Pose);
-  // Intake
-  private final IntakeWheelsSubsystem intake = new IntakeWheelsSubsystem();
-  private final PivotSubsystem pivot = new PivotSubsystem();
-
-  // Climber (stub — hardware not wired yet)
-  private final ClimberSubsystem climber = new ClimberSubsystem();
+  // Subsystems (initialized in constructor based on mode)
+  private final IndexerSubsystem indexer;
+  public final ShooterSubsystem shooter;
+  public final ShooterPivotSubsystem shooterPivot;
+  private final IntakeWheelsSubsystem intake;
+  private final PivotSubsystem pivot;
+  private final ClimberSubsystem climber;
 
   private final Telemetry m_telemetry =
       new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+
+  // ==================== SUPERSTRUCTURE ====================
+  private final Superstructure superstructure;
 
   // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
@@ -80,6 +88,51 @@ public class RobotContainer {
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
   public RobotContainer() {
+    // ==================== IO MODE SWITCHING ====================
+    switch (Constants.currentMode) {
+      case REAL:
+        indexer = new IndexerSubsystem(new IndexerIOTalonFX());
+        shooter = new ShooterSubsystem(new ShooterIOTalonFX());
+        shooterPivot = new ShooterPivotSubsystem(
+            new ShooterPivotIOTalonFX(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new IntakeWheelsIOTalonFX());
+        pivot = new PivotSubsystem(new PivotIOTalonFX());
+        climber = new ClimberSubsystem(new NoOpClimberIO());
+        break;
+
+      case SIM:
+        // Sim IOs - first-order physics models for each mechanism
+        indexer = new IndexerSubsystem(new frc.robot.subsystems.indexer.IndexerIOSim());
+        shooter = new ShooterSubsystem(new frc.robot.subsystems.shooter.ShooterIOSim());
+        shooterPivot = new ShooterPivotSubsystem(
+            new frc.robot.subsystems.shooter.ShooterPivotIOSim(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new frc.robot.subsystems.intake.IntakeWheelsIOSim());
+        pivot = new PivotSubsystem(new frc.robot.subsystems.intake.PivotIOSim());
+        climber = new ClimberSubsystem(new frc.robot.subsystems.climber.ClimberIOSim());
+        break;
+
+      case REPLAY:
+        // Replay - same as SIM (Logger will inject real data from the log file)
+        indexer = new IndexerSubsystem(new NoOpIndexerIO());
+        shooter = new ShooterSubsystem(new NoOpShooterIO());
+        shooterPivot =
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
+        pivot = new PivotSubsystem(new NoOpPivotIO());
+        climber = new ClimberSubsystem(new NoOpClimberIO());
+        break;
+
+      default:
+        indexer = new IndexerSubsystem(new NoOpIndexerIO());
+        shooter = new ShooterSubsystem(new NoOpShooterIO());
+        shooterPivot =
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
+        pivot = new PivotSubsystem(new NoOpPivotIO());
+        climber = new ClimberSubsystem(new NoOpClimberIO());
+        break;
+    }
+
     // Create vision subsystem (needs drivetrain reference for pose injection)
     vision = new VisionSubsystem(drivetrain);
 
@@ -103,6 +156,25 @@ public class RobotContainer {
       return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
     });
 
+    // ==================== SUPERSTRUCTURE ====================
+    superstructure = new Superstructure(
+        shooter,
+        shooterPivot,
+        indexer,
+        intake,
+        pivot,
+        climber,
+        m_stateMachine,
+        m_setpointSupplier,
+        () -> {
+          double targetHeading =
+              ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+          double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
+          Angle error = Radians.of(
+              Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
+          return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
+        });
+
     // Initialize the pathfinding system
     initializePathfinding();
 
@@ -118,12 +190,20 @@ public class RobotContainer {
     // Choreo.
     // Must be registered BEFORE any PathPlanner autos/paths are created.
     autoCommands = new AutoCommands(
-        intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
+        superstructure,
+        intake,
+        pivot,
+        indexer,
+        shooter,
+        shooterPivot,
+        drivetrain,
+        vision,
+        m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
-    autos = new Autos(drivetrain, choreoAutoFactory, autoCommands);
+    autos = new Autos(choreoAutoFactory, autoCommands);
 
     // Configure button bindings
     configureBindings();
@@ -145,26 +225,15 @@ public class RobotContainer {
    */
   private void configureBindings() {
     DriverControls.configure(
-        m_driverController,
-        drivetrain,
-        vision,
-        intake,
-        pivot,
-        shooter,
-        shooterPivot,
-        indexer,
-        m_stateMachine,
-        m_setpointSupplier);
+        m_driverController, drivetrain, vision, superstructure, m_stateMachine, m_setpointSupplier);
     OperatorControls.configure(
         m_operatorController,
-        intake,
-        pivot,
-        indexer,
-        climber,
-        shooter,
+        superstructure,
         shooterPivot,
+        climber,
         m_stateMachine,
-        m_setpointSupplier);
+        m_setpointSupplier,
+        () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose));
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }
@@ -182,6 +251,26 @@ public class RobotContainer {
   /** Get the state machine instance */
   public RobotStateMachine getStateMachine() {
     return m_stateMachine;
+  }
+
+  public IntakeWheelsSubsystem getIntake() {
+    return intake;
+  }
+
+  public PivotSubsystem getPivot() {
+    return pivot;
+  }
+
+  public IndexerSubsystem getIndexer() {
+    return indexer;
+  }
+
+  public ClimberSubsystem getClimber() {
+    return climber;
+  }
+
+  public Superstructure getSuperstructure() {
+    return superstructure;
   }
 
   /**

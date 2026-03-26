@@ -4,139 +4,134 @@
 
 package frc.robot.subsystems.indexer;
 
-import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IndexerConstants;
+import org.littletonrobotics.junction.Logger;
 
-/**
- * Dual-motor indexer subsystem with independent feeder and spindexer control.
- *
- * <p>The feeder is a fast wheel that shoots game pieces upward, while the spindexer is a slower
- * floor wheel that rotates pieces into the feeder path.
- */
 public class IndexerSubsystem extends SubsystemBase {
 
-  // Two independent motors
-  private final TalonFX m_feederMotor;
-  private final TalonFX m_spindexerMotor;
+  private final IndexerIO io;
+  private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
 
-  // Two independent control requests (allows us to send different speeds)
-  private final VelocityVoltage m_feederRequest = new VelocityVoltage(0).withSlot(0);
-  private final VelocityVoltage m_spindexerRequest = new VelocityVoltage(0).withSlot(0);
+  // ==================== STATE MACHINE ====================
 
-  public IndexerSubsystem() {
-    m_feederMotor = new TalonFX(IndexerConstants.kFeederMotorID, new CANBus("rio"));
-    m_spindexerMotor = new TalonFX(IndexerConstants.kSpindexerMotorID, new CANBus("rio"));
-    configureMotors();
+  public enum WantedState {
+    OFF,
+    FEED,
+    REVERSE,
+    INDEX
   }
 
-  /** Configure both indexer motors with PID gains, current limits, and brake mode. */
-  private void configureMotors() {
-    // ==================== FEEDER CONFIGURATION ====================
-    TalonFXConfiguration feederConfig = new TalonFXConfiguration();
-    feederConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    feederConfig.Slot0 = new Slot0Configs()
-        .withKP(IndexerConstants.kFeederKP)
-        .withKI(IndexerConstants.kFeederKI)
-        .withKD(IndexerConstants.kFeederKD)
-        .withKS(IndexerConstants.kFeederKS)
-        .withKV(IndexerConstants.kFeederKV)
-        .withKA(IndexerConstants.kFeederKA)
-        .withKG(IndexerConstants.kFeederKG);
-    m_feederMotor.getConfigurator().apply(feederConfig);
-
-    // ==================== SPINDEXER CONFIGURATION ====================
-    TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
-    spindexerConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
-    spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    spindexerConfig.Slot0 = new Slot0Configs()
-        .withKP(IndexerConstants.kSpindexerKP)
-        .withKI(IndexerConstants.kSpindexerKI)
-        .withKD(IndexerConstants.kSpindexerKD)
-        .withKS(IndexerConstants.kSpindexerKS)
-        .withKV(IndexerConstants.kSpindexerKV)
-        .withKA(IndexerConstants.kSpindexerKA)
-        .withKG(IndexerConstants.kSpindexerKG);
-    m_spindexerMotor.getConfigurator().apply(spindexerConfig);
+  private enum SystemState {
+    IDLE,
+    FEEDING,
+    REVERSING,
+    INDEXING
   }
 
-  /**
-   * Sets the speeds of both indexer motors independently.
-   *
-   * @param feederRPM Target RPM for the fast feeder wheel
-   * @param spindexerRPM Target RPM for the floor/spindexer wheel
-   */
-  public void setSpeeds(double feederRPM, double spindexerRPM) {
-    // 1. Convert RPM to RPS
-    double feederRPS = feederRPM / 60.0;
-    double spindexerRPS = spindexerRPM / 60.0;
+  private WantedState wantedState = WantedState.OFF;
+  private SystemState systemState = SystemState.IDLE;
 
-    // 2. Send commands to motors
-    m_feederMotor.setControl(m_feederRequest.withVelocity(feederRPS));
-    m_spindexerMotor.setControl(m_spindexerRequest.withVelocity(spindexerRPS));
+  public IndexerSubsystem(IndexerIO io) {
+    this.io = io;
   }
 
-  /** Stop both indexer motors immediately. */
-  public void stop() {
-    m_feederMotor.stopMotor();
-    m_spindexerMotor.stopMotor();
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("Indexer", inputs);
+
+    systemState = handleStateTransitions();
+    applyStates();
+
+    Logger.recordOutput("Indexer/WantedState", wantedState);
+    Logger.recordOutput("Indexer/SystemState", systemState);
+  }
+
+  // ==================== STATE TRANSITIONS ====================
+
+  private SystemState handleStateTransitions() {
+    return switch (wantedState) {
+      case FEED -> SystemState.FEEDING;
+      case REVERSE -> SystemState.REVERSING;
+      case INDEX -> SystemState.INDEXING;
+      case OFF -> SystemState.IDLE;
+    };
+  }
+
+  private void applyStates() {
+    switch (systemState) {
+      case FEEDING:
+        io.setFeederVelocity(IndexerConstants.kFeederTargetRPM / 60.0);
+        io.setSpindexerVelocity(IndexerConstants.kSpindexerTargetRPM / 60.0);
+        break;
+      case REVERSING:
+        io.setFeederVelocity(IndexerConstants.kFeederReverseRPM / 60.0);
+        io.setSpindexerVelocity(IndexerConstants.kSpindexerReverseRPM / 60.0);
+        break;
+      case INDEXING:
+        // Spindexer only — rotate pieces into feeder path without shooting
+        io.setFeederVelocity(0);
+        io.setSpindexerVelocity(IndexerConstants.kSpindexerTargetRPM / 60.0);
+        break;
+      case IDLE:
+      default:
+        io.stop();
+        break;
+    }
+  }
+
+  // ==================== PUBLIC API ====================
+
+  public void setWantedState(WantedState state) {
+    this.wantedState = state;
+  }
+
+  public WantedState getWantedState() {
+    return wantedState;
   }
 
   // ==================== COMMAND FACTORIES ====================
 
-  /**
-   * Command to feed game pieces forward. Runs while the command is active, stops on end.
-   *
-   * @return a feed command that requires this subsystem
-   */
   public Command feedCommand() {
-    return startEnd(
-            () ->
-                setSpeeds(IndexerConstants.kFeederTargetRPM, IndexerConstants.kSpindexerTargetRPM),
-            this::stop)
+    return startEnd(() -> setWantedState(WantedState.FEED), () -> setWantedState(WantedState.OFF))
         .withName("Indexer Feed");
   }
 
-  /**
-   * Command to reverse the indexer (unjam). Runs while the command is active, stops on end.
-   *
-   * @return a reverse command that requires this subsystem
-   */
   public Command reverseCommand() {
     return startEnd(
-            () -> setSpeeds(
-                IndexerConstants.kFeederReverseRPM, IndexerConstants.kSpindexerReverseRPM),
-            this::stop)
+            () -> setWantedState(WantedState.REVERSE), () -> setWantedState(WantedState.OFF))
         .withName("Indexer Reverse");
   }
 
-  /**
-   * Command to stop the indexer immediately.
-   *
-   * @return an instant stop command that requires this subsystem
-   */
   public Command stopCommand() {
-    return runOnce(this::stop).withName("Indexer Stop");
+    return runOnce(() -> setWantedState(WantedState.OFF)).withName("Indexer Stop");
   }
 
-  /**
-   * Command to run both indexer motors at custom RPMs. Stops on end.
-   *
-   * @param feederRPM target RPM for the feeder motor
-   * @param spindexerRPM target RPM for the spindexer motor
-   * @return a start-end command that requires this subsystem
-   */
-  public Command runAtSpeedsCommand(double feederRPM, double spindexerRPM) {
-    return startEnd(() -> setSpeeds(feederRPM, spindexerRPM), this::stop)
-        .withName("Indexer " + feederRPM + "/" + spindexerRPM + " RPM");
+  // ==================== TELEMETRY ====================
+
+  public double getFeederSupplyCurrentAmps() {
+    return inputs.feederSupplyCurrentAmps;
+  }
+
+  public double getSpindexerSupplyCurrentAmps() {
+    return inputs.spindexerSupplyCurrentAmps;
+  }
+
+  public double getFeederStatorCurrentAmps() {
+    return inputs.feederStatorCurrentAmps;
+  }
+
+  public double getSpindexerStatorCurrentAmps() {
+    return inputs.spindexerStatorCurrentAmps;
+  }
+
+  public double getFeederVoltageVolts() {
+    return inputs.feederVoltageVolts;
+  }
+
+  public double getSpindexerVoltageVolts() {
+    return inputs.spindexerVoltageVolts;
   }
 }

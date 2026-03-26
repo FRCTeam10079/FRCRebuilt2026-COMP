@@ -61,7 +61,7 @@
             "height": 128.0,
             "type": "Match Time",
             "properties": {
-              "topic": "",
+              "topic": "/SmartDashboard/Match Time",
               "period": 0.06,
               "time_display_mode": "Minutes and Seconds",
               "red_start_time": 15,

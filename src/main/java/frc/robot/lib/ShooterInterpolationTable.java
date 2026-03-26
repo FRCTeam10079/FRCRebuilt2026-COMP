@@ -12,6 +12,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.

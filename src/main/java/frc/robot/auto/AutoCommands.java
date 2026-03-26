@@ -4,7 +4,6 @@
 
 package frc.robot.auto;
 
-import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -222,44 +221,5 @@ public class AutoCommands {
     NamedCommands.registerCommand("Intake", intake());
 
     DataLogManager.log("[AutoCommands] Named commands registered for PathPlanner");
-  }
-
-  /**
-   * Register Choreo global marker bindings for subsystem actions. These bindings are evaluated from
-   * event markers inside Choreo trajectories.
-   */
-  public void registerChoreoBindings(AutoFactory factory) {
-    factory
-        // Intake
-        .bind("intake", intake())
-        .bind("intakeOut", intakeOut())
-        .bind("stopIntake", stopIntake())
-        // Pivot
-        .bind("deployPivot", deployPivot())
-        .bind("stowPivot", stowPivot())
-        // Combined intake + pivot
-        .bind("intakeFuel", intakeFuel())
-        .bind("endIntaking", endIntaking())
-        // Indexer
-        .bind("runIndexer", runIndexer())
-        .bind("reverseIndexer", reverseIndexer())
-        .bind("stopIndexer", stopIndexer())
-        // Shooter
-        .bind("spinUpShooter", spinUpShooter())
-        .bind("stopShooter", stopShooter())
-        .bind("shoot", shoot())
-        .bind("fenderShot", fenderShot())
-        // Vision alignment
-        .bind("alignCenter", alignCenter())
-        .bind("alignLeft", alignLeft())
-        .bind("alignRight", alignRight())
-        // Stop all
-        .bind("stopAll", stopAll())
-        // Aliases matching auto file names
-        .bind("Intake down", intakeFuel())
-        .bind("Shoot", shoot())
-        .bind("Intake", intake());
-
-    DataLogManager.log("[AutoCommands] Marker bindings registered for Choreo");
   }
 }

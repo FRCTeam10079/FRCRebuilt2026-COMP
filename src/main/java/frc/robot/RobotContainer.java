@@ -6,7 +6,6 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
 
-import choreo.auto.AutoFactory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -71,7 +70,6 @@ public class RobotContainer {
       new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
   // ==================== AUTO ====================
-  private final AutoFactory choreoAutoFactory;
   private final AutoCommands autoCommands;
   private final Autos autos;
 
@@ -106,13 +104,6 @@ public class RobotContainer {
     // Initialize the pathfinding system
     initializePathfinding();
 
-    choreoAutoFactory = new AutoFactory(
-        () -> drivetrain.getState().Pose,
-        drivetrain::resetPose,
-        drivetrain::followTrajectory,
-        false,
-        drivetrain);
-
     // ==================== REGISTER NAMED COMMANDS ====================
     // AutoCommands provides factory methods used by both PathPlanner and
     // Choreo.
@@ -120,10 +111,9 @@ public class RobotContainer {
     autoCommands = new AutoCommands(
         intake, pivot, indexer, shooter, shooterPivot, drivetrain, vision, m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
-    autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
-    autos = new Autos(drivetrain, choreoAutoFactory, autoCommands);
+    autos = new Autos(drivetrain, autoCommands);
 
     // Configure button bindings
     configureBindings();

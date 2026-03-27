@@ -8,11 +8,27 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.036559306910882,
-        "y": -0.41905522290849007
+        "x": 7.2567456894121225,
+        "y": 0.5497370392315641
       },
       "isLocked": false,
       "linkedName": "rNeutral"
+    },
+    {
+      "anchor": {
+        "x": 5.180804529818026,
+        "y": 0.5
+      },
+      "prevControl": {
+        "x": 6.2048448544605055,
+        "y": 0.4999999999999999
+      },
+      "nextControl": {
+        "x": 4.156764205175547,
+        "y": 0.5000000000000001
+      },
+      "isLocked": false,
+      "linkedName": null
     },
     {
       "anchor": {
@@ -20,32 +36,30 @@
         "y": 1.1373108362268523
       },
       "prevControl": {
-        "x": 3.3572089432311025,
-        "y": 0.3924648582713769
+        "x": 3.320248422459752,
+        "y": 0.42949917744820654
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "rScore"
     }
   ],
-  "rotationTargets": [],
-  "constraintZones": [],
-  "pointTowardsZones": [
+  "rotationTargets": [
     {
-      "fieldPosition": {
-        "x": 10.0,
-        "y": 0.8
-      },
-      "rotationOffset": 0.0,
-      "minWaypointRelativePos": 0.4114929401993355,
-      "maxWaypointRelativePos": 0.8091647632890365,
-      "name": "Point Towards Zone"
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 1.466101694915253,
+      "rotationDegrees": 0.0
     }
   ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
   "eventMarkers": [
     {
       "name": "stopIntake",
-      "waypointRelativePos": 0.6760408014950168,
+      "waypointRelativePos": 1.35,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -60,7 +74,7 @@
   },
   "goalEndState": {
     "velocity": 0.0,
-    "rotation": 52.25
+    "rotation": 53.25
   },
   "reversed": false,
   "folder": "Right Paths",

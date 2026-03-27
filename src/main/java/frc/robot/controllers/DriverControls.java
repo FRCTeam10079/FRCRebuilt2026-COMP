@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
+import frc.robot.Constants.IndexerConstants;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterMath;
@@ -101,6 +102,13 @@ public final class DriverControls {
                 intake)
             // .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming)
             );
+    controller
+        .x()
+        .whileTrue(Commands.startEnd(pivot::deployPivot, pivot::stowPivot, pivot)
+            .alongWith(
+                intake.intakeOutCommand(),
+                indexer.runAtSpeedsCommand(
+                    IndexerConstants.kFeederReverseRPM, IndexerConstants.kSpindexerReverseRPM)));
 
     // ==================== SHOOTING (DISTANCE-BASED) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin + track pivot

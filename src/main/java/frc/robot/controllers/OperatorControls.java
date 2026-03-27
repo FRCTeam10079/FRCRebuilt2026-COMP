@@ -78,7 +78,7 @@ public final class OperatorControls {
     // B - Hold reverse intake + indexer
     operator
         .b()
-        .onTrue(updateWantedStateFromOperatorInputs(operator, superstructure))
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))
         .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
 
     // ==================== SHOOTER PIVOT ====================
@@ -144,7 +144,8 @@ public final class OperatorControls {
     // Right Trigger - Force-feed the shooter, bypassing on-target gates.
     operator
         .rightTrigger(0.5)
-        .onTrue(updateWantedStateFromOperatorInputs(operator, superstructure))
+        .onTrue(Commands.runOnce(
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
 
     // ======== CLIMB SAFETY (through Superstructure) ========

@@ -73,7 +73,8 @@ public final class DriverControls {
     // On release, control falls back to any other still-held mechanism action.
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(updateWantedStateFromDriverInputs(controller, superstructure))
+        .onTrue(
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // ==================== SHOOTING (through Superstructure) ====================
@@ -83,7 +84,7 @@ public final class DriverControls {
     // Superstructure handles shooter + pivot coordination via AIM state.
     controller
         .rightBumper()
-        .onTrue(updateWantedStateFromDriverInputs(controller, superstructure))
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.AIM)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Heading lock while RB is held (drivetrain-only, parallel to Superstructure
@@ -96,7 +97,8 @@ public final class DriverControls {
     // On release, control falls back to any other still-held mechanism action.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(updateWantedStateFromDriverInputs(controller, superstructure))
+        .onTrue(Commands.runOnce(
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Rumble while actively shooting
@@ -120,7 +122,7 @@ public final class DriverControls {
     // D-pad Down - Stow intake pivot
     controller
         .povDown()
-        .onTrue(updateWantedStateFromDriverInputs(controller, superstructure))
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // ==================== X-STANCE ====================

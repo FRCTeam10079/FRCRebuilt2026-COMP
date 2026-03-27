@@ -234,7 +234,6 @@ public class Superstructure extends SubsystemBase {
     intake.setWantedState(IntakeWheelsSubsystem.WantedState.INTAKE);
     indexer.setWantedState(
         IndexerSubsystem.WantedState.OFF); // Indexer only runs during shooting/feed, never intake.
-    shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
     trackPivotContinuously();
   }
 

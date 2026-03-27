@@ -79,11 +79,7 @@ public final class OperatorControls {
     operator
         .b()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))
-        .onFalse(Commands.runOnce(() -> {
-          if (superstructure.getWantedSuperState() == WantedSuperState.UNJAM) {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
 
     // ==================== SHOOTER PIVOT ====================
     // Superstructure manages the shooter pivot in AIM/SHOOT states.
@@ -150,11 +146,7 @@ public final class OperatorControls {
         .rightTrigger(0.5)
         .onTrue(Commands.runOnce(
             () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
-        .onFalse(Commands.runOnce(() -> {
-          if (superstructure.getWantedSuperState() == WantedSuperState.FORCE_SHOOT) {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
 
     // ======== CLIMB SAFETY (through Superstructure) ========
     // Start + Back together -> L1 climb sequence arm (safety interlock)
@@ -169,5 +161,20 @@ public final class OperatorControls {
 
   private static DoubleSupplier negate(DoubleSupplier supplier) {
     return () -> -supplier.getAsDouble();
+  }
+
+  private static edu.wpi.first.wpilibj2.command.Command updateWantedStateFromOperatorInputs(
+      CommandXboxController operator, Superstructure superstructure) {
+    return Commands.runOnce(() -> {
+      WantedSuperState desiredState = WantedSuperState.IDLE;
+
+      if (operator.rightTrigger(0.5).getAsBoolean()) {
+        desiredState = WantedSuperState.FORCE_SHOOT;
+      } else if (operator.b().getAsBoolean()) {
+        desiredState = WantedSuperState.UNJAM;
+      }
+
+      superstructure.setWantedSuperState(desiredState);
+    });
   }
 }

@@ -17,7 +17,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "rStartToRNeutral"
+                  "pathName": "ldepotStartToDepot"
                 }
               }
             ]
@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "rNeutralToRscore"
+            "pathName": "DepotTolScore"
           }
         },
         {
@@ -42,7 +42,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 6.0
+                  "waitTime": 4.5
                 }
               }
             ]
@@ -67,7 +67,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.6
+                  "waitTime": 0.75
                 }
               }
             ]
@@ -92,7 +92,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 1.3
+                  "waitTime": 1.0
                 }
               }
             ]
@@ -117,7 +117,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.7
+                  "waitTime": 0.75
                 }
               }
             ]
@@ -142,51 +142,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 1.3
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "stowPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.8
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 10.0
+                  "waitTime": 1.0
                 }
               }
             ]
@@ -196,6 +152,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Right Autons",
+  "folder": null,
   "choreoAuto": false
 }

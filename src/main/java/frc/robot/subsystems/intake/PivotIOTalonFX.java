@@ -1,5 +1,6 @@
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
@@ -52,14 +53,47 @@ public class PivotIOTalonFX implements PivotIO {
     config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
 
     pivotMotor.applyConfiguration(config);
+    configureSignalRates();
+  }
+
+  private void configureSignalRates() {
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        50.0,
+        pivotMotor.getRotorPosition(),
+        pivotMotor.getRotorVelocity(),
+        pivotMotor.getSupplyCurrent(),
+        pivotMotor.getStatorCurrent(),
+        pivotMotor.getMotorVoltage(),
+        pivotMotor.getDutyCycle(),
+        pivotMotor.getClosedLoopReference(),
+        pivotMotor.getClosedLoopError());
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        10.0,
+        pivotMotor.getDeviceTemp(),
+        pivotMotor.getFaultField(),
+        pivotMotor.getStickyFaultField(),
+        pivotMotor.getMotionMagicAtTarget(),
+        pivotMotor.getMotionMagicIsRunning());
+
+    pivotMotor.optimizeBusUtilization();
   }
 
   @Override
   public void updateInputs(PivotIOInputs inputs) {
     inputs.positionRotations = pivotMotor.getRotorPosition().getValueAsDouble();
+    inputs.velocityRPS = pivotMotor.getRotorVelocity().getValueAsDouble();
     inputs.statorCurrentAmps = pivotMotor.getStatorCurrent().getValueAsDouble();
     inputs.supplyCurrentAmps = pivotMotor.getSupplyCurrent().getValueAsDouble();
     inputs.voltageVolts = pivotMotor.getMotorVoltage().getValueAsDouble();
+    inputs.dutyCycle = pivotMotor.getDutyCycle().getValueAsDouble();
+    inputs.closedLoopReferenceRotations = pivotMotor.getClosedLoopReference().getValueAsDouble();
+    inputs.closedLoopErrorRotations = pivotMotor.getClosedLoopError().getValueAsDouble();
+    inputs.deviceTempCelsius = pivotMotor.getDeviceTemp().getValueAsDouble();
+    inputs.faultField = pivotMotor.getFaultField().getValue().intValue();
+    inputs.stickyFaultField = pivotMotor.getStickyFaultField().getValue().intValue();
+    inputs.motionMagicAtTarget = pivotMotor.getMotionMagicAtTarget().getValue();
+    inputs.motionMagicIsRunning = pivotMotor.getMotionMagicIsRunning().getValue();
   }
 
   @Override

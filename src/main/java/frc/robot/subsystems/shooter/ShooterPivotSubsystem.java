@@ -92,6 +92,16 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     Logger.recordOutput("ShooterPivot/IsHomed", isHomed);
     Logger.recordOutput("ShooterPivot/AtTarget", isAtTarget());
     Logger.recordOutput("ShooterPivot/TrenchMode", trenchMode);
+    Logger.recordOutput("ShooterPivot/HomingStallCounter", homingStallCounter);
+    Logger.recordOutput(
+        "ShooterPivot/HomingCurrentExceeded",
+        Amps.of(inputs.statorCurrentAmps).gt(ShooterPivotConstants.HOMING_CURRENT_THRESHOLD));
+    Logger.recordOutput(
+        "ShooterPivot/ClosedLoopReferenceRotations", inputs.closedLoopReferenceRotations);
+    Logger.recordOutput("ShooterPivot/ClosedLoopErrorRotations", inputs.closedLoopErrorRotations);
+    Logger.recordOutput("ShooterPivot/MotionMagicAtTarget", inputs.motionMagicAtTarget);
+    Logger.recordOutput("ShooterPivot/MotionMagicIsRunning", inputs.motionMagicIsRunning);
+    Logger.recordOutput("ShooterPivot/FaultField", inputs.faultField);
   }
 
   // ==================== STATE TRANSITIONS ====================

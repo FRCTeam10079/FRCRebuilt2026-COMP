@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -55,6 +56,30 @@ public class ShooterPivotIOTalonFX implements ShooterPivotIO {
             ShooterPivotConstants.MAX_ANGLE.minus(ShooterPivotConstants.MIN_ANGLE)));
 
     pivotMotor.getConfigurator().apply(config);
+    configureSignalRates();
+  }
+
+  private void configureSignalRates() {
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        50.0,
+        pivotMotor.getPosition(),
+        pivotMotor.getVelocity(),
+        pivotMotor.getSupplyCurrent(),
+        pivotMotor.getStatorCurrent(),
+        pivotMotor.getMotorVoltage(),
+        pivotMotor.getDutyCycle(),
+        pivotMotor.getClosedLoopReference(),
+        pivotMotor.getClosedLoopError());
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        10.0,
+        pivotMotor.getDeviceTemp(),
+        pivotMotor.getFaultField(),
+        pivotMotor.getStickyFaultField(),
+        pivotMotor.getMotionMagicAtTarget(),
+        pivotMotor.getMotionMagicIsRunning());
+
+    pivotMotor.optimizeBusUtilization();
   }
 
   @Override
@@ -65,6 +90,13 @@ public class ShooterPivotIOTalonFX implements ShooterPivotIO {
     inputs.statorCurrentAmps = pivotMotor.getStatorCurrent().getValueAsDouble();
     inputs.voltageVolts = pivotMotor.getMotorVoltage().getValueAsDouble();
     inputs.dutyCycle = pivotMotor.getDutyCycle().getValueAsDouble();
+    inputs.closedLoopReferenceRotations = pivotMotor.getClosedLoopReference().getValueAsDouble();
+    inputs.closedLoopErrorRotations = pivotMotor.getClosedLoopError().getValueAsDouble();
+    inputs.deviceTempCelsius = pivotMotor.getDeviceTemp().getValueAsDouble();
+    inputs.faultField = pivotMotor.getFaultField().getValue().intValue();
+    inputs.stickyFaultField = pivotMotor.getStickyFaultField().getValue().intValue();
+    inputs.motionMagicAtTarget = pivotMotor.getMotionMagicAtTarget().getValue();
+    inputs.motionMagicIsRunning = pivotMotor.getMotionMagicIsRunning().getValue();
   }
 
   @Override

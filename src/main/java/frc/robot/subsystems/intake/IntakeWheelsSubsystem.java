@@ -31,6 +31,7 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.OFF;
   private SystemState systemState = SystemState.IDLE;
+  private double targetVelocityRPS = 0.0;
 
   public IntakeWheelsSubsystem(IntakeWheelsIO io) {
     this.io = io;
@@ -46,6 +47,10 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
 
     Logger.recordOutput("IntakeWheels/WantedState", wantedState);
     Logger.recordOutput("IntakeWheels/SystemState", systemState);
+    Logger.recordOutput("IntakeWheels/TargetVelocityRPS", targetVelocityRPS);
+    Logger.recordOutput("IntakeWheels/MeasuredVelocityRPS", inputs.velocityRPS);
+    Logger.recordOutput("IntakeWheels/VelocityErrorRPS", targetVelocityRPS - inputs.velocityRPS);
+    Logger.recordOutput("IntakeWheels/SlaveVelocityRPS", inputs.slaveVelocityRPS);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -61,13 +66,16 @@ public class IntakeWheelsSubsystem extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case INTAKING:
-        io.setVelocity(IntakeConstants.Wheels.INTAKE_IN_RPM / 60.0);
+        targetVelocityRPS = IntakeConstants.Wheels.INTAKE_IN_RPM / 60.0;
+        io.setVelocity(targetVelocityRPS);
         break;
       case REVERSING:
-        io.setVelocity(IntakeConstants.Wheels.INTAKE_OUT_RPM / 60.0);
+        targetVelocityRPS = IntakeConstants.Wheels.INTAKE_OUT_RPM / 60.0;
+        io.setVelocity(targetVelocityRPS);
         break;
       case IDLE:
       default:
+        targetVelocityRPS = 0.0;
         io.stop();
         break;
     }

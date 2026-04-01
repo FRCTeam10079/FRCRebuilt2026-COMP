@@ -1,5 +1,6 @@
 package frc.robot.lib;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.units.measure.Angle;
@@ -16,6 +17,10 @@ import frc.robot.constants.ShooterPivotConstants;
  * @see ShooterInterpolationTable
  */
 public record ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngle, boolean isValid) {
+
+  private static double rpmOffsetRpm = 0.0;
+  private static double angleOffsetDeg = 0.0;
+  private static long offsetRevision = 0;
 
   /**
    * Create a new ShooterSetpoint.
@@ -40,8 +45,12 @@ public record ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngle, boo
    * @return a ShooterSetpoint with the appropriate RPM and angle
    */
   public static ShooterSetpoint fromDistance(Distance distanceMeters) {
-    AngularVelocity rpm = ShooterInterpolationTable.getRPM(distanceMeters);
-    Angle angle = ShooterInterpolationTable.getAngle(distanceMeters);
+    AngularVelocity rpm = Constants.clamp(
+        RPM.of(ShooterInterpolationTable.getRPM(distanceMeters).in(RPM) + rpmOffsetRpm),
+        RPM.zero(),
+        ShooterConstants.SHOOTER_MAX_SPEED);
+    Angle angle =
+        Degrees.of(ShooterInterpolationTable.getAngle(distanceMeters).in(Degrees) + angleOffsetDeg);
 
     // Validate that the angle is within the pivot's physical range
     boolean valid =
@@ -52,6 +61,34 @@ public record ShooterSetpoint(AngularVelocity flywheelRPM, Angle pivotAngle, boo
         Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
 
     return new ShooterSetpoint(rpm, angle, valid);
+  }
+
+  public static void adjustRPMOffset(AngularVelocity deltaRPM) {
+    rpmOffsetRpm += deltaRPM.in(RPM);
+    offsetRevision++;
+  }
+
+  public static void adjustAngleOffset(Angle deltaAngle) {
+    angleOffsetDeg += deltaAngle.in(Degrees);
+    offsetRevision++;
+  }
+
+  public static AngularVelocity getRPMOffset() {
+    return RPM.of(rpmOffsetRpm);
+  }
+
+  public static Angle getAngleOffset() {
+    return Degrees.of(angleOffsetDeg);
+  }
+
+  public static void resetOffsets() {
+    rpmOffsetRpm = 0.0;
+    angleOffsetDeg = 0.0;
+    offsetRevision++;
+  }
+
+  public static long getOffsetRevision() {
+    return offsetRevision;
   }
 
   /** @return the target flywheel RPM */

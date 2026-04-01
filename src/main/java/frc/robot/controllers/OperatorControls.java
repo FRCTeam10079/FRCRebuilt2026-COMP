@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
-import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.HubShiftState;
 import frc.robot.statemachine.MatchState;
@@ -156,15 +155,33 @@ public final class OperatorControls {
           }
         }));
 
-    // ======== CLIMB SAFETY (through Superstructure) ========
-    // Start + Back together -> L1 climb sequence arm (safety interlock)
+    // ======== CLIMB SAFETY (through Superstructure + direct climber commands)
+    // ========
+    // Start + Back together -> Arm endgame and begin extending climber (safety
+    // interlock)
     new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
         .onTrue(Commands.sequence(
             Commands.runOnce(() -> {
               stateMachine.setMatchState(MatchState.ENDGAME);
-              stateMachine.setClimbState(ClimbState.CLIMBING_L1);
             }),
-            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB))));
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+            climber.extendCommand()));
+
+    // A button (while in climb mode) -> Trigger retract/climb phase after hooking
+    // on bar
+    operator
+        .a()
+        .and(() -> superstructure.isClimbing() && climber.isExtended())
+        .onTrue(climber.climbCommand());
+
+    // Back alone (not with Start) -> Abort climb from any state
+    operator
+        .back()
+        .and(() -> !operator.start().getAsBoolean())
+        .and(() -> superstructure.isClimbing())
+        .onTrue(Commands.sequence(
+            climber.abortCommand(),
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE))));
   }
 
   private static DoubleSupplier negate(DoubleSupplier supplier) {

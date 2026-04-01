@@ -1,24 +1,73 @@
 package frc.robot.subsystems.climber;
 
+import edu.wpi.first.math.MathUtil;
+import frc.robot.Constants.ClimberConstants;
+
 /**
- * Simulated climber IO. The real climber is voltage-only with no position feedback, so the sim just
- * tracks whether voltage is being applied.
+ * Simulated climber IO. Models a first-order winch driven by voltage, tracking motor position and
+ * velocity. The spool converts motor rotation to linear travel through a 25:1 gear ratio.
  */
 public class ClimberIOSim implements ClimberIO {
+  private static final double LOOP_PERIOD_SEC = 0.02;
+  private static final double NOMINAL_VOLTAGE = 12.0;
+
+  /**
+   * Approximate free speed of the Kraken X60 in RPS (~6000 RPM / 60). Through the 25:1 gearbox,
+   * this is the motor-side speed. kV ≈ free speed RPS / nominal voltage.
+   */
+  private static final double KV_RPS_PER_VOLT = (6000.0 / 60.0) / NOMINAL_VOLTAGE;
+
+  /** Time constant for velocity ramping (seconds). Models rotor + spool inertia. */
+  private static final double TAU = 0.3;
+
+  private double positionRotations = 0.0;
+  private double velocityRPS = 0.0;
   private double appliedVolts = 0.0;
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
-    // ClimberIOInputs has no fields — nothing to populate
+    // First-order model: velocity approaches target exponentially
+    double targetVelocityRPS = appliedVolts * KV_RPS_PER_VOLT;
+    double alpha = 1.0 - Math.exp(-LOOP_PERIOD_SEC / TAU);
+    velocityRPS += alpha * (targetVelocityRPS - velocityRPS);
+
+    // Integrate position
+    positionRotations += velocityRPS * LOOP_PERIOD_SEC;
+
+    // Clamp position to software limits (simulates TalonFX software limits)
+    positionRotations = MathUtil.clamp(
+        positionRotations,
+        ClimberConstants.FULL_RETRACT_ROTATIONS,
+        ClimberConstants.FULL_EXTEND_ROTATIONS);
+
+    // If clamped at a limit, zero velocity in that direction
+    if (positionRotations <= ClimberConstants.FULL_RETRACT_ROTATIONS && velocityRPS < 0) {
+      velocityRPS = 0.0;
+    }
+    if (positionRotations >= ClimberConstants.FULL_EXTEND_ROTATIONS && velocityRPS > 0) {
+      velocityRPS = 0.0;
+    }
+
+    inputs.positionRotations = positionRotations;
+    inputs.velocityRPS = velocityRPS;
+    inputs.appliedVoltage = appliedVolts;
+    inputs.supplyCurrentAmps = Math.abs(appliedVolts) * 3.0; // rough estimate
+    inputs.statorCurrentAmps = Math.abs(appliedVolts) * 5.0;
+    inputs.tempCelsius = 30.0; // nominal sim temperature
   }
 
   @Override
   public void setVoltage(double volts) {
-    appliedVolts = volts;
+    appliedVolts = MathUtil.clamp(volts, -NOMINAL_VOLTAGE, NOMINAL_VOLTAGE);
   }
 
   @Override
   public void stop() {
     appliedVolts = 0.0;
+  }
+
+  @Override
+  public void setEncoderPosition(double rotations) {
+    positionRotations = rotations;
   }
 }

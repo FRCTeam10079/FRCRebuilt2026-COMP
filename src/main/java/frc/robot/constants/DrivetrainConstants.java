@@ -70,7 +70,7 @@ public class DrivetrainConstants {
    * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
    * driver-controllable max speed; the velocity limiter may further reduce it.
    */
-  public static final double MAX_SHOOTING_SPEED_MPS = 0.7;
+  public static final double MAX_SHOOTING_SPEED_MPS = 0.6;
 
   /**
    * Maximum angular velocity (rad/s) while in shoot-on-the-move mode. This is the cap on the

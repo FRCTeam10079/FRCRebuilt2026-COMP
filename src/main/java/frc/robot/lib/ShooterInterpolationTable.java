@@ -53,9 +53,9 @@ public final class ShooterInterpolationTable {
     // -------------------------------------------------------
     // Close range: low RPM, steep angle (fuel doesn't need much speed)
     putRpm(1.0, 2000.0);
-    putRpm(2.2, 2050.0);
+    putRpm(2.2, 2060.0);
     // rpmTable.put(2.5, 2100.0);
-    rpmTable.put(3.0, 2355.0);
+    rpmTable.put(3.0, 2350.0);
     // rpmTable.put(3.5, 2500.0);
     rpmTable.put(4.5, 2625.0);
     // rpmTable.put(4.5, 3300.0);
@@ -113,13 +113,13 @@ public final class ShooterInterpolationTable {
     // - At 60deg launch, v~15m/s, horizontal component ~7.5m/s
     // - TOF ~ distance / horizontal_velocity (rough)
     // -------------------------------------------------------
-    tofTable.put(1.0, 1.25); // very close - short flight
+    tofTable.put(1.0, 1.35); // very close - short flight
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
-    tofTable.put(2.0, 1.4); // TODO: TUNE - placeholder estimate
+    tofTable.put(2.0, 1.5); // TODO: TUNE - placeholder estimate
     // tofTable.put(2.5, 1.55); // TODO: TUNE - placeholder estimate
-    tofTable.put(3.0, 1.5); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.0, 1.6); // TODO: TUNE - placeholder estimate
     // tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
-    tofTable.put(4.0, 1.7); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.0, 1.8); // TODO: TUNE - placeholder estimate
     // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
     tofTable.put(5.0, 2.7); // TODO: TUNE - placeholder estimate
   }

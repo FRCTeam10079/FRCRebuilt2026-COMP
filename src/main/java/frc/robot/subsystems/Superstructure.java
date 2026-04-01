@@ -14,7 +14,9 @@ import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.lib.SmartShootController;
+import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.GameState;
+import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
@@ -224,6 +226,11 @@ public class Superstructure extends SubsystemBase {
     pivot.setWantedState(PivotSubsystem.WantedState.STOW);
   }
 
+  /** Returns true when the Superstructure is in CLIMBING mode (endgame active). */
+  public boolean isClimbing() {
+    return currentSuperState == CurrentSuperState.CLIMBING;
+  }
+
   // ==================== STATE TRANSITIONS ====================
 
   /**
@@ -281,8 +288,11 @@ public class Superstructure extends SubsystemBase {
   /** Dispatch to per-state handler methods that set each child subsystem's wanted state. */
   private void applyStates() {
     // Detect state-change side effects
+    // When leaving CLIMBING super state, only reset climber if it hasn't completed
+    // the climb
     if (previousSuperState == CurrentSuperState.CLIMBING
-        && currentSuperState != CurrentSuperState.CLIMBING) {
+        && currentSuperState != CurrentSuperState.CLIMBING
+        && !climber.isClimbComplete()) {
       climber.setWantedState(ClimberSubsystem.WantedState.IDLE);
     }
 
@@ -376,11 +386,21 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyClimb() {
-    climber.setWantedState(ClimberSubsystem.WantedState.EXTEND);
+    // Endgame gate: refuse to climb unless we are in endgame
+    if (stateMachine.getMatchState() != MatchState.ENDGAME && !stateMachine.isEndgamePeriod()) {
+      Logger.recordOutput("Superstructure/ClimbBlocked", true);
+      return;
+    }
+    Logger.recordOutput("Superstructure/ClimbBlocked", false);
+
+    // Shut down all non-climb subsystems
     shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
     indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
     intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
     trackPivotContinuously();
+
+    // Climber state is driven by OperatorControls commands, not the Superstructure.
+    // The Superstructure just ensures other subsystems are off during climb mode.
   }
 
   private void applyStopped() {
@@ -443,6 +463,19 @@ public class Superstructure extends SubsystemBase {
   private void syncGameState() {
     if (!stateMachine.isEnabled()) return;
 
+    // Sync ClimbState from the climber subsystem's internal state machine
+    ClimbState climbDesired =
+        switch (climber.getSystemState()) {
+          case EXTENDING, EXTENDED -> ClimbState.APPROACHING;
+          case CLIMBING -> ClimbState.CLIMBING_L1;
+          case HELD -> ClimbState.ENGAGED;
+          default -> ClimbState.NOT_CLIMBING;
+        };
+    if (stateMachine.getClimbState() != climbDesired) {
+      stateMachine.setClimbState(climbDesired);
+    }
+
+    // Sync GameState
     GameState desired =
         switch (currentSuperState) {
           case COLLECTING -> GameState.COLLECTING;
@@ -455,7 +488,12 @@ public class Superstructure extends SubsystemBase {
             }
             yield GameState.SCORING;
           }
-          case CLIMBING -> GameState.CLIMBING;
+          case CLIMBING -> {
+            if (climber.isClimbComplete()) {
+              yield GameState.CLIMBED;
+            }
+            yield GameState.CLIMBING;
+          }
           case UNJAMMING -> GameState.MANUAL_OVERRIDE;
           default -> intakeActive ? GameState.COLLECTING : null;
         };

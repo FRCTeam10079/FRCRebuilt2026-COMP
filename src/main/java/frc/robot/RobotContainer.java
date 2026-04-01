@@ -26,6 +26,7 @@ import frc.robot.lib.SmartShootController;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.climber.ClimberIOTalonFX;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.climber.NoOpClimberIO;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -105,7 +106,7 @@ public class RobotContainer {
             new ShooterPivotIOTalonFX(), () -> drivetrain.getState().Pose);
         intake = new IntakeWheelsSubsystem(new IntakeWheelsIOTalonFX());
         pivot = new PivotSubsystem(new PivotIOTalonFX());
-        climber = new ClimberSubsystem(new NoOpClimberIO());
+        climber = new ClimberSubsystem(new ClimberIOTalonFX());
         break;
 
       case SIM:

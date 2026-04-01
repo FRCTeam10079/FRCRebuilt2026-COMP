@@ -18,17 +18,27 @@ public class ClimberSubsystem extends SubsystemBase {
   // ==================== STATE MACHINE ====================
 
   public enum WantedState {
+    /** Do nothing - motor stopped, brake mode holds position. */
     IDLE,
+    /** Pay rope out until hook is fully extended. */
     EXTEND,
-    RETRACT,
-    CLIMB
+    /** Wind rope in to lift the robot until scored position. */
+    CLIMB,
+    /** Stop immediately and return to idle from any state. */
+    ABORT
   }
 
-  private enum SystemState {
+  public enum SystemState {
+    /** Motor off, brake holds position. */
     IDLE,
+    /** Running extend voltage, watching for full extension position. */
     EXTENDING,
-    RETRACTING,
-    CLIMBING
+    /** Mechanism fully extended, motor stopped, waiting for climb command. */
+    EXTENDED,
+    /** Running retract voltage, watching for scored position. */
+    CLIMBING,
+    /** Climb complete - motor off, brake holds robot weight. */
+    HELD
   }
 
   private WantedState wantedState = WantedState.IDLE;
@@ -47,34 +57,62 @@ public class ClimberSubsystem extends SubsystemBase {
     systemState = handleStateTransitions();
     applyStates();
 
-    Logger.recordOutput("Climber/WantedState", wantedState);
-    Logger.recordOutput("Climber/SystemState", systemState);
+    Logger.recordOutput("Climber/WantedState", wantedState.name());
+    Logger.recordOutput("Climber/SystemState", systemState.name());
     Logger.recordOutput("Climber/RequestedVolts", requestedVolts);
-    Logger.recordOutput("Climber/AppliedVolts", inputs.appliedVolts);
+    Logger.recordOutput("Climber/PositionRotations", inputs.positionRotations);
   }
 
   // ==================== STATE TRANSITIONS ====================
 
   private SystemState handleStateTransitions() {
-    return switch (wantedState) {
-      case EXTEND -> SystemState.EXTENDING;
-      case RETRACT -> SystemState.RETRACTING;
-      case CLIMB -> SystemState.CLIMBING;
-      case IDLE -> SystemState.IDLE;
-    };
+    switch (wantedState) {
+      case IDLE:
+        return SystemState.IDLE;
+
+      case EXTEND:
+        if (inputs.positionRotations
+            >= ClimberConstants.FULL_EXTEND_ROTATIONS
+                - ClimberConstants.POSITION_TOLERANCE_ROTATIONS) {
+          return SystemState.EXTENDED;
+        }
+        return SystemState.EXTENDING;
+
+      case CLIMB:
+        // Can only climb if we have extended (or are already climbing/held)
+        if (systemState == SystemState.EXTENDED
+            || systemState == SystemState.CLIMBING
+            || systemState == SystemState.HELD) {
+          if (inputs.positionRotations
+              <= ClimberConstants.CLIMB_SCORED_ROTATIONS
+                  + ClimberConstants.POSITION_TOLERANCE_ROTATIONS) {
+            return SystemState.HELD;
+          }
+          return SystemState.CLIMBING;
+        }
+        // Not extended yet — stay in current state
+        return systemState;
+
+      case ABORT:
+        return SystemState.IDLE;
+
+      default:
+        return SystemState.IDLE;
+    }
   }
 
   private void applyStates() {
     switch (systemState) {
       case EXTENDING:
-        requestedVolts = ClimberConstants.CLIMBER_EXTEND_SPEED * 12.0;
+        requestedVolts = ClimberConstants.EXTEND_VOLTAGE;
         io.setVoltage(requestedVolts);
         break;
-      case RETRACTING:
       case CLIMBING:
-        requestedVolts = ClimberConstants.CLIMBER_RETRACT_SPEED * 12.0;
+        requestedVolts = ClimberConstants.RETRACT_VOLTAGE;
         io.setVoltage(requestedVolts);
         break;
+      case EXTENDED:
+      case HELD:
       case IDLE:
       default:
         requestedVolts = 0.0;
@@ -93,21 +131,75 @@ public class ClimberSubsystem extends SubsystemBase {
     return wantedState;
   }
 
+  public SystemState getSystemState() {
+    return systemState;
+  }
+
+  /** True when the mechanism has reached full extension and is waiting for climb. */
+  public boolean isExtended() {
+    return systemState == SystemState.EXTENDED;
+  }
+
+  /** True when the climb is complete and the robot is being held. */
+  public boolean isClimbComplete() {
+    return systemState == SystemState.HELD;
+  }
+
+  /** Current motor position in rotor rotations (for logging / dashboard). */
+  public double getPositionRotations() {
+    return inputs.positionRotations;
+  }
+
   // ==================== COMMAND FACTORIES ====================
 
+  /**
+   * Extend the climber until the hook is fully deployed. Returns to IDLE if interrupted. The state
+   * machine auto-transitions to EXTENDED when the position threshold is reached, at which point the
+   * command ends.
+   */
   public Command extendCommand() {
-    return startEnd(
-            () -> setWantedState(WantedState.EXTEND), () -> setWantedState(WantedState.IDLE))
+    return run(() -> setWantedState(WantedState.EXTEND))
+        .until(this::isExtended)
+        .finallyDo(interrupted -> {
+          if (interrupted) {
+            setWantedState(WantedState.IDLE);
+          }
+        })
         .withName("Climber Extend");
   }
 
-  public Command retractCommand() {
-    return startEnd(
-            () -> setWantedState(WantedState.RETRACT), () -> setWantedState(WantedState.IDLE))
-        .withName("Climber Retract");
+  /**
+   * Retract the climber to lift the robot. Runs until the scored position is reached, then holds.
+   * If interrupted, aborts back to IDLE. On successful completion, the state machine stays in HELD
+   * (motor off, brake holds).
+   */
+  public Command climbCommand() {
+    return run(() -> setWantedState(WantedState.CLIMB))
+        .until(this::isClimbComplete)
+        .finallyDo(interrupted -> {
+          if (interrupted) {
+            setWantedState(WantedState.IDLE);
+          }
+          // On normal completion: state stays CLIMB -> HELD, which keeps brake engaged
+        })
+        .withName("Climber Climb");
   }
 
+  /**
+   * Full autonomous climb: extend immediately, then retract without pausing. Prioritizes completing
+   * the climb quickly. Returns to IDLE if interrupted at any point.
+   */
+  public Command autoClimbCommand() {
+    return Commands.sequence(extendCommand(), climbCommand()).withName("Climber Auto Climb");
+  }
+
+  /** Abort the climb from any state. Motor stops immediately, brake holds. */
+  public Command abortCommand() {
+    return Commands.runOnce(() -> setWantedState(WantedState.IDLE), this).withName("Climber Abort");
+  }
+
+  /** Stop command — alias for abort for backward compatibility. */
   public Command stopCommand() {
-    return Commands.runOnce(() -> setWantedState(WantedState.IDLE)).withName("Climber Stop");
+    return abortCommand();
   }
 }

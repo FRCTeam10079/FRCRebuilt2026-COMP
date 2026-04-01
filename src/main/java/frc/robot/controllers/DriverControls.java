@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
-import frc.robot.Constants.ShooterPivotConstants;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.LaunchCalculator;
@@ -26,6 +25,7 @@ import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
+import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
@@ -40,8 +40,7 @@ import java.util.function.Supplier;
  */
 public final class DriverControls {
 
-  private DriverControls() {
-  } // Static utility class
+  private DriverControls() {} // Static utility class
 
   /**
    * Bind all driver controls.
@@ -134,7 +133,8 @@ public final class DriverControls {
         .leftBumper()
         .whileTrue(drivetrain
             .shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX)
-            .alongWith(ShooterFactory.aimAndSpinUpFromLauncher(shooter, shooterPivot))
+            .alongWith(ShooterFactory.aimAndSpinUpFromLauncher(
+                superstructure.getShooter(), superstructure.getShooterPivot()))
             .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
             .finallyDo(() -> {
               if (stateMachine.getGameState() == GameState.SCORING) {
@@ -148,15 +148,14 @@ public final class DriverControls {
     // NOTE: Each condition is evaluated into a separate variable to avoid Java
     // short-circuit && — previously isAtLaunchHeadingGoal() was never called
     // when the flywheel wasn't at speed, hiding heading-tracking diagnostics.
-    int[] gateLogCounter = { 0 };
+    int[] gateLogCounter = {0};
     Trigger sotmReady = new Trigger(() -> {
       LaunchParameters params = LaunchCalculator.getInstance().getParameters();
-      if (params == null || !params.isValid())
-        return false;
+      if (params == null || !params.isValid()) return false;
 
-      boolean fly = shooter.isAt(RPM.of(params.flywheelRPM()));
-      boolean piv = shooterPivot.isAtAngle(
-          Degrees.of(params.pivotAngleDegrees()), ShooterPivotConstants.SHOOTING_TOLERANCE);
+      boolean fly = superstructure.getShooter().isAt(RPM.of(params.flywheelRPM()));
+      boolean piv =
+          superstructure.getShooterPivot().isAtAngle(Degrees.of(params.pivotAngleDegrees()));
       boolean hdg = drivetrain.isAtLaunchHeadingGoal();
 
       // Periodic gate logging at ~2Hz with actual sensor values
@@ -169,10 +168,10 @@ public final class DriverControls {
             Timer.getFPGATimestamp(),
             fly,
             params.flywheelRPM(),
-            shooter.getCurrentRPM().in(RPM),
+            superstructure.getShooter().getCurrentRPM().in(RPM),
             piv,
             params.pivotAngleDegrees(),
-            shooterPivot.getCurrentAngle().in(Degrees),
+            superstructure.getShooterPivot().getCurrentAngle().in(Degrees),
             hdg,
             params.driveAngle().minus(drivetrain.getState().Pose.getRotation()).getDegrees(),
             drivetrain.isLevelForLaunch() ? "ok" : "FAIL",
@@ -190,7 +189,7 @@ public final class DriverControls {
           return params != null && params.isValid();
         })
         .and(sotmReady.debounce(0.25, DebounceType.kFalling))
-        .whileTrue(indexer.feedCommand());
+        .whileTrue(superstructure.getIndexer().feedCommand());
 
     // Rumble when SOTM is ready to fire (left bumper held + in tolerance)
     controller
@@ -213,19 +212,19 @@ public final class DriverControls {
     // D-pad Right - Decrease TOF at nearest distance key
     // Prints current distance bucket and TOF value on each press.
     controller.povLeft().onTrue(Commands.runOnce(() -> {
-      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
-          edu.wpi.first.units.Units.Meters);
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
       ShooterInterpolationTable.adjustTof(dist, true);
     }));
     controller.povRight().onTrue(Commands.runOnce(() -> {
-      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
-          edu.wpi.first.units.Units.Meters);
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
       ShooterInterpolationTable.adjustTof(dist, false);
     }));
     // D-pad Up - Print current TOF at nearest key (read-only check)
     controller.povUp().onTrue(Commands.runOnce(() -> {
-      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose).in(
-          edu.wpi.first.units.Units.Meters);
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
       ShooterInterpolationTable.printCurrentTof(dist);
     }));
 

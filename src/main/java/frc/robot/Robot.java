@@ -26,8 +26,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
- * Robot class for FRC 2026 REBUILT season Integrates with the Master State
- * Machine for
+ * Robot class for FRC 2026 REBUILT season Integrates with the Master State Machine for
  * comprehensive robot control
  */
 public class Robot extends LoggedRobot {

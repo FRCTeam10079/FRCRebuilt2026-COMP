@@ -17,28 +17,20 @@ import java.util.TreeSet;
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.
  *
- * <p>
- * Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
+ * <p>Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
  * empirically-measured data points.
  *
- * <p>
- * Tuning guide: Drive to each distance, manually adjust RPM and angle until
- * fuel consistently
- * scores, then record the values here. The interpolation handles all
- * intermediate distances
+ * <p>Tuning guide: Drive to each distance, manually adjust RPM and angle until fuel consistently
+ * scores, then record the values here. The interpolation handles all intermediate distances
  * automatically.
  *
- * <p>
- * Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release
- * height is 19.5in
- * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot
- * range: 60deg to
+ * <p>Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release height is 19.5in
+ * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot range: 60deg to
  * 80deg from horizontal.
  */
 public final class ShooterInterpolationTable {
 
-  private ShooterInterpolationTable() {
-  } // Static utility class
+  private ShooterInterpolationTable() {} // Static utility class
 
   // ==================== RPM TABLE ====================
   // Maps distance (meters) -> flywheel RPM
@@ -100,8 +92,8 @@ public final class ShooterInterpolationTable {
   // Maps distance (meters) -> time of flight (seconds)
   // Time from ball leaving the shooter to arriving at the hub.
   // CRITICAL for shoot-on-the-move - determines lookahead offset.
-  private static InterpolatingTreeMap<Double, Double> tofTable = new InterpolatingTreeMap<>(
-      InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> tofTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
 
   static {
     // -------------------------------------------------------
@@ -137,11 +129,8 @@ public final class ShooterInterpolationTable {
   /**
    * Get the interpolated time-of-flight for a given distance.
    *
-   * <p>
-   * This is used by the LaunchCalculator for velocity-compensated lookahead. The
-   * ball's flight
-   * time determines how much the robot's velocity offsets the effective aim
-   * point.
+   * <p>This is used by the LaunchCalculator for velocity-compensated lookahead. The ball's flight
+   * time determines how much the robot's velocity offsets the effective aim point.
    *
    * @param distanceMeters horizontal distance to hub in meters
    * @return estimated time of flight in seconds
@@ -200,7 +189,7 @@ public final class ShooterInterpolationTable {
   }
 
   /** TOF table keys in ascending order for nearest-key lookup. */
-  private static final double[] TOF_KEYS = { 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 };
+  private static final double[] TOF_KEYS = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
 
   /** Step size for each D-pad press when tuning TOF. */
   private static final double TOF_STEP = 0.01;
@@ -228,7 +217,7 @@ public final class ShooterInterpolationTable {
    * Adjust the TOF value at the nearest key by the given direction.
    *
    * @param distanceMeters current distance to hub
-   * @param up             true to increase TOF, false to decrease
+   * @param up true to increase TOF, false to decrease
    */
   public static void adjustTof(double distanceMeters, boolean up) {
     double key = nearestTofKey(distanceMeters);
@@ -239,7 +228,8 @@ public final class ShooterInterpolationTable {
     SmartDashboard.putNumber("TofTune/Old TOF (s)", current);
     SmartDashboard.putNumber("TofTune/New TOF (s)", adjusted);
     SmartDashboard.putNumber("TofTune/Actual Dist (m)", distanceMeters);
-    SmartDashboard.putString("TofTune/Last Action",
+    SmartDashboard.putString(
+        "TofTune/Last Action",
         (up ? "UP" : "DOWN") + String.format(" @ %.1fm -> %.3fs", key, adjusted));
   }
 
@@ -253,7 +243,7 @@ public final class ShooterInterpolationTable {
     SmartDashboard.putNumber("TofTune/Key (m)", key);
     SmartDashboard.putNumber("TofTune/Current TOF (s)", tofTable.get(key));
     SmartDashboard.putNumber("TofTune/Actual Dist (m)", distanceMeters);
-    SmartDashboard.putString("TofTune/Last Action", String.format("READ @ %.1fm = %.3fs", key, tofTable.get(key)));
-  }
+    SmartDashboard.putString(
+        "TofTune/Last Action", String.format("READ @ %.1fm = %.3fs", key, tofTable.get(key)));
   }
 }

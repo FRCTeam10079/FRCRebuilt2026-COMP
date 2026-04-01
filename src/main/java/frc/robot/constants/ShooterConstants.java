@@ -48,7 +48,7 @@ public class ShooterConstants {
 
   // ==================== HEADING ALIGNMENT ====================
   /** Heading tolerance for "aligned to hub" in degrees. */
-  public static final Angle HEADING_TOLERANCE = Degrees.of(15.0);
+  public static final Angle HEADING_TOLERANCE = Degrees.of(10.0);
 
   /**
    * Heading tolerance for shoot-on-the-move in degrees (yaw). MA (6328) uses 5.0deg. Tighter than

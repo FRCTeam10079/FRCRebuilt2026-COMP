@@ -1,5 +1,6 @@
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.NeutralOut;
@@ -55,6 +56,37 @@ public class IntakeWheelsIOTalonFX implements IntakeWheelsIO {
     TalonFXConfiguration slaveConfig = new TalonFXConfiguration();
     slaveConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     slaveMotor.getConfigurator().apply(slaveConfig);
+
+    configureSignalRates();
+  }
+
+  private void configureSignalRates() {
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        50.0,
+        intakeMotor.getVelocity(),
+        intakeMotor.getSupplyCurrent(),
+        intakeMotor.getStatorCurrent(),
+        intakeMotor.getMotorVoltage(),
+        intakeMotor.getDutyCycle(),
+        intakeMotor.getClosedLoopReference(),
+        intakeMotor.getClosedLoopError(),
+        slaveMotor.getVelocity(),
+        slaveMotor.getSupplyCurrent(),
+        slaveMotor.getStatorCurrent(),
+        slaveMotor.getMotorVoltage(),
+        slaveMotor.getDutyCycle());
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        10.0,
+        intakeMotor.getDeviceTemp(),
+        intakeMotor.getFaultField(),
+        intakeMotor.getStickyFaultField(),
+        slaveMotor.getDeviceTemp(),
+        slaveMotor.getFaultField(),
+        slaveMotor.getStickyFaultField());
+
+    intakeMotor.optimizeBusUtilization();
+    slaveMotor.optimizeBusUtilization();
   }
 
   @Override
@@ -63,6 +95,20 @@ public class IntakeWheelsIOTalonFX implements IntakeWheelsIO {
     inputs.supplyCurrentAmps = intakeMotor.getSupplyCurrent().getValueAsDouble();
     inputs.statorCurrentAmps = intakeMotor.getStatorCurrent().getValueAsDouble();
     inputs.voltageVolts = intakeMotor.getMotorVoltage().getValueAsDouble();
+    inputs.dutyCycle = intakeMotor.getDutyCycle().getValueAsDouble();
+    inputs.closedLoopReferenceRPS = intakeMotor.getClosedLoopReference().getValueAsDouble();
+    inputs.closedLoopErrorRPS = intakeMotor.getClosedLoopError().getValueAsDouble();
+    inputs.deviceTempCelsius = intakeMotor.getDeviceTemp().getValueAsDouble();
+    inputs.faultField = intakeMotor.getFaultField().getValue().intValue();
+    inputs.stickyFaultField = intakeMotor.getStickyFaultField().getValue().intValue();
+    inputs.slaveVelocityRPS = slaveMotor.getVelocity().getValueAsDouble();
+    inputs.slaveSupplyCurrentAmps = slaveMotor.getSupplyCurrent().getValueAsDouble();
+    inputs.slaveStatorCurrentAmps = slaveMotor.getStatorCurrent().getValueAsDouble();
+    inputs.slaveVoltageVolts = slaveMotor.getMotorVoltage().getValueAsDouble();
+    inputs.slaveDutyCycle = slaveMotor.getDutyCycle().getValueAsDouble();
+    inputs.slaveDeviceTempCelsius = slaveMotor.getDeviceTemp().getValueAsDouble();
+    inputs.slaveFaultField = slaveMotor.getFaultField().getValue().intValue();
+    inputs.slaveStickyFaultField = slaveMotor.getStickyFaultField().getValue().intValue();
   }
 
   @Override

@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -57,6 +58,37 @@ public class ShooterIOTalonFX implements ShooterIO {
         .withStatorCurrentLimitEnable(true)
         .withStatorCurrentLimit(80);
     slaveMotor.getConfigurator().apply(slaveConfig);
+
+    configureSignalRates();
+  }
+
+  private void configureSignalRates() {
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        50.0,
+        masterMotor.getVelocity(),
+        masterMotor.getSupplyCurrent(),
+        masterMotor.getStatorCurrent(),
+        masterMotor.getMotorVoltage(),
+        masterMotor.getDutyCycle(),
+        masterMotor.getClosedLoopReference(),
+        masterMotor.getClosedLoopError(),
+        slaveMotor.getVelocity(),
+        slaveMotor.getSupplyCurrent(),
+        slaveMotor.getStatorCurrent(),
+        slaveMotor.getMotorVoltage(),
+        slaveMotor.getDutyCycle());
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        10.0,
+        masterMotor.getDeviceTemp(),
+        masterMotor.getFaultField(),
+        masterMotor.getStickyFaultField(),
+        slaveMotor.getDeviceTemp(),
+        slaveMotor.getFaultField(),
+        slaveMotor.getStickyFaultField());
+
+    masterMotor.optimizeBusUtilization();
+    slaveMotor.optimizeBusUtilization();
   }
 
   @Override
@@ -65,9 +97,20 @@ public class ShooterIOTalonFX implements ShooterIO {
     inputs.masterSupplyCurrentAmps = masterMotor.getSupplyCurrent().getValueAsDouble();
     inputs.masterStatorCurrentAmps = masterMotor.getStatorCurrent().getValueAsDouble();
     inputs.masterVoltageVolts = masterMotor.getMotorVoltage().getValueAsDouble();
+    inputs.masterDutyCycle = masterMotor.getDutyCycle().getValueAsDouble();
+    inputs.masterClosedLoopReferenceRPS = masterMotor.getClosedLoopReference().getValueAsDouble();
+    inputs.masterClosedLoopErrorRPS = masterMotor.getClosedLoopError().getValueAsDouble();
+    inputs.masterDeviceTempCelsius = masterMotor.getDeviceTemp().getValueAsDouble();
+    inputs.masterFaultField = masterMotor.getFaultField().getValue().intValue();
+    inputs.masterStickyFaultField = masterMotor.getStickyFaultField().getValue().intValue();
+    inputs.slaveVelocityRPS = slaveMotor.getVelocity().getValueAsDouble();
     inputs.slaveSupplyCurrentAmps = slaveMotor.getSupplyCurrent().getValueAsDouble();
     inputs.slaveStatorCurrentAmps = slaveMotor.getStatorCurrent().getValueAsDouble();
     inputs.slaveVoltageVolts = slaveMotor.getMotorVoltage().getValueAsDouble();
+    inputs.slaveDutyCycle = slaveMotor.getDutyCycle().getValueAsDouble();
+    inputs.slaveDeviceTempCelsius = slaveMotor.getDeviceTemp().getValueAsDouble();
+    inputs.slaveFaultField = slaveMotor.getFaultField().getValue().intValue();
+    inputs.slaveStickyFaultField = slaveMotor.getStickyFaultField().getValue().intValue();
   }
 
   @Override

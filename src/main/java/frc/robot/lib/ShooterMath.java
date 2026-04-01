@@ -96,6 +96,7 @@ public final class ShooterMath {
     private double lastX = Double.NaN;
     private double lastY = Double.NaN;
     private double lastTheta = Double.NaN;
+    private long lastOffsetRevision = Long.MIN_VALUE;
 
     MemoizedSetpointSupplier(Supplier<Pose2d> poseSupplier) {
       this.poseSupplier = poseSupplier;
@@ -107,12 +108,14 @@ public final class ShooterMath {
       double x = pose.getX();
       double y = pose.getY();
       double theta = pose.getRotation().getRadians();
+      long offsetRevision = ShooterSetpoint.getOffsetRevision();
 
-      // Only recompute if the pose has changed (simple cache invalidation)
-      if (x != lastX || y != lastY || theta != lastTheta) {
+      // Recompute when pose changes OR tuning offsets changed.
+      if (x != lastX || y != lastY || theta != lastTheta || offsetRevision != lastOffsetRevision) {
         lastX = x;
         lastY = y;
         lastTheta = theta;
+        lastOffsetRevision = offsetRevision;
         Distance distance = getDistanceToHub(pose);
         cached = ShooterSetpoint.fromDistance(distance);
       }

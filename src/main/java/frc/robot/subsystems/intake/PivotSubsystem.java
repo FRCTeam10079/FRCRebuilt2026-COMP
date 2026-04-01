@@ -67,8 +67,20 @@ public class PivotSubsystem extends SubsystemBase {
     Logger.recordOutput("IntakePivot/SystemState", systemState);
     Logger.recordOutput("IntakePivot/setpoint", pivotSetpoint.in(Rotations));
     Logger.recordOutput("IntakePivot/position", getPivotPosition().in(Rotations));
+    Logger.recordOutput("IntakePivot/velocityRPS", inputs.velocityRPS);
+    Logger.recordOutput(
+        "IntakePivot/closedLoopReferenceRotations", inputs.closedLoopReferenceRotations);
+    Logger.recordOutput("IntakePivot/closedLoopErrorRotations", inputs.closedLoopErrorRotations);
+    Logger.recordOutput("IntakePivot/motionMagicAtTarget", inputs.motionMagicAtTarget);
+    Logger.recordOutput("IntakePivot/motionMagicIsRunning", inputs.motionMagicIsRunning);
     Logger.recordOutput("IntakePivot/reachedSetpoint", reachedSetpoint());
     Logger.recordOutput("IntakePivot/statorCurrent", inputs.statorCurrentAmps);
+    Logger.recordOutput(
+        "IntakePivot/stallCurrentExceeded",
+        Amps.of(inputs.statorCurrentAmps).gt(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD));
+    Logger.recordOutput("IntakePivot/stallTimerSeconds", stallTimer.get());
+    Logger.recordOutput("IntakePivot/atSetpointTimerSeconds", atSetpointTimer.get());
+    Logger.recordOutput("IntakePivot/faultField", inputs.faultField);
   }
 
   // ==================== STATE TRANSITIONS ====================

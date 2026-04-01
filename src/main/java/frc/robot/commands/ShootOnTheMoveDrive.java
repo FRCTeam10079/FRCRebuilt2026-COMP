@@ -13,6 +13,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -40,11 +41,15 @@ import java.util.function.Supplier;
 /**
  * Command to align the robot to an AprilTag using vision
  *
- * <p>This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag) 2. Calculates
- * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control to drive the robot
+ * <p>
+ * This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag)
+ * 2. Calculates
+ * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control
+ * to drive the robot
  * to the target pose 4. Rotates to face opposite the tag (facing the tag)
  *
- * <p>For REBUILT 2026 - Generic AprilTag alignment for any field element
+ * <p>
+ * For REBUILT 2026 - Generic AprilTag alignment for any field element
  */
 public class ShootOnTheMoveDrive extends Command {
 
@@ -69,8 +74,8 @@ public class ShootOnTheMoveDrive extends Command {
   DoubleSupplier yInputSupplier;
 
   // Swerve drive request - field centric with velocity control
-  private final SwerveRequest.FieldCentric driveRequest =
-      new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+  private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric()
+      .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
   // Stop request
   private final SwerveRequest stop;
@@ -100,8 +105,8 @@ public class ShootOnTheMoveDrive extends Command {
   /**
    * Creates a new AlignToAprilTag command
    *
-   * @param drivetrain The swerve drivetrain subsystem
-   * @param vision The vision subsystem
+   * @param drivetrain    The swerve drivetrain subsystem
+   * @param vision        The vision subsystem
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public ShootOnTheMoveDrive(
@@ -191,50 +196,7 @@ public class ShootOnTheMoveDrive extends Command {
       return;
     }
 
-    // Convert tag position to Pose2d
-    Pose2d aprilTagPose = calculateTagPose();
-
-    Pose2d hubPose;
-
-    Pose2d correctedHubPose;
-
-    double distanceToHub;
-
-    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
-        drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
-
-    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
-
-    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
-
-    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-
-    if (isRed) {
-
-      hubPose = new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d());
-
-      distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
-
-      correctedHubPose = new Pose2d(
-          hubPose.getX()
-              - (xVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY()
-              - (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          new Rotation2d(0));
-
-    } else {
-
-      hubPose = new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
-
-      distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
-
-      correctedHubPose = new Pose2d(
-          hubPose.getX()
-              - (xVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          hubPose.getY()
-              - (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToHub)),
-          new Rotation2d(0));
-    }
+    Pose2d correctedHubPose = getCorrectedHubPose();
 
     // Calculate velocities using PID
     double[] velocities = calculatePIDVelocities(currentPose, correctedHubPose);
@@ -242,23 +204,16 @@ public class ShootOnTheMoveDrive extends Command {
     SmartDashboard.putNumber(
         "AlignToAprilTag/VelocityX", drivetrain.getState().Speeds.vyMetersPerSecond);
 
-    SmartDashboard.putNumber(
-        "AlignToAprilTag/ToF", ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
-
-    SmartDashboard.putNumberArray("AprilTagPose", new double[] {
-      aprilTagPose.getX(), aprilTagPose.getY(), aprilTagPose.getRotation().getDegrees()
-    });
-
     SmartDashboard.putNumberArray("CorrectedPose", new double[] {
-      correctedHubPose.getX(),
-      correctedHubPose.getY(),
-      correctedHubPose.getRotation().getDegrees()
+        correctedHubPose.getX(),
+        correctedHubPose.getY(),
+        correctedHubPose.getRotation().getDegrees()
     });
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
-        .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 2.0))
-        .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 2.0))
+        .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 1.0))
+        .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 1.0))
         .withRotationalRate(velocities[2]));
   }
 
@@ -285,7 +240,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     for (int id : allianceTags) {
       double[] tagData = AprilTagMaps.aprilTagMap.get(id);
-      if (tagData == null) continue;
+      if (tagData == null)
+        continue;
       Pose2d tagPose = new Pose2d(
           tagData[0] * Constants.INCHES_TO_METERS,
           tagData[1] * Constants.INCHES_TO_METERS,
@@ -368,16 +324,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
 
-    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    hubPose = getCorrectedHubPose();
 
-    if (isRed) {
-
-      hubPose = new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d());
-
-    } else {
-
-      hubPose = new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
-    }
     // Pose2d aprilTagPose = calculateTagPose();
 
     // If no tag detected, don't execute
@@ -394,6 +342,56 @@ public class ShootOnTheMoveDrive extends Command {
             + (yVelFieldCentric * ShooterInterpolationTable.getTimeOfFlight(distanceToAprilTag)),
         drivetrain.getState().Pose.getRotation());
     return correctedPose;
+  }
+
+  private Pose2d getCorrectedHubPose() {
+
+    // Get current robot pose
+    Pose2d currentPose = drivetrain.getState().Pose;
+    if (currentPose == null) {
+      return new Pose2d();
+    }
+
+    // Convert tag position to Pose2d
+    Pose2d aprilTagPose = calculateTagPose();
+
+    Pose2d hubPose;
+
+    Pose2d correctedHubPose = new Pose2d();
+
+    double distanceToHub;
+
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
+        drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
+
+    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
+
+    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
+
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+
+    hubPose = (isRed) ? new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d())
+        : new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
+
+    distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
+
+    correctedHubPose = new Pose2d(
+        hubPose.getX() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
+        hubPose.getY() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
+        new Rotation2d());
+    // Change the number of loops for more precision in estimating the pose
+    for (int i = 0; i < 11; i++) {
+      distanceToHub = currentPose.getTranslation().getDistance(correctedHubPose.getTranslation());
+      correctedHubPose = new Pose2d(
+          hubPose.getX() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
+          hubPose.getY() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
+          new Rotation2d());
+      SmartDashboard.putNumber(
+          "AlignToAprilTag/ToF " + (i + 1), ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
+    }
+
+    return correctedHubPose;
+
   }
 
   public static Supplier<ShooterSetpoint> getShooterSetpointSupplier() {
@@ -444,7 +442,7 @@ public class ShootOnTheMoveDrive extends Command {
     SmartDashboard.putNumber("AlignToAprilTag/TargetX", targetPose.getX());
     SmartDashboard.putNumber("AlignToAprilTag/TargetY", targetPose.getY());
 
-    return new double[] {velocityX, velocityY, velocityYaw};
+    return new double[] { velocityX, velocityY, velocityYaw };
   }
 
   /** Calculate distance between two poses */

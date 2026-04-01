@@ -12,6 +12,7 @@ import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
+import org.littletonrobotics.junction.Logger;
 
 public class PowerDiagnosticsLogger {
   private static final double LOG_PERIOD_SECONDS = 0.1;
@@ -195,8 +196,17 @@ public class PowerDiagnosticsLogger {
     m_lastLogTimestampSeconds = nowSeconds;
 
     double batteryVoltage = RobotController.getBatteryVoltage();
+    double brownoutVoltage = RobotController.getBrownoutVoltage();
+    boolean batteryLow = batteryVoltage <= BATTERY_LOW_THRESHOLD_VOLTS;
+
     m_batteryVoltageEntry.append(batteryVoltage);
-    m_brownoutVoltageEntry.append(RobotController.getBrownoutVoltage());
+    m_brownoutVoltageEntry.append(brownoutVoltage);
+
+    // Canonical AdvantageKit outputs for battery diagnostics and AdvantageScope
+    // layouts.
+    Logger.recordOutput("Power/BatteryVoltage", batteryVoltage, "volts");
+    Logger.recordOutput("Power/BrownoutVoltage", brownoutVoltage, "volts");
+    Logger.recordOutput("Power/BatteryLow", batteryLow);
 
     logPdhTelemetry(nowSeconds);
 

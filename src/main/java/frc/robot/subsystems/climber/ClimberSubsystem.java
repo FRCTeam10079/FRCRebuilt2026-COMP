@@ -33,6 +33,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLE;
+  private double requestedVolts = 0.0;
 
   public ClimberSubsystem(ClimberIO io) {
     this.io = io;
@@ -48,6 +49,8 @@ public class ClimberSubsystem extends SubsystemBase {
 
     Logger.recordOutput("Climber/WantedState", wantedState);
     Logger.recordOutput("Climber/SystemState", systemState);
+    Logger.recordOutput("Climber/RequestedVolts", requestedVolts);
+    Logger.recordOutput("Climber/AppliedVolts", inputs.appliedVolts);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -64,14 +67,17 @@ public class ClimberSubsystem extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case EXTENDING:
-        io.setVoltage(ClimberConstants.CLIMBER_EXTEND_SPEED * 12.0);
+        requestedVolts = ClimberConstants.CLIMBER_EXTEND_SPEED * 12.0;
+        io.setVoltage(requestedVolts);
         break;
       case RETRACTING:
       case CLIMBING:
-        io.setVoltage(ClimberConstants.CLIMBER_RETRACT_SPEED * 12.0);
+        requestedVolts = ClimberConstants.CLIMBER_RETRACT_SPEED * 12.0;
+        io.setVoltage(requestedVolts);
         break;
       case IDLE:
       default:
+        requestedVolts = 0.0;
         io.stop();
         break;
     }

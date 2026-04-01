@@ -7,9 +7,18 @@ public interface PivotIO {
   @AutoLog
   class PivotIOInputs {
     public double positionRotations = 0.0;
+    public double velocityRPS = 0.0;
     public double statorCurrentAmps = 0.0;
     public double supplyCurrentAmps = 0.0;
     public double voltageVolts = 0.0;
+    public double dutyCycle = 0.0;
+    public double closedLoopReferenceRotations = 0.0;
+    public double closedLoopErrorRotations = 0.0;
+    public double deviceTempCelsius = 0.0;
+    public int faultField = 0;
+    public int stickyFaultField = 0;
+    public boolean motionMagicAtTarget = false;
+    public boolean motionMagicIsRunning = false;
   }
 
   default void updateInputs(PivotIOInputs inputs) {}

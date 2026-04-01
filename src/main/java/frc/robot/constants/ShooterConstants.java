@@ -56,7 +56,7 @@ public class ShooterConstants {
    */
   // TODO: TUNE ON THE ROBOT - MA uses 5.0deg; widen if shots are gated too
   // aggressively
-  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 5.0;
+  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 6.0;
 
   /**
    * Pitch tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted (e.g.,

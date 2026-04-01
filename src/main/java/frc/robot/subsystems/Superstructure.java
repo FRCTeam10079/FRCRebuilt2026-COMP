@@ -4,8 +4,13 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.RPM;
+
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.lib.SmartShootController;
 import frc.robot.statemachine.GameState;
@@ -27,7 +32,7 @@ import org.littletonrobotics.junction.Logger;
  * wanted state accordingly.
  *
  * <p>This centralizes all mechanism coordination so DriverControls and OperatorControls only need
- * to express intent — not manage individual subsystems directly.
+ * to express intent - not manage individual subsystems directly.
  */
 public class Superstructure extends SubsystemBase {
 
@@ -49,6 +54,8 @@ public class Superstructure extends SubsystemBase {
     FORCE_SHOOT,
     /** Reverse feeder/indexer without touching intake. */
     UNJAM,
+    /** Shoot-on-the-move: velocity-compensated aiming via LaunchCalculator. */
+    SOTM,
     /** Extend climber for endgame. */
     CLIMB,
     /** E-stop all mechanisms. */
@@ -67,6 +74,10 @@ public class Superstructure extends SubsystemBase {
     SHOOTING,
     /** Actively feeding - force-shoot bypass. */
     FORCE_SHOOTING,
+    /** SOTM: flywheel spinning up / pivot tracking, waiting for on-target conditions. */
+    SOTM_AIMING,
+    /** SOTM: all conditions met, indexer feeding. */
+    SOTM_SHOOTING,
     UNJAMMING,
     CLIMBING,
     STOPPED
@@ -87,6 +98,8 @@ public class Superstructure extends SubsystemBase {
   private final Supplier<ShooterSetpoint> setpointSupplier;
   private final Supplier<Boolean> headingAlignedSupplier;
   private final SmartShootController smartShootController;
+  private final Supplier<LaunchParameters> launchParametersSupplier;
+  private final Supplier<Boolean> sotmHeadingAlignedSupplier;
 
   // ==================== STATE TRACKING ====================
 
@@ -100,6 +113,17 @@ public class Superstructure extends SubsystemBase {
    */
   private boolean shooterPivotOverride = false;
 
+  /**
+   * Hold-on timer for SOTM feeding. Once all on-target conditions are met the indexer feeds; if
+   * conditions briefly flicker false the state machine holds SOTM_SHOOTING for up to this duration
+   * before falling back to SOTM_AIMING. Replicates the 0.25 s kFalling debounce that was previously
+   * in the DriverControls compound trigger.
+   */
+  private static final double SOTM_FEED_HOLD_DURATION = 0.25;
+
+  private final Timer sotmFeedHoldTimer = new Timer();
+  private boolean sotmFeedHoldActive = false;
+
   // ==================== CONSTRUCTOR ====================
 
   public Superstructure(
@@ -112,7 +136,9 @@ public class Superstructure extends SubsystemBase {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
       Supplier<Boolean> headingAlignedSupplier,
-      SmartShootController smartShootController) {
+      SmartShootController smartShootController,
+      Supplier<LaunchParameters> launchParametersSupplier,
+      Supplier<Boolean> sotmHeadingAlignedSupplier) {
     this.shooter = shooter;
     this.shooterPivot = shooterPivot;
     this.indexer = indexer;
@@ -123,6 +149,8 @@ public class Superstructure extends SubsystemBase {
     this.setpointSupplier = setpointSupplier;
     this.headingAlignedSupplier = headingAlignedSupplier;
     this.smartShootController = smartShootController;
+    this.launchParametersSupplier = launchParametersSupplier;
+    this.sotmHeadingAlignedSupplier = sotmHeadingAlignedSupplier;
   }
 
   // ==================== PERIODIC ====================
@@ -169,21 +197,6 @@ public class Superstructure extends SubsystemBase {
     this.shooterPivotOverride = override;
   }
 
-  /** Direct subsystem access for SOTM compound trigger conditions. */
-  public ShooterSubsystem getShooter() {
-    return shooter;
-  }
-
-  /** Direct subsystem access for SOTM compound trigger conditions. */
-  public ShooterPivotSubsystem getShooterPivot() {
-    return shooterPivot;
-  }
-
-  /** Direct subsystem access for SOTM auto-feed command. */
-  public IndexerSubsystem getIndexer() {
-    return indexer;
-  }
-
   // ==================== STATE TRANSITIONS ====================
 
   /**
@@ -213,6 +226,23 @@ public class Superstructure extends SubsystemBase {
           currentSuperState = CurrentSuperState.AIMING;
         }
       }
+      case SOTM -> {
+        if (isOnTargetSotm()) {
+          // All conditions met - feed. Reset the hold-on timer.
+          currentSuperState = CurrentSuperState.SOTM_SHOOTING;
+          sotmFeedHoldTimer.restart();
+          sotmFeedHoldActive = true;
+        } else if (sotmFeedHoldActive
+            && previousSuperState == CurrentSuperState.SOTM_SHOOTING
+            && !sotmFeedHoldTimer.hasElapsed(SOTM_FEED_HOLD_DURATION)) {
+          // Brief off-target flicker - hold feeding for up to SOTM_FEED_HOLD_DURATION.
+          currentSuperState = CurrentSuperState.SOTM_SHOOTING;
+        } else {
+          // Not on-target and hold-on expired (or never started).
+          currentSuperState = CurrentSuperState.SOTM_AIMING;
+          sotmFeedHoldActive = false;
+        }
+      }
       case UNJAM -> currentSuperState = CurrentSuperState.UNJAMMING;
       case CLIMB -> currentSuperState = CurrentSuperState.CLIMBING;
       case STOPPED -> currentSuperState = CurrentSuperState.STOPPED;
@@ -237,6 +267,8 @@ public class Superstructure extends SubsystemBase {
       case WAITING_FOR_TARGET -> applyAim(); // Same outputs - still spinning up
       case SHOOTING -> applyShoot();
       case FORCE_SHOOTING -> applyForceShoot();
+      case SOTM_AIMING -> applySotmAim();
+      case SOTM_SHOOTING -> applySotmShoot();
       case UNJAMMING -> applyUnjam();
       case CLIMBING -> applyClimb();
       case STOPPED -> applyStopped();
@@ -356,7 +388,7 @@ public class Superstructure extends SubsystemBase {
     GameState desired =
         switch (currentSuperState) {
           case COLLECTING -> GameState.COLLECTING;
-          case AIMING, SHOOTING, FORCE_SHOOTING -> GameState.SCORING;
+          case AIMING, SHOOTING, FORCE_SHOOTING, SOTM_AIMING, SOTM_SHOOTING -> GameState.SCORING;
           case WAITING_FOR_TARGET -> {
             // If SmartShoot is queued (hub inactive), don't override to SCORING
             // let the RobotStateMachine's HUB_INACTIVE state stand.
@@ -400,5 +432,71 @@ public class Superstructure extends SubsystemBase {
     if (sp == null || !sp.isValid()) return false;
     AngularVelocity targetRPM = sp.flywheelRPM();
     return targetRPM.gt(edu.wpi.first.units.Units.RPM.zero()) && shooter.isAt(targetRPM);
+  }
+
+  // ==================== SOTM STATE HANDLERS ====================
+
+  /**
+   * SOTM aiming: spin flywheel and track pivot from LaunchCalculator predictions. Indexer stays off
+   * - waiting for all on-target conditions.
+   */
+  private void applySotmAim() {
+    LaunchParameters params = launchParametersSupplier.get();
+    if (params != null && params.isValid()) {
+      shooter.setWantedState(ShooterSubsystem.WantedState.HOLD_RPM, RPM.of(params.flywheelRPM()));
+      if (!shooterPivotOverride) {
+        shooterPivot.setWantedState(
+            ShooterPivotSubsystem.WantedState.TRACK_ANGLE, Degrees.of(params.pivotAngleDegrees()));
+      }
+    } else {
+      shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
+      if (!shooterPivotOverride) {
+        shooterPivot.setWantedState(ShooterPivotSubsystem.WantedState.IDLE);
+      }
+    }
+    indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
+  }
+
+  /** SOTM shooting: same flywheel/pivot tracking as {@link #applySotmAim()}, plus indexer feeds. */
+  private void applySotmShoot() {
+    LaunchParameters params = launchParametersSupplier.get();
+    if (params != null && params.isValid()) {
+      shooter.setWantedState(ShooterSubsystem.WantedState.HOLD_RPM, RPM.of(params.flywheelRPM()));
+      if (!shooterPivotOverride) {
+        shooterPivot.setWantedState(
+            ShooterPivotSubsystem.WantedState.TRACK_ANGLE, Degrees.of(params.pivotAngleDegrees()));
+      }
+    }
+    indexer.setWantedState(IndexerSubsystem.WantedState.FEED);
+  }
+
+  // ==================== SOTM ON-TARGET CHECK ====================
+
+  /**
+   * SOTM on-target check: flywheel RPM + pivot angle + heading alignment using LaunchCalculator
+   * predictions and the wider SOTM heading tolerance.
+   *
+   * <p>Each condition is evaluated into a separate variable (no short-circuit) so all gate
+   * diagnostics are always logged.
+   */
+  private boolean isOnTargetSotm() {
+    LaunchParameters params = launchParametersSupplier.get();
+    if (params == null || !params.isValid()) {
+      Logger.recordOutput("Superstructure/SOTM/OnTarget/Valid", false);
+      return false;
+    }
+
+    boolean flywheelReady = shooter.isAt(RPM.of(params.flywheelRPM()));
+    boolean pivotReady = shooterPivot.isAtAngle(Degrees.of(params.pivotAngleDegrees()));
+    boolean headingReady = sotmHeadingAlignedSupplier.get();
+
+    Logger.recordOutput("Superstructure/SOTM/OnTarget/Valid", true);
+    Logger.recordOutput("Superstructure/SOTM/OnTarget/Flywheel", flywheelReady);
+    Logger.recordOutput("Superstructure/SOTM/OnTarget/Pivot", pivotReady);
+    Logger.recordOutput("Superstructure/SOTM/OnTarget/Heading", headingReady);
+    Logger.recordOutput(
+        "Superstructure/SOTM/OnTarget/All", flywheelReady && pivotReady && headingReady);
+
+    return flywheelReady && pivotReady && headingReady;
   }
 }

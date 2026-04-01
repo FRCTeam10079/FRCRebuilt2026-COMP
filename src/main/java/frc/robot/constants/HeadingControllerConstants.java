@@ -45,11 +45,11 @@ public class HeadingControllerConstants {
   /** P gain for launch-mode heading control (rad/s output per radian of error). */
   // TODO: TUNE ON THE ROBOT - MA (6328) uses 8.0; adjust for
   // overshoot/oscillation
-  public static final double LAUNCH_KP = 8.0;
+  public static final double LAUNCH_KP = 7.2;
 
   /** D gain for launch-mode heading control (rad/s output per rad/s velocity error). */
   // TODO: TUNE ON THE ROBOT - MA (6328) uses 0.5
-  public static final double LAUNCH_KD = 0.5;
+  public static final double LAUNCH_KD = 0.8;
 
   protected HeadingControllerConstants() {}
 }

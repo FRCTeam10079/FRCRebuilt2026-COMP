@@ -4,13 +4,8 @@
 
 package frc.robot.controllers;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.RPM;
-
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -19,15 +14,13 @@ import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShooterFactory;
-import frc.robot.lib.LaunchCalculator;
-import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
-import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.CurrentSuperState;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.vision.VisionSubsystem;
@@ -121,80 +114,28 @@ public final class DriverControls {
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
 
     // ==================== SHOOT ON THE MOVE ====================
-    // Left Bumper - Hold to activate SOTM: auto-aims heading while driving,
-    // pre-spins the shooter from LaunchCalculator, and auto-feeds when all
-    // conditions are met (valid parameters, heading + level, flywheel + pivot).
-    // Adapted from MA (6328) pattern: drive + spin-up on button hold, debounced
-    // feeding on compound trigger.
-
-    // Step 1: SOTM drive (heading lock + velocity limiting + COR shifting)
-    // + launcher spin-up run while left bumper is held.
+    // Left Bumper - Hold to activate SOTM: sets WantedSuperState.SOTM so the
+    // Superstructure coordinates shooter, pivot, and indexer using
+    // LaunchCalculator predictions. The drivetrain SOTM command (heading lock +
+    // velocity limiting + COR shifting) runs in parallel since the
+    // Superstructure does not manage the drivetrain.
+    // Guarded against CLIMB to prevent accidentally overriding endgame.
     controller
         .leftBumper()
-        .whileTrue(drivetrain
-            .shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX)
-            .alongWith(ShooterFactory.aimAndSpinUpFromLauncher(
-                superstructure.getShooter(), superstructure.getShooterPivot()))
-            .beforeStarting(() -> stateMachine.setGameState(GameState.SCORING))
-            .finallyDo(() -> {
-              if (stateMachine.getGameState() == GameState.SCORING) {
-                stateMachine.setGameState(GameState.IDLE);
-              }
-            }));
+        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM)))
+        .onFalse(setIdleIfStill(superstructure, WantedSuperState.SOTM));
 
-    // Step 2: Debounced auto-feeding. All sub-conditions must hold, then stay
-    // true for 0.25 s (falling debounce) before the indexer feeds. This prevents
-    // feeding on a momentary flicker of all-OK.
-    // NOTE: Each condition is evaluated into a separate variable to avoid Java
-    // short-circuit && — previously isAtLaunchHeadingGoal() was never called
-    // when the flywheel wasn't at speed, hiding heading-tracking diagnostics.
-    int[] gateLogCounter = {0};
-    Trigger sotmReady = new Trigger(() -> {
-      LaunchParameters params = LaunchCalculator.getInstance().getParameters();
-      if (params == null || !params.isValid()) return false;
-
-      boolean fly = superstructure.getShooter().isAt(RPM.of(params.flywheelRPM()));
-      boolean piv =
-          superstructure.getShooterPivot().isAtAngle(Degrees.of(params.pivotAngleDegrees()));
-      boolean hdg = drivetrain.isAtLaunchHeadingGoal();
-
-      // Periodic gate logging at ~2Hz with actual sensor values
-      gateLogCounter[0]++;
-      if (gateLogCounter[0] % 25 == 0) {
-        double pitchDeg = Math.abs(drivetrain.getPigeon2().getPitch().getValueAsDouble());
-        double rollDeg = Math.abs(drivetrain.getPigeon2().getRoll().getValueAsDouble());
-        System.out.printf(
-            "SOTM_GATE,%.3f,fly=%b(%.0f/%.0f),piv=%b(%.1f/%.1f),hdg=%b(%.1f),lvl(%s)(p=%.1f,r=%.1f)%n",
-            Timer.getFPGATimestamp(),
-            fly,
-            params.flywheelRPM(),
-            superstructure.getShooter().getCurrentRPM().in(RPM),
-            piv,
-            params.pivotAngleDegrees(),
-            superstructure.getShooterPivot().getCurrentAngle().in(Degrees),
-            hdg,
-            params.driveAngle().minus(drivetrain.getState().Pose.getRotation()).getDegrees(),
-            drivetrain.isLevelForLaunch() ? "ok" : "FAIL",
-            pitchDeg,
-            rollDeg);
-      }
-
-      return fly && piv && hdg;
-    });
-
+    // SOTM drive command (drivetrain-only, parallel to Superstructure SOTM state)
     controller
         .leftBumper()
-        .and(() -> {
-          LaunchParameters params = LaunchCalculator.getInstance().getParameters();
-          return params != null && params.isValid();
-        })
-        .and(sotmReady.debounce(0.25, DebounceType.kFalling))
-        .whileTrue(superstructure.getIndexer().feedCommand());
+        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+        .whileTrue(
+            drivetrain.shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX));
 
-    // Rumble when SOTM is ready to fire (left bumper held + in tolerance)
-    controller
-        .leftBumper()
-        .and(sotmReady)
+    // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
+    new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)
+        .and(controller.leftBumper())
         .onTrue(Commands.runOnce(() -> controller
             .getHID()
             .setRumble(RumbleType.kBothRumble, Constants.StateMachineConstants.RUMBLE_STRONG)))
@@ -279,6 +220,8 @@ public final class DriverControls {
         desiredState = WantedSuperState.SHOOT;
       } else if (controller.rightBumper().getAsBoolean()) {
         desiredState = WantedSuperState.AIM;
+      } else if (controller.leftBumper().getAsBoolean()) {
+        desiredState = WantedSuperState.SOTM;
       } else if (controller
           .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
           .getAsBoolean()) {

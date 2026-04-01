@@ -90,8 +90,7 @@ public class DrivetrainConstants {
    * interpolates between robot center and shooter position as heading error transitions from
    * COR_MIN to COR_MAX. MA (6328) uses 30.0.
    */
-  public static final double COR_MAX_ERROR_DEG = 3.0
-  ;
+  public static final double COR_MAX_ERROR_DEG = 3.0;
 
   protected DrivetrainConstants() {}
 }

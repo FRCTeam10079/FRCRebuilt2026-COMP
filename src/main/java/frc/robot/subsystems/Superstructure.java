@@ -160,6 +160,21 @@ public class Superstructure extends SubsystemBase {
     this.shooterPivotOverride = override;
   }
 
+  /** Direct subsystem access for SOTM compound trigger conditions. */
+  public ShooterSubsystem getShooter() {
+    return shooter;
+  }
+
+  /** Direct subsystem access for SOTM compound trigger conditions. */
+  public ShooterPivotSubsystem getShooterPivot() {
+    return shooterPivot;
+  }
+
+  /** Direct subsystem access for SOTM auto-feed command. */
+  public IndexerSubsystem getIndexer() {
+    return indexer;
+  }
+
   // ==================== STATE TRANSITIONS ====================
 
   /**

@@ -113,13 +113,13 @@ public final class ShooterInterpolationTable {
     // - At 60deg launch, v~15m/s, horizontal component ~7.5m/s
     // - TOF ~ distance / horizontal_velocity (rough)
     // -------------------------------------------------------
-    tofTable.put(1.0, 1.1); // very close - short flight
+    tofTable.put(1.0, 1.25); // very close - short flight
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
-    tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate
+    tofTable.put(2.0, 1.4); // TODO: TUNE - placeholder estimate
     // tofTable.put(2.5, 1.55); // TODO: TUNE - placeholder estimate
-    tofTable.put(3.0, 1.3); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.0, 1.5); // TODO: TUNE - placeholder estimate
     // tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
-    tofTable.put(4.0, 1.5); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.0, 1.7); // TODO: TUNE - placeholder estimate
     // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
     tofTable.put(5.0, 2.7); // TODO: TUNE - placeholder estimate
   }

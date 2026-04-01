@@ -64,33 +64,34 @@ public class DrivetrainConstants {
    * - Decrease if shots miss at speed
    */
   // TODO: TUNE ON THE ROBOT - MA (6328) uses 0.6
-  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.6;
+  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.4;
 
   /**
    * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
    * driver-controllable max speed; the velocity limiter may further reduce it.
    */
-  public static final double MAX_SHOOTING_SPEED_MPS = 6.0;
+  public static final double MAX_SHOOTING_SPEED_MPS = 0.7;
 
   /**
    * Maximum angular velocity (rad/s) while in shoot-on-the-move mode. This is the cap on the
    * heading controller output.
    */
-  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0;
+  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 0.65;
 
   /**
    * Heading error (degrees) below which center-of-rotation shifting is NOT applied. When the
    * heading is close enough to the target, pivot around robot center as normal. MA (6328) uses
    * 15.0.
    */
-  public static final double COR_MIN_ERROR_DEG = 15.0;
+  public static final double COR_MIN_ERROR_DEG = 0.0;
 
   /**
    * Heading error (degrees) at which full center-of-rotation shifting is applied. The COR smoothly
    * interpolates between robot center and shooter position as heading error transitions from
    * COR_MIN to COR_MAX. MA (6328) uses 30.0.
    */
-  public static final double COR_MAX_ERROR_DEG = 30.0;
+  public static final double COR_MAX_ERROR_DEG = 3.0
+  ;
 
   protected DrivetrainConstants() {}
 }

@@ -43,10 +43,10 @@ public class HeadingControllerConstants {
   // point.
 
   /** P gain for launch-mode heading control (rad/s output per radian of error). */
-  public static final double LAUNCH_KP = 8.0;
+  public static final double LAUNCH_KP = 5.0;
 
   /** D gain for launch-mode heading control (rad/s output per rad/s velocity error). */
-  public static final double LAUNCH_KD = 0.5;
+  public static final double LAUNCH_KD = 2.0;
 
   protected HeadingControllerConstants() {}
 }

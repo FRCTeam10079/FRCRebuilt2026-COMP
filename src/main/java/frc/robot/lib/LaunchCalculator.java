@@ -68,17 +68,17 @@ public class LaunchCalculator {
    * Moving average filter window for pivot angle velocity feedforward. Smooths out the derivative
    * to prevent jitter.
    *
-   * <p>0.1s window = 5 samples at 50Hz (same as MA 6328).
+   * <p>0.4s window = 20 samples at 50Hz. Wider than MA default for smoother pivot tracking.
    */
-  private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.1;
+  private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
 
   /**
-   * Moving average filter window for drive heading velocity feedforward. Tight window = responsive
-   * feedforward for fast turning.
+   * Moving average filter window for drive heading velocity feedforward. Wider window = smoother
+   * but more lag. Heavily smoothed to prevent heading oscillation.
    *
-   * <p>0.1s window = 5 samples at 50Hz (same as MA 6328).
+   * <p>1.5s window = 75 samples at 50Hz.
    */
-  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 0.1;
+  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 1.5;
 
   /**
    * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the robot is too
@@ -181,12 +181,10 @@ public class LaunchCalculator {
       LinearFilter.movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
 
   // Low pass filters for velocities to prevent noise-induced oscillation loop.
-  // Window of 5 samples (0.1s at 50Hz) balances noise rejection with
-  // responsiveness.
-  // Reduced from 10 after COR fix eliminated a major noise source.
-  private final LinearFilter vxFilter = LinearFilter.movingAverage(5);
-  private final LinearFilter vyFilter = LinearFilter.movingAverage(5);
-  private final LinearFilter omegaFilter = LinearFilter.movingAverage(5);
+  // Window of 10 samples (0.2s at 50Hz) for heavier smoothing to reduce jitter.
+  private final LinearFilter vxFilter = LinearFilter.movingAverage(10);
+  private final LinearFilter vyFilter = LinearFilter.movingAverage(10);
+  private final LinearFilter omegaFilter = LinearFilter.movingAverage(10);
 
   // ==================== STATE ====================
 

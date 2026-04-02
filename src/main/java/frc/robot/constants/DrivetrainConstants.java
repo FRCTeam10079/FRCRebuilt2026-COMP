@@ -63,19 +63,19 @@ public class DrivetrainConstants {
    * <p>MA (6328) uses 0.5 rad/s. Start there and adjust: - Increase if driver feels too constrained
    * - Decrease if shots miss at speed
    */
-  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.6;
+  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.5;
 
   /**
    * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
    * driver-controllable max speed; the velocity limiter may further reduce it.
    */
-  public static final double MAX_SHOOTING_SPEED_MPS = 0.6;
+  public static final double MAX_SHOOTING_SPEED_MPS = 4.0;
 
   /**
    * Maximum angular velocity (rad/s) while in shoot-on-the-move mode. This is the cap on the
    * heading controller output.
    */
-  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 0.65;
+  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0;
 
   /**
    * Heading error (degrees) below which center-of-rotation shifting is NOT applied. When the

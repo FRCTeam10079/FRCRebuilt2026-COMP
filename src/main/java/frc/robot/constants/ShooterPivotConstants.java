@@ -63,8 +63,8 @@ public class ShooterPivotConstants {
 
   // ==================== TOLERANCES ====================
 
-  /** Wider tolerance for "ready to shoot" in degrees. */
-  public static final Angle SHOOTING_TOLERANCE = Degrees.of(3.0);
+  /** Wider tolerance for "ready to shoot" in degrees. MA (6328) uses 1.5deg. */
+  public static final Angle SHOOTING_TOLERANCE = Degrees.of(1.5);
 
   // ==================== CURRENT LIMITS ====================
   public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(30);

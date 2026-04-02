@@ -51,24 +51,22 @@ public class ShooterConstants {
   public static final Angle HEADING_TOLERANCE = Degrees.of(10.0);
 
   /**
-   * Heading tolerance for shoot-on-the-move in degrees (yaw). MA (6328) uses 5.0deg. Tighter than
-   * static heading tolerance because SOTM relies on accurate aiming.
+   * Heading tolerance for shoot-on-the-move in degrees (yaw). MA (6328) uses 10.0deg for launch,
+   * 15.0deg for passing.
    */
-  // TODO: TUNE ON THE ROBOT - MA uses 5.0deg; widen if shots are gated too
-  // aggressively
-  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 6.0;
+  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 10.0;
 
   /**
    * Pitch tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted (e.g.,
    * driving over field elements). MA (6328) uses 5.0deg.
    */
-  public static final double LAUNCH_PITCH_TOLERANCE_DEGREES = 15.0;
+  public static final double LAUNCH_PITCH_TOLERANCE_DEGREES = 5.0;
 
   /**
    * Roll tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted
    * laterally. MA (6328) uses 5.0deg.
    */
-  public static final double LAUNCH_ROLL_TOLERANCE_DEGREES = 15.0;
+  public static final double LAUNCH_ROLL_TOLERANCE_DEGREES = 5.0;
 
   protected ShooterConstants() {}
 }

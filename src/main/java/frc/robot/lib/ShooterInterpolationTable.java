@@ -139,6 +139,78 @@ public final class ShooterInterpolationTable {
     return tofTable.get(distanceMeters);
   }
 
+  // ==================== PASSING TABLES ====================
+  // Separate interpolation tables for passing shots (long lobs over/around the
+  // hub).
+  // Passing uses a flatter pivot angle, higher RPM, and longer TOF.
+  // Adapted from MA (6328) passing infrastructure.
+
+  private static InterpolatingTreeMap<Double, Double> passingRpmTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+
+  private static InterpolatingTreeMap<Double, Double> passingAngleTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+
+  private static InterpolatingTreeMap<Double, Double> passingTofTable =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+
+  /** Minimum valid distance for passing shots (meters). */
+  public static final double PASSING_MIN_DISTANCE = 5.4;
+
+  /** Maximum valid distance for passing shots (meters). */
+  public static final double PASSING_MAX_DISTANCE = 17.0;
+
+  static {
+    // -------------------------------------------------------
+    // TODO: MUST BE TUNED ON REAL ROBOT!
+    // Passing shots are long-range lobs aimed at a teammate.
+    // These placeholders are adapted from MA's data as starting points.
+    // Distance (m) -> RPM (higher than normal for long range)
+    // -------------------------------------------------------
+    passingRpmTable.put(5.5, 3000.0);
+    passingRpmTable.put(7.0, 3200.0);
+    passingRpmTable.put(8.0, 3400.0);
+    passingRpmTable.put(17.0, 4500.0);
+  }
+
+  static {
+    // -------------------------------------------------------
+    // TODO: MUST BE TUNED ON REAL ROBOT!
+    // Passing shots use a fixed steep angle for consistent lob trajectory.
+    // Distance (m) -> Pivot angle (degrees)
+    // -------------------------------------------------------
+    passingAngleTable.put(5.5, 62.0);
+    passingAngleTable.put(7.0, 62.0);
+    passingAngleTable.put(8.0, 62.0);
+    passingAngleTable.put(17.0, 62.0);
+  }
+
+  static {
+    // -------------------------------------------------------
+    // TODO: MUST BE TUNED ON REAL ROBOT!
+    // Passing shots have longer flight times due to high arc.
+    // Distance (m) -> TOF (seconds)
+    // -------------------------------------------------------
+    passingTofTable.put(5.5, 1.3);
+    passingTofTable.put(7.0, 1.4);
+    passingTofTable.put(8.0, 1.5);
+    passingTofTable.put(11.0, 1.75);
+    passingTofTable.put(13.0, 1.8);
+    passingTofTable.put(17.0, 2.2);
+  }
+
+  public static AngularVelocity getPassingRPM(Distance distance) {
+    return RPM.of(passingRpmTable.get(distance.in(Meters)));
+  }
+
+  public static Angle getPassingAngle(Distance distance) {
+    return Degrees.of(passingAngleTable.get(distance.in(Meters)));
+  }
+
+  public static double getPassingTimeOfFlight(double distanceMeters) {
+    return passingTofTable.get(distanceMeters);
+  }
+
   public static void hotSwapTofValues(Double key, Double newValue) {
     tofTable.put(key, newValue);
 

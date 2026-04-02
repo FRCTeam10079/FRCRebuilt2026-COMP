@@ -116,6 +116,14 @@ public class LaunchCalculator {
 
   public static final double SHOOTER_OFFSET_Y = 0.0; // meters, no lateral offset
 
+  // ==================== PASSING TARGET ====================
+  // When passing, aim at a point near the alliance wall where a teammate can
+  // catch.
+  // Adapted from MA (6328). X is near the wall, Y is offset from center.
+  // TODO: TUNE THESE FOR OUR FIELD STRATEGY
+  private static final double PASS_TARGET_X = 37.0 * 0.0254; // ~0.94m from alliance wall
+  private static final double PASS_TARGET_Y = 65.0 * 0.0254; // ~1.65m across field
+
   // ==================== FIELD GEOMETRY (for bad boxes) ====================
 
   /** Field length derived from symmetric hub placement. ~16.54 m. */
@@ -172,18 +180,19 @@ public class LaunchCalculator {
   private final LinearFilter driveAngleFilter =
       LinearFilter.movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
 
-  // new code: Low pass filters for velocities to prevent noise-induced
-  // oscillation loop
-  private final LinearFilter vxFilter = LinearFilter.movingAverage(10);
-  private final LinearFilter vyFilter = LinearFilter.movingAverage(10);
-  private final LinearFilter omegaFilter = LinearFilter.movingAverage(10);
+  // Low pass filters for velocities to prevent noise-induced oscillation loop.
+  // Window of 5 samples (0.1s at 50Hz) balances noise rejection with
+  // responsiveness.
+  // Reduced from 10 after COR fix eliminated a major noise source.
+  private final LinearFilter vxFilter = LinearFilter.movingAverage(5);
+  private final LinearFilter vyFilter = LinearFilter.movingAverage(5);
+  private final LinearFilter omegaFilter = LinearFilter.movingAverage(5);
 
   // ==================== STATE ====================
 
   private double lastPivotAngleDegrees = Double.NaN;
   private Rotation2d lastDriveAngle = null;
   private LaunchParameters latestParameters = null;
-  private int filtLogCounter = 0;
 
   // ==================== DATA RECORD ====================
 
@@ -209,7 +218,8 @@ public class LaunchCalculator {
       double flywheelRPM,
       double lookaheadDistance,
       double rawDistance,
-      double timeOfFlight) {}
+      double timeOfFlight,
+      boolean passing) {}
 
   // ==================== CORE UPDATE ====================
 
@@ -240,19 +250,13 @@ public class LaunchCalculator {
     double smoothedOmega = omegaFilter.calculate(rawRobotRelativeVelocity.omegaRadiansPerSecond);
     ChassisSpeeds robotRelativeVelocity = new ChassisSpeeds(smoothedVx, smoothedVy, smoothedOmega);
 
-    // ---- SOTM filter debug logging (2Hz) ----
-    filtLogCounter++;
-    if (filtLogCounter % 25 == 0) {
-      System.out.printf(
-          "SOTM_FILT,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f%n",
-          Timer.getFPGATimestamp(),
-          rawRobotRelativeVelocity.vxMetersPerSecond,
-          rawRobotRelativeVelocity.vyMetersPerSecond,
-          rawRobotRelativeVelocity.omegaRadiansPerSecond,
-          smoothedVx,
-          smoothedVy,
-          smoothedOmega);
-    }
+    // ---- SOTM filter debug logging ----
+    Logger.recordOutput("LaunchCalc/RawVx", rawRobotRelativeVelocity.vxMetersPerSecond);
+    Logger.recordOutput("LaunchCalc/RawVy", rawRobotRelativeVelocity.vyMetersPerSecond);
+    Logger.recordOutput("LaunchCalc/RawOmega", rawRobotRelativeVelocity.omegaRadiansPerSecond);
+    Logger.recordOutput("LaunchCalc/SmoothedVx", smoothedVx);
+    Logger.recordOutput("LaunchCalc/SmoothedVy", smoothedVy);
+    Logger.recordOutput("LaunchCalc/SmoothedOmega", smoothedOmega);
 
     // ---- Step 1: Phase delay compensation ----
     // Project the robot pose forward by the phase delay to compensate for system
@@ -262,38 +266,67 @@ public class LaunchCalculator {
         robotRelativeVelocity.vyMetersPerSecond * PHASE_DELAY_SECONDS,
         robotRelativeVelocity.omegaRadiansPerSecond * PHASE_DELAY_SECONDS));
 
-    // ---- Step 2: Determine target ----
-    Translation2d target = ShooterMath.getHubPosition();
+    // ---- Step 2: Determine if passing ----
+    // Passing mode activates when the robot is on the far side of the field from
+    // its own hub (past the hub center X line). Adapted from MA (6328).
+    Translation2d hubPos = ShooterMath.getHubPosition();
+    double hubCenterX = hubPos.getX();
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    // On blue, passing = robot X > hub X (robot past hub toward red side)
+    // On red, passing = robot X < hub X (robot past hub toward blue side)
+    boolean passing = isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
 
-    Translation2d robotCenterFieldPos = estimatedPose.getTranslation();
-    double rawDistance = target.getDistance(robotCenterFieldPos);
-    // Compute shooter position on the field (applying robot-frame offset)
-    // Translation2d shooterFieldPos = estimatedPose
-    // .getTranslation()
-    // .plus(new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y)
-    // .rotateBy(estimatedPose.getRotation()));
+    // ---- Step 3: Determine target ----
+    Translation2d target = passing ? getPassingTarget(estimatedPose) : hubPos;
 
-    // ---- Step 3: Field-relative velocity ----
+    // Compute launcher position on the field (applying robot-frame offset)
+    // Adapted from MA (6328): use launcher position, not robot center, as the
+    // base for distance and lookahead calculations.
+    Translation2d launcherOffset =
+        new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y).rotateBy(estimatedPose.getRotation());
+    Translation2d launcherFieldPos = estimatedPose.getTranslation().plus(launcherOffset);
+    double rawDistance = target.getDistance(launcherFieldPos);
+
+    // ---- Step 3: Field-relative launcher velocity ----
+    // In auto, use the raw (setpoint) velocity for more predictable lookahead.
+    // In teleop, transform robot-center velocity to launcher frame to account for
+    // the offset between robot center and launcher during rotation.
     ChassisSpeeds fieldVelocity =
         ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
-    double fieldVelX = fieldVelocity.vxMetersPerSecond;
-    double fieldVelY = fieldVelocity.vyMetersPerSecond;
+    ChassisSpeeds launcherVelocity;
+    if (DriverStation.isAutonomous()) {
+      // In auto the measured velocity is the setpoint velocity (no driver input),
+      // so skip the launcher-frame transform - it can amplify noise.
+      launcherVelocity = fieldVelocity;
+    } else {
+      // Transform velocity from robot center to launcher position.
+      // This accounts for rotational velocity adding a tangential component at the
+      // launcher offset.
+      Translation2d robotToLauncher = new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y);
+      launcherVelocity = transformVelocityForLauncher(fieldVelocity, robotToLauncher, robotHeading);
+    }
+    double fieldVelX = launcherVelocity.vxMetersPerSecond;
+    double fieldVelY = launcherVelocity.vyMetersPerSecond;
 
-    // ---- Step 4: Iterative lookahead convergence loop ----
+    // ---- Step 5: Iterative lookahead convergence loop ----
     // The ball leaves the launcher with the robot's velocity superimposed.
     // We iterate to find a self-consistent (distance, TOF) pair where:
     // - distance determines TOF (from interpolation table)
     // - TOF determines how far the robot's velocity offsets the effective aim point
     // - the new aim point changes the distance, which changes TOF, etc.
-    double timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(rawDistance);
-    Translation2d lookaheadPos = robotCenterFieldPos;
+    double timeOfFlight = passing
+        ? ShooterInterpolationTable.getPassingTimeOfFlight(rawDistance)
+        : ShooterInterpolationTable.getTimeOfFlight(rawDistance);
+    Translation2d lookaheadPos = launcherFieldPos;
     double lookaheadDistance = rawDistance;
 
     for (int i = 0; i < LOOKAHEAD_ITERATIONS; i++) {
-      timeOfFlight = ShooterInterpolationTable.getTimeOfFlight(lookaheadDistance);
+      timeOfFlight = passing
+          ? ShooterInterpolationTable.getPassingTimeOfFlight(lookaheadDistance)
+          : ShooterInterpolationTable.getTimeOfFlight(lookaheadDistance);
       double offsetX = fieldVelX * timeOfFlight;
       double offsetY = fieldVelY * timeOfFlight;
-      lookaheadPos = robotCenterFieldPos.plus(new Translation2d(offsetX, offsetY));
+      lookaheadPos = launcherFieldPos.plus(new Translation2d(offsetX, offsetY));
       lookaheadDistance = target.getDistance(lookaheadPos);
     }
 
@@ -316,10 +349,19 @@ public class LaunchCalculator {
       // Our shooter fires forward, so no rotation needed
     }
 
-    // ---- Step 6: Compute setpoints from lookahead distance ----
-    ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
-    double pivotAngleDegrees = setpoint.pivotAngle().in(Degrees);
-    double flywheelRPM = setpoint.flywheelRPM().in(RPM);
+    // ---- Step 7: Compute setpoints from lookahead distance ----
+    double pivotAngleDegrees;
+    double flywheelRPM;
+    if (passing) {
+      pivotAngleDegrees = ShooterInterpolationTable.getPassingAngle(Meters.of(lookaheadDistance))
+          .in(Degrees);
+      flywheelRPM =
+          ShooterInterpolationTable.getPassingRPM(Meters.of(lookaheadDistance)).in(RPM);
+    } else {
+      ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
+      pivotAngleDegrees = setpoint.pivotAngle().in(Degrees);
+      flywheelRPM = setpoint.flywheelRPM().in(RPM);
+    }
 
     // ---- Step 7: Compute angular velocity feedforwards via derivative + filter
     // ----
@@ -343,15 +385,21 @@ public class LaunchCalculator {
     lastPivotAngleDegrees = pivotAngleDegrees;
     lastDriveAngle = driveAngle;
 
-    // ---- Step 8: Validity check ----
+    // ---- Step 9: Validity check ----
     boolean outsideOfBadBoxes = !isInsideBadBox(estimatedPose.getTranslation());
-    boolean isValid = setpoint.isValid()
-        && lookaheadDistance >= MIN_VALID_DISTANCE
-        && lookaheadDistance <= MAX_VALID_DISTANCE
-        && outsideOfBadBoxes;
-    SmartDashboard.putBoolean("LaunchCalc/OutsideBadBoxes", outsideOfBadBoxes);
+    double minDist = passing ? ShooterInterpolationTable.PASSING_MIN_DISTANCE : MIN_VALID_DISTANCE;
+    double maxDist = passing ? ShooterInterpolationTable.PASSING_MAX_DISTANCE : MAX_VALID_DISTANCE;
+    boolean isValid =
+        outsideOfBadBoxes && lookaheadDistance >= minDist && lookaheadDistance <= maxDist;
+    // For non-passing shots, also check that the setpoint itself is valid
+    if (!passing) {
+      ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
+      isValid = isValid && setpoint.isValid();
+    }
+    Logger.recordOutput("LaunchCalc/OutsideBadBoxes", outsideOfBadBoxes);
+    Logger.recordOutput("LaunchCalc/Passing", passing);
 
-    // ---- Step 9: Build the result ----
+    // ---- Step 10: Build the result ----
     latestParameters = new LaunchParameters(
         isValid,
         driveAngle,
@@ -361,7 +409,8 @@ public class LaunchCalculator {
         flywheelRPM,
         lookaheadDistance,
         rawDistance,
-        timeOfFlight);
+        timeOfFlight,
+        passing);
 
     // ---- Step 10: Telemetry ----
     Logger.recordOutput("LaunchCalc/RawDistance", rawDistance);
@@ -484,6 +533,28 @@ public class LaunchCalculator {
         FIELD_WIDTH - bounds.minY());
   }
 
+  // ==================== PASSING TARGET ====================
+
+  /**
+   * Compute the passing target position on the field.
+   *
+   * <p>The target is near the alliance wall, mirrored based on which side of the field (Y axis) the
+   * robot is on, so the pass goes to the near side. For blue alliance, the target is at
+   * (PASS_TARGET_X, PASS_TARGET_Y or mirrored). For red alliance, it is flipped to the opposite end
+   * of the field.
+   *
+   * @param robotPose current robot pose (for Y-side detection)
+   * @return field-relative Translation2d of the passing target
+   */
+  private Translation2d getPassingTarget(Pose2d robotPose) {
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    // Mirror Y if robot is on the far side of the field (past center Y)
+    boolean mirrorY = robotPose.getY() > FIELD_WIDTH / 2.0;
+    double targetY = mirrorY ? FIELD_WIDTH - PASS_TARGET_Y : PASS_TARGET_Y;
+    double targetX = isRed ? FIELD_LENGTH - PASS_TARGET_X : PASS_TARGET_X;
+    return new Translation2d(targetX, targetY);
+  }
+
   // ==================== BOUNDS RECORD ====================
 
   /**
@@ -499,5 +570,33 @@ public class LaunchCalculator {
           && translation.getY() >= minY()
           && translation.getY() <= maxY();
     }
+  }
+
+  // ==================== VELOCITY TRANSFORM ====================
+
+  /**
+   * Transform field-relative velocity from robot center to a point offset in the robot frame.
+   *
+   * <p>Adapted from MA (6328) GeomUtil.transformVelocity. When the robot rotates, a point offset
+   * from the center of rotation has additional tangential velocity. This method adds that component
+   * so the lookahead uses the launcher's actual velocity, not the robot center's.
+   *
+   * @param velocity field-relative ChassisSpeeds at robot center
+   * @param robotFrameOffset offset from robot center to the target point (robot frame)
+   * @param currentRotation current robot heading (for frame conversion)
+   * @return ChassisSpeeds representing the velocity at the offset point in field frame
+   */
+  private static ChassisSpeeds transformVelocityForLauncher(
+      ChassisSpeeds velocity, Translation2d robotFrameOffset, Rotation2d currentRotation) {
+    return new ChassisSpeeds(
+        velocity.vxMetersPerSecond
+            - velocity.omegaRadiansPerSecond
+                * (robotFrameOffset.getX() * currentRotation.getSin()
+                    + robotFrameOffset.getY() * currentRotation.getCos()),
+        velocity.vyMetersPerSecond
+            + velocity.omegaRadiansPerSecond
+                * (robotFrameOffset.getX() * currentRotation.getCos()
+                    - robotFrameOffset.getY() * currentRotation.getSin()),
+        velocity.omegaRadiansPerSecond);
   }
 }

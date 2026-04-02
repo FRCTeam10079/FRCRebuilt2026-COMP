@@ -63,8 +63,7 @@ public class DrivetrainConstants {
    * <p>MA (6328) uses 0.5 rad/s. Start there and adjust: - Increase if driver feels too constrained
    * - Decrease if shots miss at speed
    */
-  // TODO: TUNE ON THE ROBOT - MA (6328) uses 0.6
-  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.4;
+  public static final double MAX_POLAR_VELOCITY_RAD_PER_SEC = 0.6;
 
   /**
    * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
@@ -80,17 +79,27 @@ public class DrivetrainConstants {
 
   /**
    * Heading error (degrees) below which center-of-rotation shifting is NOT applied. When the
-   * heading is close enough to the target, pivot around robot center as normal. MA (6328) uses
-   * 15.0.
+   * heading is close enough to the target, pivot around robot center as normal.
    */
-  public static final double COR_MIN_ERROR_DEG = 0.0;
+  public static final double COR_MIN_ERROR_DEG = 15.0;
 
   /**
    * Heading error (degrees) at which full center-of-rotation shifting is applied. The COR smoothly
    * interpolates between robot center and shooter position as heading error transitions from
-   * COR_MIN to COR_MAX. MA (6328) uses 30.0.
+   * COR_MIN to COR_MAX.
    */
-  public static final double COR_MAX_ERROR_DEG = 3.0;
+  public static final double COR_MAX_ERROR_DEG = 30.0;
+
+  // ==================== O-LOCK THRESHOLDS ====================
+  /**
+   * Linear speed threshold (m/s) below which O-lock engages during SOTM. When both linear speed AND
+   * angular speed are below their respective thresholds, the drivetrain enters X-stop to prevent
+   * jitter.
+   */
+  public static final double OLOCK_LINEAR_THRESHOLD_MPS = 0.1;
+
+  /** Angular speed threshold (rad/s) below which O-lock engages during SOTM. */
+  public static final double OLOCK_OMEGA_THRESHOLD_RAD_PER_SEC = 0.15;
 
   protected DrivetrainConstants() {}
 }

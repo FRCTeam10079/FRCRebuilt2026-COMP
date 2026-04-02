@@ -13,9 +13,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.generated.BuildConstants;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.PowerDiagnosticsLogger;
 import frc.robot.lib.ShooterMath;
+import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -157,6 +159,12 @@ public class Robot extends LoggedRobot {
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+    // Critical for post-match log review: confirms what auto actually executed vs
+    // what the driver
+    // selected.
+    Logger.recordOutput(
+        "Auto/SelectedCommandName",
+        m_autonomousCommand != null ? m_autonomousCommand.getName() : "<null>");
 
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
@@ -180,6 +188,15 @@ public class Robot extends LoggedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
+
+    ShooterSetpoint.resetOffsets();
+    Logger.recordOutput("ShooterTuning/EventType", "TeleopReset");
+    Logger.recordOutput("ShooterTuning/OffsetsReset", true);
+    Logger.recordOutput("ShooterTuning/AppliedOffsetRPM", 0.0);
+    Logger.recordOutput("ShooterTuning/AppliedOffsetAngleDeg", 0.0);
+    Logger.recordOutput("ShooterTuning/OffsetRPMAfterReset", 0.0);
+    Logger.recordOutput("ShooterTuning/OffsetAngleDegAfterReset", 0.0);
+    scheduleShooterTuningEventClear();
 
     // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
     // Heading is sent every frame in VisionSubsystem.periodic().
@@ -229,5 +246,11 @@ public class Robot extends LoggedRobot {
   @Override
   public void simulationPeriodic() {
     // Simulation running
+  }
+
+  private void scheduleShooterTuningEventClear() {
+    CommandScheduler.getInstance()
+        .schedule(Commands.waitSeconds(0.02)
+            .andThen(Commands.runOnce(() -> Logger.recordOutput("ShooterTuning/EventType", ""))));
   }
 }

@@ -32,6 +32,8 @@ public class IndexerSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.OFF;
   private SystemState systemState = SystemState.IDLE;
+  private double targetFeederRPS = 0.0;
+  private double targetSpindexerRPS = 0.0;
 
   public IndexerSubsystem(IndexerIO io) {
     this.io = io;
@@ -47,6 +49,14 @@ public class IndexerSubsystem extends SubsystemBase {
 
     Logger.recordOutput("Indexer/WantedState", wantedState);
     Logger.recordOutput("Indexer/SystemState", systemState);
+    Logger.recordOutput("Indexer/FeederTargetRPS", targetFeederRPS);
+    Logger.recordOutput("Indexer/SpindexerTargetRPS", targetSpindexerRPS);
+    Logger.recordOutput(
+        "Indexer/FeederVelocityErrorRPS", targetFeederRPS - inputs.feederVelocityRPS);
+    Logger.recordOutput(
+        "Indexer/SpindexerVelocityErrorRPS", targetSpindexerRPS - inputs.spindexerVelocityRPS);
+    Logger.recordOutput("Indexer/FeederFaultField", inputs.feederFaultField);
+    Logger.recordOutput("Indexer/SpindexerFaultField", inputs.spindexerFaultField);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -63,20 +73,28 @@ public class IndexerSubsystem extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case FEEDING:
-        io.setFeederVelocity(IndexerConstants.kFeederTargetRPM / 60.0);
-        io.setSpindexerVelocity(IndexerConstants.kSpindexerTargetRPM / 60.0);
+        targetFeederRPS = IndexerConstants.kFeederTargetRPM / 60.0;
+        targetSpindexerRPS = IndexerConstants.kSpindexerTargetRPM / 60.0;
+        io.setFeederVelocity(targetFeederRPS);
+        io.setSpindexerVelocity(targetSpindexerRPS);
         break;
       case REVERSING:
-        io.setFeederVelocity(IndexerConstants.kFeederReverseRPM / 60.0);
-        io.setSpindexerVelocity(IndexerConstants.kSpindexerReverseRPM / 60.0);
+        targetFeederRPS = IndexerConstants.kFeederReverseRPM / 60.0;
+        targetSpindexerRPS = IndexerConstants.kSpindexerReverseRPM / 60.0;
+        io.setFeederVelocity(targetFeederRPS);
+        io.setSpindexerVelocity(targetSpindexerRPS);
         break;
       case INDEXING:
         // Spindexer only — rotate pieces into feeder path without shooting
-        io.setFeederVelocity(0);
-        io.setSpindexerVelocity(IndexerConstants.kSpindexerTargetRPM / 60.0);
+        targetFeederRPS = 0.0;
+        targetSpindexerRPS = IndexerConstants.kSpindexerTargetRPM / 60.0;
+        io.setFeederVelocity(targetFeederRPS);
+        io.setSpindexerVelocity(targetSpindexerRPS);
         break;
       case IDLE:
       default:
+        targetFeederRPS = 0.0;
+        targetSpindexerRPS = 0.0;
         io.stop();
         break;
     }

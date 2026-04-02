@@ -203,7 +203,7 @@ public class RobotContainer {
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
-    autos = new Autos(drivetrain, choreoAutoFactory, autoCommands);
+    autos = new Autos(choreoAutoFactory, autoCommands);
 
     // Configure button bindings
     configureBindings();

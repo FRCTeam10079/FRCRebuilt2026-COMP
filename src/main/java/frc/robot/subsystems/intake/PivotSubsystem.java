@@ -67,8 +67,20 @@ public class PivotSubsystem extends SubsystemBase {
     Logger.recordOutput("IntakePivot/SystemState", systemState);
     Logger.recordOutput("IntakePivot/setpoint", pivotSetpoint.in(Rotations));
     Logger.recordOutput("IntakePivot/position", getPivotPosition().in(Rotations));
+    Logger.recordOutput("IntakePivot/velocityRPS", inputs.velocityRPS);
+    Logger.recordOutput(
+        "IntakePivot/closedLoopReferenceRotations", inputs.closedLoopReferenceRotations);
+    Logger.recordOutput("IntakePivot/closedLoopErrorRotations", inputs.closedLoopErrorRotations);
+    Logger.recordOutput("IntakePivot/motionMagicAtTarget", inputs.motionMagicAtTarget);
+    Logger.recordOutput("IntakePivot/motionMagicIsRunning", inputs.motionMagicIsRunning);
     Logger.recordOutput("IntakePivot/reachedSetpoint", reachedSetpoint());
     Logger.recordOutput("IntakePivot/statorCurrent", inputs.statorCurrentAmps);
+    Logger.recordOutput(
+        "IntakePivot/stallCurrentExceeded",
+        Amps.of(inputs.statorCurrentAmps).gt(IntakeConstants.Pivot.STALL_CURRENT_THRESHOLD));
+    Logger.recordOutput("IntakePivot/stallTimerSeconds", stallTimer.get());
+    Logger.recordOutput("IntakePivot/atSetpointTimerSeconds", atSetpointTimer.get());
+    Logger.recordOutput("IntakePivot/faultField", inputs.faultField);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -148,10 +160,13 @@ public class PivotSubsystem extends SubsystemBase {
     switch (systemState) {
       case DEPLOYING:
       case STOWING:
+      // Intentionally keep holding STOWED with Motion Magic so the pivot does not
+      // sag/flop out during acceleration; NeutralOut is only safe when deployed; I
+      // think...
+      case STOWED:
         io.setMotionMagicPosition(pivotSetpoint);
         break;
       case DEPLOYED:
-      case STOWED:
       case IDLE:
       case STALLED:
         io.setNeutral();

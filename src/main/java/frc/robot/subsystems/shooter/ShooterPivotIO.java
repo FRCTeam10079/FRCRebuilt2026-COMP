@@ -12,6 +12,13 @@ public interface ShooterPivotIO {
     public double statorCurrentAmps = 0.0;
     public double voltageVolts = 0.0;
     public double dutyCycle = 0.0;
+    public double closedLoopReferenceRotations = 0.0;
+    public double closedLoopErrorRotations = 0.0;
+    public double deviceTempCelsius = 0.0;
+    public int faultField = 0;
+    public int stickyFaultField = 0;
+    public boolean motionMagicAtTarget = false;
+    public boolean motionMagicIsRunning = false;
   }
 
   default void updateInputs(ShooterPivotIOInputs inputs) {}

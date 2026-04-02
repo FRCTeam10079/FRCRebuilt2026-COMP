@@ -232,15 +232,14 @@ public class Superstructure extends SubsystemBase {
   private void applyCollect() {
     pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY);
     intake.setWantedState(IntakeWheelsSubsystem.WantedState.INTAKE);
-    indexer.setWantedState(IndexerSubsystem.WantedState.INDEX);
-    shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
+    indexer.setWantedState(
+        IndexerSubsystem.WantedState.OFF); // Indexer only runs during shooting/feed, never intake.
     trackPivotContinuously();
   }
 
   private void applyStow() {
+    // STOW is pivot-only so it never interrupts active shooting/indexing behavior.
     pivot.setWantedState(PivotSubsystem.WantedState.STOW);
-    intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
-    trackPivotContinuously();
   }
 
   private void applyAim() {

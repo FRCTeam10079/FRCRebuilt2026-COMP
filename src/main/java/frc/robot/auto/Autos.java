@@ -10,19 +10,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.pathfinding.Pathfinding;
-import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
 /**
- * Central auto-mode configuration. Builds the SmartDashboard choosers for PathPlanner and Choreo
- * autos and provides the selected autonomous command to Robot.java.
+ * Central auto-mode configuration. Builds the SmartDashboard chooser for PathPlanner autos and
+ * provides the selected autonomous command to Robot.java.
  *
  * <p>Uses AutoFactory.trajectoryCmd() / resetOdometry() for simple command composition instead of
  * AutoRoutine.
  */
 public class Autos {
 
-  private final CommandSwerveDrivetrain drivetrain;
   private final AutoFactory choreoAutoFactory;
   private final AutoCommands autoCommands;
 
@@ -32,14 +29,9 @@ public class Autos {
   /**
    * Create the auto configuration and publish choosers to SmartDashboard.
    *
-   * @param drivetrain the swerve drivetrain
    * @param choreoAutoFactory the Choreo AutoFactory (already created in RobotContainer)
    */
-  public Autos(
-      CommandSwerveDrivetrain drivetrain,
-      AutoFactory choreoAutoFactory,
-      AutoCommands autoCommands) {
-    this.drivetrain = drivetrain;
+  public Autos(AutoFactory choreoAutoFactory, AutoCommands autoCommands) {
     this.choreoAutoFactory = choreoAutoFactory;
     this.autoCommands = autoCommands;
 
@@ -47,9 +39,10 @@ public class Autos {
     pathPlannerChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Mode", pathPlannerChooser);
 
-    // Choreo chooser — manually populated with known trajectories
+    // Removed because the project no longer uses Choreo, and this extra chooser was
+    // causing
+    // confusion on the dashboard.
     configureChoreoChooser();
-    SmartDashboard.putData("Choreo Auto", choreoChooser);
   }
 
   // ==================== CHOOSER BUILDERS ====================
@@ -70,9 +63,8 @@ public class Autos {
    * Returns the autonomous command selected by the dashboard. Priority:
    *
    * <ol>
-   *   <li>Choreo trajectory (if a non-blank name is selected)
    *   <li>PathPlanner auto (from the auto chooser)
-   *   <li>Fallback: AD* pathfind to AprilTag 10
+   *   <li>Fallback: no-op command
    * </ol>
    */
   public Command getSelected() {
@@ -80,7 +72,11 @@ public class Autos {
     // 2) PathPlanner
     Command ppAuto = pathPlannerChooser.getSelected();
     if (ppAuto == null) {
-      return getRecoveryPath();
+      // AD*-based pathfinding can take several seconds to compute before movement and
+      // must never
+      // be the default at auto start; when selection is null, do nothing rather than
+      // guess.
+      return Commands.none().withName("Auto: No Selection");
     }
     return ppAuto;
   }
@@ -107,17 +103,6 @@ public class Autos {
   // trajectory.cmd()));
   // return routine.cmd().withName("Choreo: " + trajectoryName);
   // }
-
-  /**
-   * Emergency recovery path — AD* pathfind to AprilTag 10. Use when no auto is selected or as a
-   * fallback.
-   *
-   * @return a pathfinding command targeting AprilTag 10
-   */
-  public Command getRecoveryPath() {
-    Pathfinding.setAutoObstacles();
-    return drivetrain.pathfindToAprilTag10().withName("Fallback: Pathfind to Tag 10");
-  }
 
   // ==================== CHOREO COMMAND COMPOSITIONS ====================
 

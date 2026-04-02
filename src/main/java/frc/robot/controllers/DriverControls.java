@@ -70,12 +70,12 @@ public final class DriverControls {
 
     // ==================== INTAKE (through Superstructure) ====================
     // Left Trigger - Hold to collect (deploy pivot + run intake wheels + index)
-    // Release returns to IDLE. Superstructure handles subsystem coordination.
+    // On release, control falls back to any other still-held mechanism action.
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .onTrue(
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
-        .onFalse(setIdleIfStill(superstructure, WantedSuperState.COLLECT));
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // ==================== SHOOTING (through Superstructure) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin via
@@ -85,7 +85,7 @@ public final class DriverControls {
     controller
         .rightBumper()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.AIM)))
-        .onFalse(setIdleIfStill(superstructure, WantedSuperState.AIM));
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Heading lock while RB is held (drivetrain-only, parallel to Superstructure
     // AIM)
@@ -94,18 +94,12 @@ public final class DriverControls {
         .whileTrue(createAimAtHubCommand(drivetrain, translationY, translationX));
 
     // Right Trigger - Hold to force-shoot (aim + feed when flywheel ready)
-    // When released: falls back to AIM if RB is still held, otherwise IDLE.
+    // On release, control falls back to any other still-held mechanism action.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .onTrue(Commands.runOnce(
             () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
-        .onFalse(Commands.runOnce(() -> {
-          if (controller.rightBumper().getAsBoolean()) {
-            superstructure.setWantedSuperState(WantedSuperState.AIM);
-          } else {
-            superstructure.setWantedSuperState(WantedSuperState.IDLE);
-          }
-        }));
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Rumble while actively shooting
     new Trigger(() -> superstructure.getCurrentSuperState()
@@ -129,7 +123,7 @@ public final class DriverControls {
     controller
         .povDown()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
-        .onFalse(setIdleIfStill(superstructure, WantedSuperState.STOW));
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -161,12 +155,26 @@ public final class DriverControls {
         Constants.DrivetrainConstants.MAX_ALIGNING_ANGULAR_RATE_RAD_PER_SEC);
   }
 
-  private static Command setIdleIfStill(
-      Superstructure superstructure, WantedSuperState expectedState) {
+  private static Command updateWantedStateFromDriverInputs(
+      CommandXboxController controller, Superstructure superstructure) {
     return Commands.runOnce(() -> {
-      if (superstructure.getWantedSuperState() == expectedState) {
-        superstructure.setWantedSuperState(WantedSuperState.IDLE);
+      WantedSuperState desiredState = WantedSuperState.IDLE;
+
+      if (controller
+          .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
+          .getAsBoolean()) {
+        desiredState = WantedSuperState.FORCE_SHOOT;
+      } else if (controller.rightBumper().getAsBoolean()) {
+        desiredState = WantedSuperState.AIM;
+      } else if (controller
+          .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
+          .getAsBoolean()) {
+        desiredState = WantedSuperState.COLLECT;
+      } else if (controller.povDown().getAsBoolean()) {
+        desiredState = WantedSuperState.STOW;
       }
+
+      superstructure.setWantedSuperState(desiredState);
     });
   }
 }

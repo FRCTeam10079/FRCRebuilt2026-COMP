@@ -72,8 +72,16 @@ public class ShooterSubsystem extends SubsystemBase {
     Logger.recordOutput("Shooter/SystemState", systemState);
     Logger.recordOutput("Shooter/TargetRPM", targetRPM.in(RPM));
     Logger.recordOutput("Shooter/CurrentRPM", getCurrentRPM().in(RPM));
+    Logger.recordOutput(
+        "Shooter/ClosedLoopReferenceRPM",
+        RotationsPerSecond.of(inputs.masterClosedLoopReferenceRPS).in(RPM));
+    Logger.recordOutput(
+        "Shooter/ClosedLoopErrorRPM",
+        RotationsPerSecond.of(inputs.masterClosedLoopErrorRPS).in(RPM));
     Logger.recordOutput("Shooter/IsReady", isReady());
     Logger.recordOutput("Shooter/StabilityCounter", stabilityCounter);
+    Logger.recordOutput("Shooter/MasterFaultField", inputs.masterFaultField);
+    Logger.recordOutput("Shooter/SlaveFaultField", inputs.slaveFaultField);
   }
 
   // ==================== STATE TRANSITIONS ====================

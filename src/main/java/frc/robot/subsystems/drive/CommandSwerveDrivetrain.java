@@ -24,6 +24,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -381,7 +382,34 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       });
     }
 
-    Logger.recordOutput("Drive Pos", getState().Pose);
+    var state = getState();
+    SwerveModuleState[] measuredStates = copyModuleStates(state.ModuleStates);
+
+    Logger.recordOutput("Odometry/Robot", state.Pose);
+    Logger.recordOutput("SwerveStates/Measured", measuredStates);
+    Logger.recordOutput("SwerveChassisSpeeds/Measured", state.Speeds);
+
+    if (DriverStation.isDisabled()) {
+      Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
+      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
+    } else {
+      SwerveModuleState[] targetStates = copyModuleStates(state.ModuleTargets);
+      Logger.recordOutput("SwerveStates/Setpoints", targetStates);
+      // No separate optimizer pipeline exists here yet, so optimized == commanded
+      // targets.
+      Logger.recordOutput("SwerveStates/SetpointsOptimized", targetStates);
+    }
+
+    // Keep legacy key for existing layouts and tools.
+    Logger.recordOutput("Drive Pos", state.Pose);
+  }
+
+  private static SwerveModuleState[] copyModuleStates(SwerveModuleState[] source) {
+    SwerveModuleState[] copy = new SwerveModuleState[source.length];
+    for (int i = 0; i < source.length; i++) {
+      copy[i] = new SwerveModuleState(source[i].speedMetersPerSecond, source[i].angle);
+    }
+    return copy;
   }
 
   {

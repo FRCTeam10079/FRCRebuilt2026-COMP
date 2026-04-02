@@ -9,7 +9,7 @@ public class ClimberIOSim implements ClimberIO {
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
-    // ClimberIOInputs has no fields — nothing to populate
+    inputs.appliedVolts = appliedVolts;
   }
 
   @Override

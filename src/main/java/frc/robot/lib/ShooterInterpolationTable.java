@@ -110,9 +110,9 @@ public final class ShooterInterpolationTable {
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
     tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate
     // tofTable.put(2.5, 1.55); // TODO: TUNE - placeholder estimate
-    tofTable.put(3.0, 1.3); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.0, 1.35); // TODO: TUNE - placeholder estimate
     // tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
-    tofTable.put(4.0, 1.5); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.0, 1.75); // TODO: TUNE - placeholder estimate
     // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
     tofTable.put(5.0, 2.7); // TODO: TUNE - placeholder estimate
   }

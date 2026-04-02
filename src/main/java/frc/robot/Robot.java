@@ -8,7 +8,6 @@ import static edu.wpi.first.units.Units.Meters;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -39,6 +38,7 @@ public class Robot extends LoggedRobot {
   private final RobotStateMachine m_stateMachine;
   private final PowerDiagnosticsLogger m_powerDiagnosticsLogger;
   private int m_periodicCycleCount = 0;
+  private int m_robotEventSequence = 0;
 
   public Robot() {
     // ==================== ADVANTAGEKIT LOGGING ====================
@@ -68,9 +68,6 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
-    // Start structured data logging
-    DataLogManager.start();
-
     m_robotContainer = new RobotContainer();
     m_stateMachine = RobotStateMachine.getInstance();
     m_powerDiagnosticsLogger = new PowerDiagnosticsLogger(
@@ -88,7 +85,7 @@ public class Robot extends LoggedRobot {
           .getStringArrayTopic("streams")
           .publish();
       pub.set(new String[] {"mjpg:http://" + llName + ".local:5800/stream.mjpg"});
-      DataLogManager.log(llName + " stream URL published to NetworkTables");
+      recordRobotEvent(llName + " stream URL published to NetworkTables");
     }
   }
 
@@ -132,7 +129,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void disabledExit() {
     // Leaving disabled state
-    DataLogManager.log("Exiting disabled mode...");
+    recordRobotEvent("Exiting disabled mode");
   }
 
   @Override
@@ -167,7 +164,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void autonomousExit() {
     // Autonomous ending
-    DataLogManager.log("Autonomous period ended");
+    recordRobotEvent("Autonomous period ended");
   }
 
   @Override
@@ -204,7 +201,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void teleopExit() {
     // Teleop ending
-    DataLogManager.log("Teleop period ended");
+    recordRobotEvent("Teleop period ended");
   }
 
   @Override
@@ -226,7 +223,7 @@ public class Robot extends LoggedRobot {
   @Override
   public void testExit() {
     // Test mode ending
-    DataLogManager.log("Test mode ended");
+    recordRobotEvent("Test mode ended");
   }
 
   @Override
@@ -238,5 +235,10 @@ public class Robot extends LoggedRobot {
     CommandScheduler.getInstance()
         .schedule(Commands.waitSeconds(0.02)
             .andThen(Commands.runOnce(() -> Logger.recordOutput("ShooterTuning/EventType", ""))));
+  }
+
+  private void recordRobotEvent(String message) {
+    Logger.recordOutput("Events/Robot/Last", message);
+    Logger.recordOutput("Events/Robot/Sequence", ++m_robotEventSequence);
   }
 }

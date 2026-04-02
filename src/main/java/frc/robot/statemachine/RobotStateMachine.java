@@ -4,7 +4,6 @@
 
 package frc.robot.statemachine;
 
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -16,6 +15,7 @@ import frc.robot.lib.ShooterInterpolationTable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * MASTER ROBOT STATE MACHINE - FRC 2026 REBUILT
@@ -80,6 +80,7 @@ public class RobotStateMachine extends SubsystemBase {
   // Telemetry throttle — publish at ~5 Hz (every 10th cycle at 50 Hz)
   private static final int TELEMETRY_DIVISOR = 10;
   private int telemetryCycleCount = 0;
+  private int eventSequence = 0;
 
   /** State history entry for debugging. */
   private record StateHistoryEntry(double timestamp, String type, String from, String to) {
@@ -156,12 +157,12 @@ public class RobotStateMachine extends SubsystemBase {
         rumbleDriver(
             Constants.StateMachineConstants.RUMBLE_MAX,
             Constants.StateMachineConstants.RUMBLE_EXTRA_LONG);
-        DataLogManager.log("=== CLIMB COMPLETE - BRAKE ENGAGED ===");
+        recordEvent("=== CLIMB COMPLETE - BRAKE ENGAGED ===");
       } else if (newState == ClimbState.FAILED) {
         rumbleDriver(
             Constants.StateMachineConstants.RUMBLE_MEDIUM_INTENSITY,
             Constants.StateMachineConstants.RUMBLE_LONG);
-        DataLogManager.log("!!! CLIMB FAILED - RECOVERY NEEDED !!!");
+        recordEvent("!!! CLIMB FAILED - RECOVERY NEEDED !!!");
       }
     }
   }
@@ -193,13 +194,13 @@ public class RobotStateMachine extends SubsystemBase {
       case TRANSITION_SHIFT -> {
         setHubShiftState(HubShiftState.TRANSITION);
         setGameState(GameState.TRANSITION);
-        DataLogManager.log("=== TRANSITION SHIFT - BOTH HUBS ACTIVE! ===");
+        recordEvent("=== TRANSITION SHIFT - BOTH HUBS ACTIVE! ===");
         rumbleDriver(
             Constants.StateMachineConstants.RUMBLE_MAX,
             Constants.StateMachineConstants.RUMBLE_LONG);
       }
       case ENDGAME -> {
-        DataLogManager.log("=== ENDGAME PERIOD STARTED! ===");
+        recordEvent("=== ENDGAME PERIOD STARTED! ===");
         rumbleDriver(
             Constants.StateMachineConstants.RUMBLE_STRONG,
             Constants.StateMachineConstants.RUMBLE_LONG);
@@ -294,7 +295,7 @@ public class RobotStateMachine extends SubsystemBase {
       double t = DriverStation.getMatchTime();
       if (t > 0 && t <= Constants.GameConstants.CRITICAL_TIME_THRESHOLD) {
         hasFiredCriticalTimeWarning = true;
-        DataLogManager.log("!!! CRITICAL: 10 SECONDS REMAINING !!!");
+        recordEvent("!!! CRITICAL: 10 SECONDS REMAINING !!!");
         rumbleBoth(
             Constants.StateMachineConstants.RUMBLE_MAX,
             Constants.StateMachineConstants.RUMBLE_EXTRA_LONG);
@@ -556,9 +557,14 @@ public class RobotStateMachine extends SubsystemBase {
 
   // ==================== STATE HISTORY ====================
 
+  private void recordEvent(String message) {
+    Logger.recordOutput("Events/StateMachine/Last", message);
+    Logger.recordOutput("Events/StateMachine/Sequence", ++eventSequence);
+  }
+
   private void logStateChange(String type, String from, String to) {
     String message = String.format("%s State: %s -> %s", type, from, to);
-    DataLogManager.log(message);
+    recordEvent(message);
     SmartDashboard.putString("Last State Change", message);
     addToStateHistory(type, from, to);
   }
@@ -576,9 +582,9 @@ public class RobotStateMachine extends SubsystemBase {
   }
 
   public void printStateHistory() {
-    DataLogManager.log("=== STATE HISTORY ===");
-    stateHistory.forEach(entry -> DataLogManager.log(entry.toString()));
-    DataLogManager.log("====================");
+    recordEvent("=== STATE HISTORY ===");
+    stateHistory.forEach(entry -> recordEvent(entry.toString()));
+    recordEvent("====================");
   }
 
   // ==================== CYCLE STATISTICS ====================

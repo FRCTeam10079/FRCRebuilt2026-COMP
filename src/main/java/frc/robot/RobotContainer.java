@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.*;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoCommands;
@@ -43,6 +42,7 @@ import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
@@ -214,9 +214,9 @@ public class RobotContainer {
    * planning thread.
    */
   private void initializePathfinding() {
-    DataLogManager.log("[RobotContainer] Initializing pathfinding system...");
+    Logger.recordOutput("Events/RobotContainer/Last", "Initializing pathfinding system");
     Pathfinding.ensureInitialized();
-    DataLogManager.log("[RobotContainer] Pathfinding system ready");
+    Logger.recordOutput("Events/RobotContainer/Last", "Pathfinding system ready");
   }
 
   /**

@@ -27,7 +27,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -168,10 +167,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // pose estimator's heading matches our desired heading. XY is preserved.
     resetPose(correctedPose);
 
-    DataLogManager.log("[Heading] Reset field heading: "
-        + currentPose.getRotation().getDegrees() + "° -> "
-        + allianceForwardHeading.getDegrees() + "° (XY preserved: "
-        + String.format("%.2f, %.2f", currentPose.getX(), currentPose.getY()) + ")");
+    Logger.recordOutput(
+        "Events/Drive/HeadingReset",
+        "[Heading] Reset field heading: "
+            + currentPose.getRotation().getDegrees() + "° -> "
+            + allianceForwardHeading.getDegrees() + "° (XY preserved: "
+            + String.format("%.2f, %.2f", currentPose.getX(), currentPose.getY()) + ")");
     Logger.recordOutput("Vision/HeadingResetOldDeg", currentPose.getRotation().getDegrees());
     Logger.recordOutput("Vision/HeadingResetNewDeg", allianceForwardHeading.getDegrees());
   }

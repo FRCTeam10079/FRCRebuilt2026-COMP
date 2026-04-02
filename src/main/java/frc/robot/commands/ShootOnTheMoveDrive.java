@@ -133,7 +133,7 @@ public class ShootOnTheMoveDrive extends Command {
     // Initialize PID controllers with values from Constants
     pidX = new PIDController(0, 0, 0);
     pidY = new PIDController(0, 0, 0);
-    pidRotate = new PIDController(8.0, 0, 1); // search this
+    pidRotate = new PIDController(4, 0, 0); // search this
 
     // Enable continuous input for rotation (-PI to PI are same point)
     pidRotate.enableContinuousInput(-Math.PI, Math.PI);
@@ -212,8 +212,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
-        .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 1.0))
-        .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 1.0))
+        .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 1.5))
+        .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 1.5))
         .withRotationalRate(velocities[2]));
   }
 

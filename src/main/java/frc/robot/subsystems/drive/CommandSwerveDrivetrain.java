@@ -933,9 +933,18 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           double headingErrorRad = params.driveAngle().minus(currentHeading).getRadians();
           double measuredOmega = currentSpeeds.omegaRadiansPerSecond;
 
-          double omegaOutput = params.driveVelocityRadPerSec()
-              + sotmLaunchKp.get() * headingErrorRad
-              + sotmLaunchKd.get() * (params.driveVelocityRadPerSec() - measuredOmega);
+          double pTerm = sotmLaunchKp.get() * headingErrorRad;
+          double dTerm = sotmLaunchKd.get() * (params.driveVelocityRadPerSec() - measuredOmega);
+
+          // Guard against derivative overpowering in the opposite direction during
+          // fast translation-direction changes. Keep this inactive near zero error.
+          if (Math.abs(Math.toDegrees(headingErrorRad)) > 3.0
+              && Math.signum(dTerm) != Math.signum(pTerm)
+              && Math.abs(dTerm) > Math.abs(pTerm) * 0.75) {
+            dTerm = Math.copySign(Math.abs(pTerm) * 0.75, dTerm);
+          }
+
+          double omegaOutput = params.driveVelocityRadPerSec() + pTerm + dTerm;
           omegaOutput = MathUtil.clamp(
               omegaOutput, -sotmMaxShootingAngularRate.get(), sotmMaxShootingAngularRate.get());
 

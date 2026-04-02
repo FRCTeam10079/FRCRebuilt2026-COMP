@@ -76,9 +76,10 @@ public class LaunchCalculator {
    * Moving average filter window for drive heading velocity feedforward. Wider window = smoother
    * but more lag. Heavily smoothed to prevent heading oscillation.
    *
-   * <p>1.5s window = 75 samples at 50Hz.
+   * <p>0.4s window = 20 samples at 50Hz. Reduced to lower feedforward phase lag when changing
+   * translation direction while retaining meaningful smoothing.
    */
-  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 1.5;
+  private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
 
   /**
    * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the robot is too
@@ -123,6 +124,12 @@ public class LaunchCalculator {
   // TODO: TUNE THESE FOR OUR FIELD STRATEGY
   private static final double PASS_TARGET_X = 37.0 * 0.0254; // ~0.94m from alliance wall
   private static final double PASS_TARGET_Y = 65.0 * 0.0254; // ~1.65m across field
+
+  /**
+   * Auto-pass target switching can cause heading to rotate away from the hub when crossing the hub
+   * X line. Keep disabled by default and only enable when actively validating passing behavior.
+   */
+  private static final boolean ENABLE_AUTO_PASSING = false;
 
   // ==================== FIELD GEOMETRY (for bad boxes) ====================
 
@@ -272,7 +279,9 @@ public class LaunchCalculator {
     boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
     // On blue, passing = robot X > hub X (robot past hub toward red side)
     // On red, passing = robot X < hub X (robot past hub toward blue side)
-    boolean passing = isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
+    boolean sideBasedPassing =
+        isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
+    boolean passing = ENABLE_AUTO_PASSING && sideBasedPassing;
 
     // ---- Step 3: Determine target ----
     Translation2d target = passing ? getPassingTarget(estimatedPose) : hubPos;

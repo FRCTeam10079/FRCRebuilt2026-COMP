@@ -54,7 +54,7 @@ public class ShooterConstants {
    * Heading tolerance for shoot-on-the-move in degrees (yaw). MA (6328) uses 10.0deg for launch,
    * 15.0deg for passing.
    */
-  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 10.0;
+  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 9.0;
 
   /**
    * Pitch tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted (e.g.,

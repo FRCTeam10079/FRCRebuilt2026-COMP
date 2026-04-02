@@ -8,7 +8,7 @@ public class ClimberConstants {
 
   // ==================== MOTOR CONFIGURATION ====================
   /** Set true if motor positive direction needs to be inverted for extend. */
-  public static final boolean MOTOR_INVERTED = false;
+  public static final boolean MOTOR_INVERTED = true;
 
   public static final int SUPPLY_CURRENT_LIMIT = 30;
   public static final int STATOR_CURRENT_LIMIT = 40;

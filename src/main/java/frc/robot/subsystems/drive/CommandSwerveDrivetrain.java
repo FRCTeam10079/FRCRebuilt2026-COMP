@@ -108,6 +108,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private static final LoggedTunableNumber sotmMaxPolarVelocity = new LoggedTunableNumber(
       "SOTM/MaxPolarVelocityRadPerSec",
       Constants.DrivetrainConstants.MAX_POLAR_VELOCITY_RAD_PER_SEC);
+  private static final LoggedTunableNumber sotmMaxShootingSpeedMps = new LoggedTunableNumber(
+      "SOTM/MaxShootingSpeedMps", Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS);
+  private static final LoggedTunableNumber sotmMaxShootingAngularRate = new LoggedTunableNumber(
+      "SOTM/MaxShootingAngularRateRadPerSec",
+      Constants.DrivetrainConstants.MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC);
   private static final LoggedTunableNumber sotmCorMinErrorDeg = new LoggedTunableNumber(
       "SOTM/CORMinErrorDeg", Constants.DrivetrainConstants.COR_MIN_ERROR_DEG);
   private static final LoggedTunableNumber sotmCorMaxErrorDeg = new LoggedTunableNumber(
@@ -918,8 +923,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 xInputSupplier.getAsDouble(),
                 yInputSupplier.getAsDouble(),
                 0.0, // no rotation
-                Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS,
-                Constants.DrivetrainConstants.MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC);
+                sotmMaxShootingSpeedMps.get(),
+                sotmMaxShootingAngularRate.get());
             return;
           }
 
@@ -931,6 +936,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           double omegaOutput = params.driveVelocityRadPerSec()
               + sotmLaunchKp.get() * headingErrorRad
               + sotmLaunchKd.get() * (params.driveVelocityRadPerSec() - measuredOmega);
+          omegaOutput = MathUtil.clamp(
+              omegaOutput, -sotmMaxShootingAngularRate.get(), sotmMaxShootingAngularRate.get());
 
           // ---- Translation from joystick ----
           double xMagnitude = MathUtil.applyDeadband(
@@ -939,12 +946,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               yInputSupplier.getAsDouble(), Constants.DrivetrainConstants.DEADBAND_PERCENT);
 
           // Convert joystick to field-relative velocities
-          double xVelocity = -xMagnitude
-              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
-              * teleopVelocityCoefficient;
-          double yVelocity = -yMagnitude
-              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
-              * teleopVelocityCoefficient;
+          double xVelocity =
+              -xMagnitude * sotmMaxShootingSpeedMps.get() * teleopVelocityCoefficient;
+          double yVelocity =
+              -yMagnitude * sotmMaxShootingSpeedMps.get() * teleopVelocityCoefficient;
 
           // ---- Velocity limiting (law of sines) ----
           // Prevents the ball from sweeping past the hub too fast.

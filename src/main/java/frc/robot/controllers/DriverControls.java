@@ -95,11 +95,12 @@ public final class DriverControls {
         .rightBumper()
         .whileTrue(createAimAtHubCommand(drivetrain, translationY, translationX));
 
-    // Right Trigger - Hold to shoot (smart shoot gated - waits for hub if needed)
+    // Right Trigger - Hold to force-shoot (aim + feed when flywheel ready).
     // On release, control falls back to any other still-held mechanism action.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SHOOT)))
+        .onTrue(Commands.runOnce(
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Rumble while actively shooting
@@ -124,7 +125,7 @@ public final class DriverControls {
         .leftBumper()
         .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM)))
-        .onFalse(setIdleIfStill(superstructure, WantedSuperState.SOTM));
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // SOTM drive command (drivetrain-only, parallel to Superstructure SOTM state)
     controller

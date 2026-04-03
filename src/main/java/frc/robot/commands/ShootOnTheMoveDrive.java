@@ -212,8 +212,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
-        .withVelocityX(MetersPerSecond.of(xInputSupplier.getAsDouble() * 1.5))
-        .withVelocityY(MetersPerSecond.of(yInputSupplier.getAsDouble() * 1.5))
+        .withVelocityX(MetersPerSecond.of(-xInputSupplier.getAsDouble() * 1.5))
+        .withVelocityY(MetersPerSecond.of(-yInputSupplier.getAsDouble() * 1.5))
         .withRotationalRate(velocities[2]));
   }
 

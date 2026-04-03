@@ -40,10 +40,7 @@ public class ClimberConstants {
   /** Motor rotations at which the climb is scored (minimum L1). */
   public static final double CLIMB_SCORED_ROTATIONS = 88.0;
 
-  /**
-   * Motor rotations target for autonomous climb (prioritize speed over full
-   * travel).
-   */
+  /** Motor rotations target for autonomous climb (prioritize speed over full travel). */
   public static final double AUTO_CLIMB_TARGET_ROTATIONS = 88.0;
 
   /** Tolerance band for "at position" checks (motor rotations). */
@@ -56,6 +53,5 @@ public class ClimberConstants {
   /** Voltage to wind rope in / lift robot (negative = retract direction). */
   public static final double RETRACT_VOLTAGE = -5.0;
 
-  protected ClimberConstants() {
-  }
+  protected ClimberConstants() {}
 }

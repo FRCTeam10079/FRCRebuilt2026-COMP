@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -44,6 +45,7 @@ public final class OperatorControls {
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
+   * @param climbPathfindCommand command that pathfinds to the selected climb lane
    */
   public static void configure(
       CommandXboxController operator,
@@ -52,7 +54,8 @@ public final class OperatorControls {
       ClimberSubsystem climber,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
-      Supplier<Distance> hubDistanceSupplier) {
+      Supplier<Distance> hubDistanceSupplier,
+      Command climbPathfindCommand) {
 
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
@@ -61,11 +64,10 @@ public final class OperatorControls {
         .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
             stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
-    // ==================== HUB OVERRIDES ====================
-    // D-Pad Up - Force hub active (offense)
-    operator
-        .povUp()
-        .onTrue(Commands.runOnce(() -> stateMachine.setHubShiftState(HubShiftState.MY_HUB_ACTIVE)));
+    // ==================== CLIMB PATHFIND ====================
+    // D-Pad Up - Pathfind to selected climb lane (hold to pathfind, release to
+    // stop)
+    operator.povUp().whileTrue(climbPathfindCommand);
 
     // D-Pad Down - Force hub inactive (defense/hoard)
     operator

@@ -6,8 +6,8 @@ package frc.robot.pathfinding;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.DataLogManager;
 import java.util.List;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Static class for accessing the active pathfinder from anywhere in the codebase.
@@ -42,7 +42,7 @@ public final class Pathfinding {
   /** Ensure the pathfinding system is initialized. Creates a LocalADStar if not set. */
   public static void ensureInitialized() {
     if (pathfinder == null) {
-      DataLogManager.log("[Pathfinding] Initializing default LocalADStar pathfinder");
+      Logger.recordOutput("Events/Pathfinding/Last", "Initializing default LocalADStar pathfinder");
       pathfinder = new LocalADStar();
     }
   }

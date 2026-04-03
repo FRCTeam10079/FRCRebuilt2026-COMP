@@ -8,8 +8,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.DataLogManager;
 import frc.robot.Constants.AprilTagMaps;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Constants for the pathfinding system.
@@ -109,27 +109,10 @@ public final class PathfindingConstants {
         new Translation2d(SCORING_STANDOFF_METERS, 0).rotateBy(tagFacing);
     Translation2d scoringPosition = tagPosition.plus(standoffOffset);
 
-    // === DEBUG LOGGING ===
-    DataLogManager.log("\\n========== APRILTAG POSE CALCULATION DEBUG ==========="
-        + "\\n[TagPose] Tag ID: " + tagId
-        + "\\n[TagPose] Raw Tag Data (inches): X=" + tagData[0] + ", Y=" + tagData[1]
-        + ", Yaw=" + tagYawDegrees + "°"
-        + "\\n[TagPose] Tag Position (meters): X=" + String.format("%.3f", tagX) + ", Y="
-        + String.format("%.3f", tagY)
-        + "\\n[TagPose] Tag Facing Direction: " + String.format("%.1f", tagFacing.getDegrees())
-        + "°"
-        + "\\n[TagPose] Robot Should Face: " + String.format("%.1f", robotFacing.getDegrees()) + "°"
-        + "\\n[TagPose] Standoff Distance: " + SCORING_STANDOFF_METERS + "m"
-        + "\\n[TagPose] Standoff Offset Vector: X=" + String.format("%.3f", standoffOffset.getX())
-        + ", Y=" + String.format("%.3f", standoffOffset.getY())
-        + "\\n[TagPose] Final Scoring Position: X=" + String.format("%.3f", scoringPosition.getX())
-        + ", Y=" + String.format("%.3f", scoringPosition.getY())
-        + "\\n[TagPose] Final Pose: (" + String.format("%.3f", scoringPosition.getX())
-        + ", " + String.format("%.3f", scoringPosition.getY()) + ", "
-        + String.format("%.1f", robotFacing.getDegrees()) + "°)"
-        + "\\n=====================================================\\n");
-
-    return new Pose2d(scoringPosition, robotFacing);
+    Pose2d scoringPose = new Pose2d(scoringPosition, robotFacing);
+    Logger.recordOutput("Pathfinding/ScoringPose/TagId", tagId);
+    Logger.recordOutput("Pathfinding/ScoringPose/Pose", scoringPose);
+    return scoringPose;
   }
 
   /**

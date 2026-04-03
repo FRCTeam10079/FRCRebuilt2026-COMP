@@ -12,7 +12,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -21,6 +20,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import java.util.List;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Command that pathfinds to a target pose using the AD* algorithm and follows the path using PID
@@ -50,9 +50,8 @@ public class PathfindToTagCommand extends Command {
   private int currentWaypointIndex;
   private final Timer pathWaitTimer = new Timer();
   private boolean hasPath = false;
-
-  // Debug counter for periodic logging
-  private int debugCounter = 0;
+  private boolean waitWarningLogged = false;
+  private int eventSequence = 0;
 
   // NetworkTables publishers for AdvantageScope visualization
   private final NetworkTable pathfindingTable;
@@ -168,6 +167,7 @@ public class PathfindToTagCommand extends Command {
     currentPath = null;
     currentWaypointIndex = 0;
     hasPath = false;
+    waitWarningLogged = false;
     pathWaitTimer.restart();
 
     // Reset PID controllers
@@ -175,7 +175,7 @@ public class PathfindToTagCommand extends Command {
     yController.reset();
     rotationController.reset();
 
-    DataLogManager.log("[PathfindToTag] Starting pathfind from "
+    recordEvent("[PathfindToTag] Starting pathfind from "
         + formatPose(currentPose)
         + " to "
         + formatPose(targetPose));
@@ -185,10 +185,6 @@ public class PathfindToTagCommand extends Command {
   public void execute() {
     Pose2d currentPose = drivetrain.getState().Pose;
 
-    // === PERIODIC DEBUG (every 50 loops ~ 1 second) ===
-    debugCounter++;
-    boolean shouldLogDebug = (debugCounter % 50 == 1);
-
     // Check for new path from background thread
     if (Pathfinding.isNewPathAvailable()) {
       currentPath = Pathfinding.getCurrentPathWaypoints();
@@ -196,26 +192,9 @@ public class PathfindToTagCommand extends Command {
       hasPath = currentPath != null && currentPath.size() >= 2;
 
       if (hasPath) {
-        DataLogManager.log(
-            "[PathfindToTag] Received path with " + currentPath.size() + " waypoints");
-        // Log all waypoints when path is received
-        StringBuilder waypointLog = new StringBuilder("[PathfindToTag] === PATH WAYPOINTS ===");
-        for (int i = 0; i < currentPath.size(); i++) {
-          Translation2d wp = currentPath.get(i);
-          waypointLog
-              .append("\n  [")
-              .append(i)
-              .append("]: (")
-              .append(String.format("%.3f", wp.getX()))
-              .append(", ")
-              .append(String.format("%.3f", wp.getY()))
-              .append(")");
-        }
-        waypointLog.append("\n==========================");
-        DataLogManager.log(waypointLog.toString());
+        recordEvent("[PathfindToTag] Received path with " + currentPath.size() + " waypoints");
       } else {
-        DataLogManager.log(
-            "[PathfindToTag] WARNING: Received invalid path (null or < 2 waypoints)");
+        recordEvent("[PathfindToTag] WARNING: Received invalid path (null or < 2 waypoints)");
       }
     }
 
@@ -236,10 +215,11 @@ public class PathfindToTagCommand extends Command {
       pathfindingField.getObject("TargetWaypoint").setPose(targetPose); // No waypoint yet
       pathfindingField.getObject("Path").setPoses(); // Empty path
 
-      // If waiting too long, log a warning but DON'T drive directly (that ignores
-      // obstacles)
-      if (pathWaitTimer.hasElapsed(2.0) && shouldLogDebug) {
-        DataLogManager.log("[PathfindToTag] WARNING: Still waiting for path after "
+      // If waiting too long, log one warning but DON'T drive directly
+      // (that ignores obstacles).
+      if (pathWaitTimer.hasElapsed(2.0) && !waitWarningLogged) {
+        waitWarningLogged = true;
+        recordEvent("[PathfindToTag] WARNING: Still waiting for path after "
             + String.format("%.1f", pathWaitTimer.get()) + "s");
       }
       return;
@@ -268,40 +248,10 @@ public class PathfindToTagCommand extends Command {
             currentPose.getRotation().getRadians(), targetPose.getRotation().getRadians()),
         constraints.maxAngularVelocityRadPerSec());
 
-    // === DEBUG: Log control outputs ===
-    if (shouldLogDebug) {
-      DataLogManager.log("\n===== PATH FOLLOWING DEBUG ====="
-          + "\n[Follow] Current Pose: (" + String.format("%.3f", currentPose.getX())
-          + ", " + String.format("%.3f", currentPose.getY()) + ", "
-          + String.format("%.1f", currentPose.getRotation().getDegrees()) + "°)"
-          + "\n[Follow] Target Waypoint: (" + String.format("%.3f", targetWaypoint.getX()) + ", "
-          + String.format("%.3f", targetWaypoint.getY()) + ")"
-          + "\n[Follow] Goal Pose: (" + String.format("%.3f", targetPose.getX()) + ", "
-          + String.format("%.3f", targetPose.getY()) + ", "
-          + String.format("%.1f", targetPose.getRotation().getDegrees()) + "°)"
-          + "\n[Follow] Position Error: X="
-          + String.format("%.3f", targetWaypoint.getX() - currentPose.getX()) + ", Y="
-          + String.format("%.3f", targetWaypoint.getY() - currentPose.getY())
-          + "\n[Follow] Velocity Commands (field-relative): vX="
-          + String.format("%.3f", xVelocity) + ", vY=" + String.format("%.3f", yVelocity)
-          + ", omega=" + String.format("%.3f", rotationVelocity)
-          + "\n[Follow] Waypoint Index: " + currentWaypointIndex + "/"
-          + (currentPath != null ? currentPath.size() : 0)
-          + "\n================================\n");
-    }
-
     // Apply to drivetrain as field-relative speeds
     ChassisSpeeds fieldSpeeds = new ChassisSpeeds(xVelocity, yVelocity, rotationVelocity);
     ChassisSpeeds robotSpeeds =
         ChassisSpeeds.fromFieldRelativeSpeeds(fieldSpeeds, currentPose.getRotation());
-
-    // === DEBUG: Log robot-relative speeds being sent ===
-    if (shouldLogDebug) {
-      DataLogManager.log("[Follow] Robot-Relative Speeds: vX="
-          + String.format("%.3f", robotSpeeds.vxMetersPerSecond) + ", vY="
-          + String.format("%.3f", robotSpeeds.vyMetersPerSecond) + ", omega="
-          + String.format("%.3f", robotSpeeds.omegaRadiansPerSecond));
-    }
 
     // === NETWORKTABLES LOGGING FOR ADVANTAGESCOPE ===
     // Publish poses for 2D field visualization
@@ -368,9 +318,9 @@ public class PathfindToTagCommand extends Command {
         .withSpeeds(new ChassisSpeeds()));
 
     if (interrupted) {
-      DataLogManager.log("[PathfindToTag] Command interrupted");
+      recordEvent("[PathfindToTag] Command interrupted");
     } else {
-      DataLogManager.log("[PathfindToTag] Reached goal: " + formatPose(targetPose));
+      recordEvent("[PathfindToTag] Reached goal: " + formatPose(targetPose));
     }
   }
 
@@ -452,5 +402,10 @@ public class PathfindToTagCommand extends Command {
   private String formatPose(Pose2d pose) {
     return String.format(
         "(%.2f, %.2f, %.1f°)", pose.getX(), pose.getY(), pose.getRotation().getDegrees());
+  }
+
+  private void recordEvent(String message) {
+    Logger.recordOutput("Events/PathfindToTag/Last", message);
+    Logger.recordOutput("Events/PathfindToTag/Sequence", ++eventSequence);
   }
 }

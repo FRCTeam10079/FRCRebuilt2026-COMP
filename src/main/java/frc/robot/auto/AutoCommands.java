@@ -6,7 +6,6 @@ package frc.robot.auto;
 
 import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.NamedCommands;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants;
@@ -24,6 +23,7 @@ import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import frc.robot.subsystems.vision.VisionSubsystem;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Factory for autonomous command compositions. Each method returns a <b>new</b> Command instance so
@@ -229,7 +229,7 @@ public class AutoCommands {
     NamedCommands.registerCommand("Shoot", shoot());
     NamedCommands.registerCommand("Intake", intake());
 
-    DataLogManager.log("[AutoCommands] Named commands registered for PathPlanner");
+    Logger.recordOutput("Events/AutoCommands/Last", "Named commands registered for PathPlanner");
   }
 
   /**
@@ -268,6 +268,6 @@ public class AutoCommands {
         .bind("Shoot", shoot())
         .bind("Intake", intake());
 
-    DataLogManager.log("[AutoCommands] Marker bindings registered for Choreo");
+    Logger.recordOutput("Events/AutoCommands/Last", "Marker bindings registered for Choreo");
   }
 }

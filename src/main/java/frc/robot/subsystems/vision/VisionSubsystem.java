@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
@@ -31,7 +30,6 @@ public class VisionSubsystem extends SubsystemBase {
   private int totalAccepted = 0;
   private int totalRejected = 0;
   private int headingCorrections = 0;
-  private int loopCounter = 0;
   private boolean hasBootstrappedHeading = false;
 
   public VisionSubsystem(CommandSwerveDrivetrain drivetrain) {
@@ -51,7 +49,7 @@ public class VisionSubsystem extends SubsystemBase {
     // boolean isAuto = RobotStateMachine.getInstance().getMatchState().autonomous;
     // Logger.recordOutput("Vision/AutoSkipped", isAuto);
     // if (isAuto) {
-    //  return;
+    // return;
     // }
 
     String[] names = VisionConstants.LIMELIGHT_NAMES;
@@ -61,22 +59,6 @@ public class VisionSubsystem extends SubsystemBase {
     for (String name : names) {
       processCamera(name, odoPose, speeds);
     }
-
-    // Print summary once per second (every 50 loops) - avoids roboRIO lag
-    loopCounter++;
-    /*
-    if (loopCounter >= 50) {
-      System.out.println("[VISION] heading="
-          + String.format("%.1f", odoPose.getRotation().getDegrees())
-          + "deg accepted="
-          + totalAccepted
-          + " rejected="
-          + totalRejected
-          + " corrections="
-          + headingCorrections);
-      loopCounter = 0;
-    }
-    */
 
     Logger.recordOutput("Vision/TotalAccepted", totalAccepted);
     Logger.recordOutput("Vision/TotalRejected", totalRejected);
@@ -138,21 +120,24 @@ public class VisionSubsystem extends SubsystemBase {
         drivetrain.resetPose(correctedPose);
         headingCorrections++;
         /*
-        System.out.println("[VISION] ONE-SHOT HEADING BOOTSTRAP: "
-            + String.format("%.1f", odoPose.getRotation().getDegrees())
-            + "deg -> "
-            + String.format("%.1f", pose.getRotation().getDegrees())
-            + "deg (divergence="
-            + String.format("%.1f", divergenceDeg)
-            + "deg, camera="
-            + cameraName
-            + ")");
-        */
-        DataLogManager.log("[Vision] One-shot heading bootstrap: "
-            + String.format("%.1f", odoPose.getRotation().getDegrees())
-            + "° -> "
-            + String.format("%.1f", pose.getRotation().getDegrees())
-            + "°");
+         * System.out.println("[VISION] ONE-SHOT HEADING BOOTSTRAP: "
+         * + String.format("%.1f", odoPose.getRotation().getDegrees())
+         * + "deg -> "
+         * + String.format("%.1f", pose.getRotation().getDegrees())
+         * + "deg (divergence="
+         * + String.format("%.1f", divergenceDeg)
+         * + "deg, camera="
+         * + cameraName
+         * + ")");
+         */
+        Logger.recordOutput(
+            "Events/Vision/Last",
+            "[Vision] One-shot heading bootstrap: "
+                + String.format("%.1f", odoPose.getRotation().getDegrees())
+                + "° -> "
+                + String.format("%.1f", pose.getRotation().getDegrees())
+                + "°");
+        Logger.recordOutput("Events/Vision/Sequence", headingCorrections);
         Logger.recordOutput(logPrefix + "HeadingBootstrap", true);
       }
       hasBootstrappedHeading = true;
@@ -188,15 +173,15 @@ public class VisionSubsystem extends SubsystemBase {
     Pose2d currentPose = drivetrain.getState().Pose;
     double currentHeadingDeg = currentPose.getRotation().getDegrees();
     /*
-    System.out.println("[VISION-DEBUG] updateWhileDisabled() | gyroHeading="
-        + String.format("%.1f", currentHeadingDeg)
-        + "deg | pose=("
-        + String.format("%.2f", currentPose.getX())
-        + ", "
-        + String.format("%.2f", currentPose.getY())
-        + ") | MT1_HEADING_CORRECTION_ENABLED="
-        + VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED);
-      */
+     * System.out.println("[VISION-DEBUG] updateWhileDisabled() | gyroHeading="
+     * + String.format("%.1f", currentHeadingDeg)
+     * + "deg | pose=("
+     * + String.format("%.2f", currentPose.getX())
+     * + ", "
+     * + String.format("%.2f", currentPose.getY())
+     * + ") | MT1_HEADING_CORRECTION_ENABLED="
+     * + VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED);
+     */
 
     for (String name : names) {
       LimelightHelpers.SetRobotOrientation(name, currentHeadingDeg, 0, 0, 0, 0, 0);
@@ -211,45 +196,48 @@ public class VisionSubsystem extends SubsystemBase {
           double divergenceDeg =
               Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));
           /*
-          System.out.println("[VISION-DEBUG] [DISABLED] ["
-              + name
-              + "] MT1 multi-tag heading="
-              + String.format("%.1f", mt1HeadingDeg)
-              + "deg gyroHeading="
-              + String.format("%.1f", currentHeadingDeg)
-              + "deg divergence="
-              + String.format("%.1f", divergenceDeg)
-              + "deg threshold="
-              + VisionConstants.MT1_HEADING_CORRECTION_THRESHOLD_DEG
-              + "deg");
-          */
+           * System.out.println("[VISION-DEBUG] [DISABLED] ["
+           * + name
+           * + "] MT1 multi-tag heading="
+           * + String.format("%.1f", mt1HeadingDeg)
+           * + "deg gyroHeading="
+           * + String.format("%.1f", currentHeadingDeg)
+           * + "deg divergence="
+           * + String.format("%.1f", divergenceDeg)
+           * + "deg threshold="
+           * + VisionConstants.MT1_HEADING_CORRECTION_THRESHOLD_DEG
+           * + "deg");
+           */
           Logger.recordOutput("Vision/" + name + "/Disabled/MT1HeadingDeg", mt1HeadingDeg);
           Logger.recordOutput("Vision/" + name + "/Disabled/HeadingDivergenceDeg", divergenceDeg);
 
           if (divergenceDeg > VisionConstants.MT1_HEADING_CORRECTION_THRESHOLD_DEG) {
             Pose2d correctedPose = new Pose2d(currentPose.getTranslation(), mt1.pose.getRotation());
             /*
-            System.out.println("[VISION-DEBUG] [DISABLED] ["
-                + name
-                + "] !!! HEADING CORRECTION FIRING !!! resetting pose heading from "
-                + String.format("%.1f", currentHeadingDeg)
-                + "deg -> "
-                + String.format("%.1f", mt1HeadingDeg)
-                + "deg");
-            */
+             * System.out.println("[VISION-DEBUG] [DISABLED] ["
+             * + name
+             * + "] !!! HEADING CORRECTION FIRING !!! resetting pose heading from "
+             * + String.format("%.1f", currentHeadingDeg)
+             * + "deg -> "
+             * + String.format("%.1f", mt1HeadingDeg)
+             * + "deg");
+             */
             drivetrain.resetPose(correctedPose);
 
             hasBootstrappedHeading = true;
             headingCorrections++;
-            DataLogManager.log("[Vision] Auto-corrected heading from MT1 multi-tag: "
-                + String.format("%.1f", currentHeadingDeg)
-                + "° -> "
-                + String.format("%.1f", mt1HeadingDeg)
-                + "° (divergence: "
-                + String.format("%.1f", divergenceDeg)
-                + "°, camera: "
-                + name
-                + ")");
+            Logger.recordOutput(
+                "Events/Vision/Last",
+                "[Vision] Auto-corrected heading from MT1 multi-tag: "
+                    + String.format("%.1f", currentHeadingDeg)
+                    + "° -> "
+                    + String.format("%.1f", mt1HeadingDeg)
+                    + "° (divergence: "
+                    + String.format("%.1f", divergenceDeg)
+                    + "°, camera: "
+                    + name
+                    + ")");
+            Logger.recordOutput("Events/Vision/Sequence", headingCorrections);
             Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", true);
 
             break;

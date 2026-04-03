@@ -10,7 +10,6 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -23,6 +22,7 @@ import frc.robot.statemachine.DrivetrainMode;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.vision.VisionSubsystem;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Command to align the robot to an AprilTag using vision
@@ -71,6 +71,7 @@ public class AlignToAprilTag extends Command {
   // Target AprilTag info
   private int targetTagID;
   private boolean tagDetected = false;
+  private int eventSequence = 0;
 
   // Timeout duration (seconds) - prevents indefinite alignment attempts
   private static final double ALIGN_TIMEOUT_SECONDS = 3.0;
@@ -115,7 +116,7 @@ public class AlignToAprilTag extends Command {
     // This command requires the drivetrain
     addRequirements(drivetrain);
 
-    DataLogManager.log("[AlignToAprilTag] Created for " + alignPosition + " position");
+    recordEvent("[AlignToAprilTag] Created for " + alignPosition + " position");
   }
 
   /** Convenience constructor for CENTER alignment */
@@ -135,7 +136,7 @@ public class AlignToAprilTag extends Command {
     // Get current robot pose
     Pose2d robotPose = drivetrain.getState().Pose;
     if (robotPose == null) {
-      DataLogManager.log("[AlignToAprilTag] ERROR: Robot pose is null!");
+      recordEvent("[AlignToAprilTag] ERROR: Robot pose is null!");
       tagDetected = false;
       return;
     }
@@ -166,12 +167,12 @@ public class AlignToAprilTag extends Command {
 
     // Check if a tag was found
     if (targetTagID == -1) {
-      DataLogManager.log("[AlignToAprilTag] ERROR: No AprilTag found in map!");
+      recordEvent("[AlignToAprilTag] ERROR: No AprilTag found in map!");
       tagDetected = false;
       return;
     }
 
-    DataLogManager.log("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
+    recordEvent("[AlignToAprilTag] Closest tag from odometry: " + targetTagID);
 
     // Check if Limelight sees a valid tag - prefer it over odometry,
     // but only if it's on our alliance side
@@ -187,12 +188,12 @@ public class AlignToAprilTag extends Command {
         && AprilTagMaps.aprilTagMap.containsKey(limelightTagID)
         && Constants.contains(allianceTags, limelightTagID)) {
       targetTagID = limelightTagID;
-      DataLogManager.log("[AlignToAprilTag] Using Limelight tag: " + targetTagID);
+      recordEvent("[AlignToAprilTag] Using Limelight tag: " + targetTagID);
     } else if (limelightTagID == 0) {
-      DataLogManager.log(
+      recordEvent(
           "[AlignToAprilTag] Limelight has no target, using odometry closest tag: " + targetTagID);
     } else {
-      DataLogManager.log("[AlignToAprilTag] Limelight tag "
+      recordEvent("[AlignToAprilTag] Limelight tag "
           + limelightTagID
           + " not valid for alliance, using odometry: "
           + targetTagID);
@@ -201,7 +202,7 @@ public class AlignToAprilTag extends Command {
     // Get tag data
     double[] tagData = AprilTagMaps.aprilTagMap.get(targetTagID);
     if (tagData == null) {
-      DataLogManager.log("[AlignToAprilTag] ERROR: Tag data is null for ID: " + targetTagID);
+      recordEvent("[AlignToAprilTag] ERROR: Tag data is null for ID: " + targetTagID);
       tagDetected = false;
       return;
     }
@@ -253,7 +254,7 @@ public class AlignToAprilTag extends Command {
     pidY.setSetpoint(targetPose.getY());
     pidRotate.setSetpoint(targetPose.getRotation().getRadians());
 
-    DataLogManager.log("[AlignToAprilTag] Target Pose: X="
+    recordEvent("[AlignToAprilTag] Target Pose: X="
         + targetPose.getX()
         + ", Y="
         + targetPose.getY()
@@ -350,7 +351,7 @@ public class AlignToAprilTag extends Command {
     // Timeout after ALIGN_TIMEOUT_SECONDS to prevent indefinite alignment attempts
     boolean timedOut = timer.hasElapsed(ALIGN_TIMEOUT_SECONDS);
     if (timedOut) {
-      DataLogManager.log("[AlignToAprilTag] Timed out after " + ALIGN_TIMEOUT_SECONDS + "s"
+      recordEvent("[AlignToAprilTag] Timed out after " + ALIGN_TIMEOUT_SECONDS + "s"
           + " (distance=" + String.format("%.3f", distance)
           + "m, yawError=" + String.format("%.1f", Math.toDegrees(yawError)) + "°)");
     }
@@ -373,11 +374,10 @@ public class AlignToAprilTag extends Command {
     // Set alignment status based on completion
     if (!interrupted && tagDetected) {
       stateMachine.setAlignedToTarget(true);
-      DataLogManager.log(
-          "[AlignToAprilTag] Completed successfully - aligned to tag " + targetTagID);
+      recordEvent("[AlignToAprilTag] Completed successfully - aligned to tag " + targetTagID);
     } else {
       stateMachine.setAlignedToTarget(false);
-      DataLogManager.log("[AlignToAprilTag] "
+      recordEvent("[AlignToAprilTag] "
           + (interrupted ? "Interrupted" : "Failed")
           + " - alignment not confirmed");
     }
@@ -385,5 +385,10 @@ public class AlignToAprilTag extends Command {
     // Log completion
     SmartDashboard.putBoolean("AlignToAprilTag/Completed", !interrupted);
     SmartDashboard.putNumber("AlignToAprilTag/Duration", timer.get());
+  }
+
+  private void recordEvent(String message) {
+    Logger.recordOutput("Events/AlignToAprilTag/Last", message);
+    Logger.recordOutput("Events/AlignToAprilTag/Sequence", ++eventSequence);
   }
 }

@@ -10,6 +10,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -51,6 +52,7 @@ public final class OperatorControls {
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
+   * @param climbPathfindCommand command that pathfinds to the selected climb lane
    */
   public static void configure(
       CommandXboxController operator,
@@ -60,7 +62,8 @@ public final class OperatorControls {
       ClimberSubsystem climber,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
-      Supplier<Distance> hubDistanceSupplier) {
+      Supplier<Distance> hubDistanceSupplier,
+      Command climbPathfindCommand) {
 
     final AtomicInteger tuningEventCounter = new AtomicInteger(0);
 

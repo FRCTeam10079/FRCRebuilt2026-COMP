@@ -28,7 +28,9 @@ public class ShooterPivotConstants {
   public static final Angle MAX_ANGLE = Degrees.of(80.0);
 
   // ==================== HOMING ====================
-  /** Duty cycle output for slow hard-stop homing (negative = toward hard stop). */
+  /**
+   * Duty cycle output for slow hard-stop homing (negative = toward hard stop).
+   */
   public static final double HOMING_SPEED = -0.06;
 
   /** Stator current threshold (amps) to detect the hard stop. */
@@ -46,20 +48,21 @@ public class ShooterPivotConstants {
   public static final double KV = 0.12;
 
   /**
-   * Gravity feedforward coefficient. Applied as kG * cos(pivotAngle) to hold position against
-   * gravity. Tune by finding the minimum voltage to hold the pivot at various angles.
+   * Gravity feedforward coefficient. Applied as kG * cos(pivotAngle) to hold
+   * position against
+   * gravity. Tune by finding the minimum voltage to hold the pivot at various
+   * angles.
    */
   public static final double KG = 0.3;
 
   // ==================== MOTION MAGIC ====================
   /** Cruise velocity in motor rotations per second. */
-  public static final AngularVelocity MOTION_MAGIC_CRUISE_VELOCITY = RotationsPerSecond.of(40.0);
+  public static final AngularVelocity MOTION_MAGIC_CRUISE_VELOCITY = RotationsPerSecond.of(50.0);
   /** Acceleration in motor rotations per second^2. */
-  public static final AngularAcceleration MOTION_MAGIC_ACCELERATION =
-      RotationsPerSecondPerSecond.of(80.0);
+  public static final AngularAcceleration MOTION_MAGIC_ACCELERATION = RotationsPerSecondPerSecond.of(100.0);
   /** Jerk in motor rotations per second^3 (0 = trapezoidal, >0 = S-curve). */
-  public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK =
-      RotationsPerSecondPerSecond.per(Second).of(400.0);
+  public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK = RotationsPerSecondPerSecond.per(Second)
+      .of(400.0);
 
   // ==================== TOLERANCES ====================
 
@@ -93,27 +96,37 @@ public class ShooterPivotConstants {
   public static final Distance TRENCH_X_MAX = Meters.of(12.0);
 
   /**
-   * Y-distance from the side wall within which the robot is considered "under the trench". Trench
+   * Y-distance from the side wall within which the robot is considered "under the
+   * trench". Trench
    * posts at ~0.644m from each wall; add half robot width + safety margin.
    */
   public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.2);
 
-  /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
+  /**
+   * Extra distance to start lowering BEFORE entering the trench zone (meters).
+   */
   public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE
 
   // ==================== CONVERSIONS ====================
-  /** Convert position of pivot angle to motor rotations. motorRotations = position * GEAR_RATIO */
+  /**
+   * Convert position of pivot angle to motor rotations. motorRotations = position
+   * * GEAR_RATIO
+   */
   public static Angle degreesToMotorRotations(Angle position) {
     return position.times(GEAR_RATIO);
   }
 
-  /** Convert motor rotations to degrees of pivot angle. degrees = motorPosition / GEAR_RATIO */
+  /**
+   * Convert motor rotations to degrees of pivot angle. degrees = motorPosition /
+   * GEAR_RATIO
+   */
   public static Angle motorRotationsToDegrees(Angle motorPosition) {
     return motorPosition.div(GEAR_RATIO);
   }
 
-  protected ShooterPivotConstants() {}
+  protected ShooterPivotConstants() {
+  }
 }

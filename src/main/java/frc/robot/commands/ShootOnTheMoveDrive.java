@@ -212,8 +212,8 @@ public class ShootOnTheMoveDrive extends Command {
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
-        .withVelocityX(MetersPerSecond.of(-xInputSupplier.getAsDouble() * 1.5))
-        .withVelocityY(MetersPerSecond.of(-yInputSupplier.getAsDouble() * 1.5))
+        .withVelocityX(MetersPerSecond.of(-xInputSupplier.getAsDouble() * 1.0))
+        .withVelocityY(MetersPerSecond.of(-yInputSupplier.getAsDouble() * 1.0))
         .withRotationalRate(velocities[2]));
   }
 
@@ -364,9 +364,9 @@ public class ShootOnTheMoveDrive extends Command {
     ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
         drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
 
-    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
+    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond * 1.5;
 
-    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
+    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond * 1.5;
 
     boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
 

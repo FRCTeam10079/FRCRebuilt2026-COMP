@@ -13,8 +13,6 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -52,21 +50,6 @@ public class PathfindToTagCommand extends Command {
   private boolean hasPath = false;
   private boolean waitWarningLogged = false;
   private int eventSequence = 0;
-
-  // NetworkTables publishers for AdvantageScope visualization
-  private final NetworkTable pathfindingTable;
-  private final StructPublisher<Pose2d> currentPosePublisher;
-  private final StructPublisher<Pose2d> goalPosePublisher;
-  private final StructPublisher<Pose2d> targetWaypointPublisher;
-  private final StructArrayPublisher<Pose2d> pathPublisher;
-
-  // Field2d for visualization in AdvantageScope / Shuffleboard
-  private static final Field2d pathfindingField = new Field2d();
-
-  static {
-    // Publish Field2d once so AdvantageScope can see it
-    SmartDashboard.putData("Pathfinding/Field", pathfindingField);
-  }
 
   // Pure pursuit parameters
   private static final double LOOKAHEAD_DISTANCE =
@@ -128,16 +111,6 @@ public class PathfindToTagCommand extends Command {
         Constants.PathfindingPIDConstants.FOLLOW_KI,
         Constants.PathfindingPIDConstants.FOLLOW_KD);
     this.rotationController.enableContinuousInput(-Math.PI, Math.PI);
-
-    // Initialize NetworkTables publishers for AdvantageScope
-    pathfindingTable = NetworkTableInstance.getDefault().getTable("Pathfinding");
-    currentPosePublisher =
-        pathfindingTable.getStructTopic("CurrentPose", Pose2d.struct).publish();
-    goalPosePublisher =
-        pathfindingTable.getStructTopic("GoalPose", Pose2d.struct).publish();
-    targetWaypointPublisher =
-        pathfindingTable.getStructTopic("TargetWaypoint", Pose2d.struct).publish();
-    pathPublisher = pathfindingTable.getStructArrayTopic("Path", Pose2d.struct).publish();
 
     addRequirements(drivetrain);
   }
@@ -396,6 +369,54 @@ public class PathfindToTagCommand extends Command {
 
   private double clampVelocity(double velocity, double max) {
     return Math.max(-max, Math.min(max, velocity));
+  }
+
+  private void recordWaitingOutputs(Pose2d currentPose) {
+    Logger.recordOutput("Pathfinding/Status", "WaitingForPath");
+    Logger.recordOutput("Pathfinding/WaitTimeSec", pathWaitTimer.get());
+    Logger.recordOutput("Pathfinding/HasPath", false);
+    Logger.recordOutput("Pathfinding/CurrentPose", currentPose);
+    Logger.recordOutput("Pathfinding/GoalPose", targetPose);
+    Logger.recordOutput("Pathfinding/TargetWaypoint", targetPose);
+    Logger.recordOutput("Pathfinding/Path", new Pose2d[0]);
+  }
+
+  private void recordFollowingOutputs(
+      Pose2d currentPose,
+      Translation2d targetWaypoint,
+      double xVelocity,
+      double yVelocity,
+      double rotationVelocity) {
+    Logger.recordOutput("Pathfinding/Status", "FollowingPath");
+    Logger.recordOutput("Pathfinding/HasPath", true);
+    Logger.recordOutput("Pathfinding/CurrentWaypoint", currentWaypointIndex);
+    Logger.recordOutput("Pathfinding/TotalWaypoints", currentPath != null ? currentPath.size() : 0);
+
+    Logger.recordOutput("Pathfinding/CurrentPose", currentPose);
+    Logger.recordOutput("Pathfinding/GoalPose", targetPose);
+    Logger.recordOutput(
+        "Pathfinding/TargetWaypoint", new Pose2d(targetWaypoint, targetPose.getRotation()));
+    Logger.recordOutput("Pathfinding/Path", buildPathPoses());
+
+    Logger.recordOutput("Pathfinding/VelX", xVelocity);
+    Logger.recordOutput("Pathfinding/VelY", yVelocity);
+    Logger.recordOutput("Pathfinding/VelOmega", rotationVelocity);
+    Logger.recordOutput("Pathfinding/ErrorX", targetWaypoint.getX() - currentPose.getX());
+    Logger.recordOutput("Pathfinding/ErrorY", targetWaypoint.getY() - currentPose.getY());
+    Logger.recordOutput("Pathfinding/CurrentWaypointIdx", currentWaypointIndex);
+    Logger.recordOutput("Pathfinding/PathLength", currentPath != null ? currentPath.size() : 0);
+  }
+
+  private Pose2d[] buildPathPoses() {
+    if (currentPath == null || currentPath.isEmpty()) {
+      return new Pose2d[0];
+    }
+
+    Pose2d[] pathPoses = new Pose2d[currentPath.size()];
+    for (int i = 0; i < currentPath.size(); i++) {
+      pathPoses[i] = new Pose2d(currentPath.get(i), targetPose.getRotation());
+    }
+    return pathPoses;
   }
 
   private String formatPose(Pose2d pose) {

@@ -6,6 +6,7 @@ public interface ClimberIO {
 
   @AutoLog
   class ClimberIOInputs {
+    public boolean motorConnected = false;
     public double positionRotations = 0.0;
     public double velocityRPS = 0.0;
     public double supplyCurrentAmps = 0.0;

@@ -5,16 +5,13 @@ import frc.robot.Constants.ClimberConstants;
 
 /**
  * Simulated climber IO. Models a first-order winch driven by voltage, tracking motor position and
- * velocity. The spool converts motor rotation to linear travel through a 25:1 gear ratio.
+ * velocity.
  */
 public class ClimberIOSim implements ClimberIO {
   private static final double LOOP_PERIOD_SEC = 0.02;
   private static final double NOMINAL_VOLTAGE = 12.0;
 
-  /**
-   * Approximate free speed of the Kraken X60 in RPS (~6000 RPM / 60). Through the 25:1 gearbox,
-   * this is the motor-side speed. kV ≈ free speed RPS / nominal voltage.
-   */
+  /** Approximate free speed of the Kraken X60 in RPS (~6000 RPM / 60). */
   private static final double KV_RPS_PER_VOLT = (6000.0 / 60.0) / NOMINAL_VOLTAGE;
 
   /** Time constant for velocity ramping (seconds). Models rotor + spool inertia. */
@@ -26,6 +23,8 @@ public class ClimberIOSim implements ClimberIO {
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
+    inputs.motorConnected = true;
+
     // First-order model: velocity approaches target exponentially
     double targetVelocityRPS = appliedVolts * KV_RPS_PER_VOLT;
     double alpha = 1.0 - Math.exp(-LOOP_PERIOD_SEC / TAU);

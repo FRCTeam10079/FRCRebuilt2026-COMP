@@ -1,14 +1,23 @@
 package frc.robot.subsystems.climber;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
+import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants.ClimberConstants;
 
 public class ClimberIOTalonFX implements ClimberIO {
@@ -16,6 +25,16 @@ public class ClimberIOTalonFX implements ClimberIO {
   private final TalonFX motor;
   private final VoltageOut voltageRequest = new VoltageOut(0.0);
   private final NeutralOut neutralRequest = new NeutralOut();
+
+  private final StatusSignal<Angle> positionSignal;
+  private final StatusSignal<AngularVelocity> velocitySignal;
+  private final StatusSignal<Current> supplyCurrentSignal;
+  private final StatusSignal<Current> statorCurrentSignal;
+  private final StatusSignal<Voltage> voltageSignal;
+  private final StatusSignal<Temperature> temperatureSignal;
+
+  private final Debouncer motorConnectedDebouncer =
+      new Debouncer(ClimberConstants.MOTOR_CONNECTED_DEBOUNCE_SECONDS);
 
   public ClimberIOTalonFX() {
     motor =
@@ -25,6 +44,25 @@ public class ClimberIOTalonFX implements ClimberIO {
     // Zero the encoder at construction time.
     // Assumption: mechanism is fully retracted when the robot powers on.
     motor.setPosition(0.0);
+
+    positionSignal = motor.getPosition();
+    velocitySignal = motor.getVelocity();
+    supplyCurrentSignal = motor.getSupplyCurrent();
+    statorCurrentSignal = motor.getStatorCurrent();
+    voltageSignal = motor.getMotorVoltage();
+    temperatureSignal = motor.getDeviceTemp();
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        ClimberConstants.STATUS_SIGNAL_UPDATE_HZ,
+        positionSignal,
+        velocitySignal,
+        supplyCurrentSignal,
+        statorCurrentSignal,
+        voltageSignal,
+        temperatureSignal);
+    ParentDevice.optimizeBusUtilizationForAll(motor);
+
+    voltageRequest.EnableFOC = ClimberConstants.ENABLE_FOC;
   }
 
   private void configureMotor() {
@@ -55,12 +93,21 @@ public class ClimberIOTalonFX implements ClimberIO {
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
-    inputs.positionRotations = motor.getPosition().getValueAsDouble();
-    inputs.velocityRPS = motor.getVelocity().getValueAsDouble();
-    inputs.supplyCurrentAmps = motor.getSupplyCurrent().getValueAsDouble();
-    inputs.statorCurrentAmps = motor.getStatorCurrent().getValueAsDouble();
-    inputs.appliedVoltage = motor.getMotorVoltage().getValueAsDouble();
-    inputs.tempCelsius = motor.getDeviceTemp().getValueAsDouble();
+    var status = BaseStatusSignal.refreshAll(
+        positionSignal,
+        velocitySignal,
+        supplyCurrentSignal,
+        statorCurrentSignal,
+        voltageSignal,
+        temperatureSignal);
+
+    inputs.motorConnected = motorConnectedDebouncer.calculate(status.isOK());
+    inputs.positionRotations = positionSignal.getValueAsDouble();
+    inputs.velocityRPS = velocitySignal.getValueAsDouble();
+    inputs.supplyCurrentAmps = supplyCurrentSignal.getValueAsDouble();
+    inputs.statorCurrentAmps = statorCurrentSignal.getValueAsDouble();
+    inputs.appliedVoltage = voltageSignal.getValueAsDouble();
+    inputs.tempCelsius = temperatureSignal.getValueAsDouble();
   }
 
   @Override

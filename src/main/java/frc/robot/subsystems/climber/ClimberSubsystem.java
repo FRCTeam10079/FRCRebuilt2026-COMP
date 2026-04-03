@@ -4,6 +4,9 @@
 
 package frc.robot.subsystems.climber;
 
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -14,6 +17,8 @@ public class ClimberSubsystem extends SubsystemBase {
 
   private final ClimberIO io;
   private final ClimberIOInputsAutoLogged inputs = new ClimberIOInputsAutoLogged();
+  private final Alert climberMotorDisconnectedAlert =
+      new Alert("Climber motor disconnected, climb may fail", AlertType.kError);
 
   // ==================== STATE MACHINE ====================
 
@@ -54,6 +59,10 @@ public class ClimberSubsystem extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Climber", inputs);
 
+    if (RobotBase.isReal()) {
+      climberMotorDisconnectedAlert.set(!inputs.motorConnected);
+    }
+
     systemState = handleStateTransitions();
     applyStates();
 
@@ -61,6 +70,7 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/SystemState", systemState.name());
     Logger.recordOutput("Climber/RequestedVolts", requestedVolts);
     Logger.recordOutput("Climber/PositionRotations", inputs.positionRotations);
+    Logger.recordOutput("Climber/MotorConnected", inputs.motorConnected);
   }
 
   // ==================== STATE TRANSITIONS ====================

@@ -8,7 +8,6 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -27,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Implementation of AD* (Anytime Dynamic A*) running locally in a background thread.
@@ -334,11 +334,11 @@ public class LocalADStar implements Pathfinder {
       List<Translation2d> waypoints =
           convertToWaypoints(pathPositions, realStartPose, realGoalPose);
 
-      // === PUBLISH TO SMARTDASHBOARD FOR ADVANTAGESCOPE ===
-      SmartDashboard.putNumber("Pathfinding/AD*/Obstacles", obstacles.size());
-      SmartDashboard.putNumber("Pathfinding/AD*/GridPathLength", pathPositions.size());
-      SmartDashboard.putNumber("Pathfinding/AD*/FinalWaypointCount", waypoints.size());
-      SmartDashboard.putBoolean("Pathfinding/AD*/PathFound", waypoints.size() >= 2);
+      // === PUBLISH VIA ADVANTAGEKIT LOGGER ===
+      Logger.recordOutput("Pathfinding/AD*/Obstacles", obstacles.size());
+      Logger.recordOutput("Pathfinding/AD*/GridPathLength", pathPositions.size());
+      Logger.recordOutput("Pathfinding/AD*/FinalWaypointCount", waypoints.size());
+      Logger.recordOutput("Pathfinding/AD*/PathFound", waypoints.size() >= 2);
 
       currentPathWaypoints.set(waypoints);
       newPathAvailable.set(true);

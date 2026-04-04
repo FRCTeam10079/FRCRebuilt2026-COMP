@@ -13,7 +13,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Constants.*;
@@ -262,12 +261,11 @@ public class AlignToAprilTag extends Command {
         + Math.toDegrees(targetPose.getRotation().getRadians())
         + "°");
 
-    // Log to SmartDashboard
-    SmartDashboard.putNumber("AlignToAprilTag/TargetTagID", targetTagID);
-    SmartDashboard.putNumber("AlignToAprilTag/TargetX", targetPose.getX());
-    SmartDashboard.putNumber("AlignToAprilTag/TargetY", targetPose.getY());
-    SmartDashboard.putNumber(
-        "AlignToAprilTag/TargetYaw", targetPose.getRotation().getDegrees());
+    // Log to AdvantageKit
+    Logger.recordOutput("AlignToAprilTag/TargetTagID", targetTagID);
+    Logger.recordOutput("AlignToAprilTag/TargetX", targetPose.getX());
+    Logger.recordOutput("AlignToAprilTag/TargetY", targetPose.getY());
+    Logger.recordOutput("AlignToAprilTag/TargetYaw", targetPose.getRotation().getDegrees());
   }
 
   @Override
@@ -287,13 +285,12 @@ public class AlignToAprilTag extends Command {
     double[] velocities = calculatePIDVelocities(currentPose);
 
     // Log data
-    SmartDashboard.putNumber("AlignToAprilTag/CurrentX", currentPose.getX());
-    SmartDashboard.putNumber("AlignToAprilTag/CurrentY", currentPose.getY());
-    SmartDashboard.putNumber(
-        "AlignToAprilTag/CurrentYaw", currentPose.getRotation().getDegrees());
-    SmartDashboard.putNumber("AlignToAprilTag/ErrorX", pidX.getError());
-    SmartDashboard.putNumber("AlignToAprilTag/ErrorY", pidY.getError());
-    SmartDashboard.putNumber("AlignToAprilTag/ErrorYaw", Math.toDegrees(pidRotate.getError()));
+    Logger.recordOutput("AlignToAprilTag/CurrentX", currentPose.getX());
+    Logger.recordOutput("AlignToAprilTag/CurrentY", currentPose.getY());
+    Logger.recordOutput("AlignToAprilTag/CurrentYaw", currentPose.getRotation().getDegrees());
+    Logger.recordOutput("AlignToAprilTag/ErrorX", pidX.getError());
+    Logger.recordOutput("AlignToAprilTag/ErrorY", pidY.getError());
+    Logger.recordOutput("AlignToAprilTag/ErrorYaw", Math.toDegrees(pidRotate.getError()));
 
     // Apply velocities to drivetrain
     drivetrain.setControl(driveRequest
@@ -356,9 +353,9 @@ public class AlignToAprilTag extends Command {
           + "m, yawError=" + String.format("%.1f", Math.toDegrees(yawError)) + "°)");
     }
 
-    SmartDashboard.putNumber("AlignToAprilTag/Distance", distance);
-    SmartDashboard.putBoolean("AlignToAprilTag/PositionReached", positionReached);
-    SmartDashboard.putBoolean("AlignToAprilTag/YawReached", yawReached);
+    Logger.recordOutput("AlignToAprilTag/Distance", distance);
+    Logger.recordOutput("AlignToAprilTag/PositionReached", positionReached);
+    Logger.recordOutput("AlignToAprilTag/YawReached", yawReached);
 
     return (positionReached && yawReached) || timedOut;
   }
@@ -383,8 +380,8 @@ public class AlignToAprilTag extends Command {
     }
 
     // Log completion
-    SmartDashboard.putBoolean("AlignToAprilTag/Completed", !interrupted);
-    SmartDashboard.putNumber("AlignToAprilTag/Duration", timer.get());
+    Logger.recordOutput("AlignToAprilTag/Completed", !interrupted);
+    Logger.recordOutput("AlignToAprilTag/Duration", timer.get());
   }
 
   private void recordEvent(String message) {

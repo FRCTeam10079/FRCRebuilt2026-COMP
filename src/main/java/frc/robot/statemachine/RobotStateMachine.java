@@ -7,10 +7,12 @@ package frc.robot.statemachine;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
+import frc.robot.lib.Elastic;
+import frc.robot.lib.Elastic.NotificationLevel;
+import frc.robot.lib.HubShiftTracker;
 import frc.robot.lib.ShooterInterpolationTable;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,13 +282,51 @@ public class RobotStateMachine extends SubsystemBase {
     isAlignedToTarget = headingAlignedSupplier.getAsBoolean();
   }
 
-  /** Detect endgame / transition periods automatically from match time. */
+  /** Detect endgame / transition periods and auto-update hub shift state from FMS data. */
   private void checkPeriodTransitions() {
     if (matchState == MatchState.TELEOP_RUNNING || matchState == MatchState.TRANSITION_SHIFT) {
       if (isEndgamePeriod()) {
         setMatchState(MatchState.ENDGAME);
       } else if (matchState == MatchState.TELEOP_RUNNING && isTransitionPeriod()) {
         setMatchState(MatchState.TRANSITION_SHIFT);
+      }
+    }
+
+    // === Auto-detect hub shift state from HubShiftTracker (FMS data) ===
+    if (isTeleop()) {
+      HubShiftTracker tracker = HubShiftTracker.getInstance();
+      if (!tracker.isOperatorOverrideActive()) {
+        boolean hubActive = tracker.isMyHubActive();
+        HubShiftState desired;
+        HubShiftTracker.ShiftPhase phase = tracker.getCurrentPhase();
+
+        if (phase == HubShiftTracker.ShiftPhase.TRANSITION
+            || phase == HubShiftTracker.ShiftPhase.ENDGAME
+            || phase == HubShiftTracker.ShiftPhase.AUTO) {
+          desired = HubShiftState.TRANSITION;
+        } else if (hubActive) {
+          desired = HubShiftState.MY_HUB_ACTIVE;
+        } else {
+          desired = HubShiftState.MY_HUB_INACTIVE;
+        }
+
+        if (hubShiftState != desired) {
+          setHubShiftState(desired);
+          // Send Elastic notification on hub shift change
+          if (desired == HubShiftState.MY_HUB_ACTIVE) {
+            Elastic.sendNotification(new Elastic.Notification()
+                .withLevel(NotificationLevel.INFO)
+                .withTitle("Hub ACTIVE")
+                .withDescription("Your hub is now active - GO SCORE!")
+                .withDisplaySeconds(3.0));
+          } else if (desired == HubShiftState.MY_HUB_INACTIVE) {
+            Elastic.sendNotification(new Elastic.Notification()
+                .withLevel(NotificationLevel.WARNING)
+                .withTitle("Hub INACTIVE")
+                .withDescription("Your hub is inactive - collect fuel or defend")
+                .withDisplaySeconds(3.0));
+          }
+        }
       }
     }
 
@@ -299,6 +339,11 @@ public class RobotStateMachine extends SubsystemBase {
         rumbleBoth(
             Constants.StateMachineConstants.RUMBLE_MAX,
             Constants.StateMachineConstants.RUMBLE_EXTRA_LONG);
+        Elastic.sendNotification(new Elastic.Notification()
+            .withLevel(NotificationLevel.ERROR)
+            .withTitle("10 SECONDS!")
+            .withDescription("Match ending soon - climb NOW!")
+            .withDisplaySeconds(5.0));
       }
     }
   }
@@ -307,44 +352,43 @@ public class RobotStateMachine extends SubsystemBase {
 
   private void updateTelemetry() {
     // Match lifecycle
-    SmartDashboard.putString("Match State", matchState.name());
-    SmartDashboard.putBoolean("Robot Enabled", matchState.enabled);
-    SmartDashboard.putBoolean("Is Autonomous", matchState.autonomous);
+    Logger.recordOutput("Match State", matchState.name());
+    Logger.recordOutput("Robot Enabled", matchState.enabled);
+    Logger.recordOutput("Is Autonomous", matchState.autonomous);
 
     // Game strategy
-    SmartDashboard.putString("Game State", gameState.name());
-    SmartDashboard.putString("Game Description", gameState.description);
+    Logger.recordOutput("Game State", gameState.name());
+    Logger.recordOutput("Game Description", gameState.description);
 
     // Drivetrain
-    SmartDashboard.putString("Drivetrain Mode", driveMode.description);
+    Logger.recordOutput("Drivetrain Mode", driveMode.description);
 
     // Hub shift
-    SmartDashboard.putString("Hub Shift State", hubShiftState.name());
-    SmartDashboard.putBoolean("My Hub Active", hubShiftState == HubShiftState.MY_HUB_ACTIVE);
+    Logger.recordOutput("Hub Shift State", hubShiftState.name());
+    Logger.recordOutput("My Hub Active", hubShiftState == HubShiftState.MY_HUB_ACTIVE);
 
     // Climb
-    SmartDashboard.putString("Climb State", climbState.name());
-    SmartDashboard.putBoolean("Climb Complete", climbState.isCompleted());
+    Logger.recordOutput("Climb State", climbState.name());
+    Logger.recordOutput("Climb Complete", climbState.isCompleted());
 
     // Fuel
-    SmartDashboard.putNumber("Fuel Count", fuelCount);
-    SmartDashboard.putBoolean("Has Fuel", hasFuel());
+    Logger.recordOutput("Fuel Count", fuelCount);
+    Logger.recordOutput("Has Fuel", hasFuel());
 
     // Shooter / Alignment
-    SmartDashboard.putBoolean("Aligned to Target", isAlignedToTarget);
-    SmartDashboard.putBoolean("Shooter at RPM", isShooterAtRPM);
-    SmartDashboard.putBoolean("Ready to Fire", isReadyToFire());
+    Logger.recordOutput("Aligned to Target", isAlignedToTarget);
+    Logger.recordOutput("Shooter at RPM", isShooterAtRPM);
+    Logger.recordOutput("Ready to Fire", isReadyToFire());
 
     // Alliance & Timing
-    SmartDashboard.putString(
-        "Alliance", DriverStation.getAlliance().map(Enum::name).orElse("UNKNOWN"));
-    SmartDashboard.putNumber("Time in State", getTimeInState());
+    Logger.recordOutput("Alliance", DriverStation.getAlliance().map(Enum::name).orElse("UNKNOWN"));
+    Logger.recordOutput("Time in State", getTimeInState());
 
     // Cycle stats
-    SmartDashboard.putNumber("Total Fuel Scored", getTotalFuelScored());
-    SmartDashboard.putNumber("Fastest Cycle Time", getFastestCycleTime());
+    Logger.recordOutput("Total Fuel Scored", getTotalFuelScored());
+    Logger.recordOutput("Fastest Cycle Time", getFastestCycleTime());
 
-    SmartDashboard.putNumber("tofTable", ShooterInterpolationTable.getTimeOfFlight(1.0));
+    Logger.recordOutput("tofTable", ShooterInterpolationTable.getTimeOfFlight(1.0));
   }
 
   // ==================== GETTERS ====================
@@ -565,7 +609,7 @@ public class RobotStateMachine extends SubsystemBase {
   private void logStateChange(String type, String from, String to) {
     String message = String.format("%s State: %s -> %s", type, from, to);
     recordEvent(message);
-    SmartDashboard.putString("Last State Change", message);
+    Logger.recordOutput("LastStateChange", message);
     addToStateHistory(type, from, to);
   }
 

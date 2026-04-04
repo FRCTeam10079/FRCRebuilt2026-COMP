@@ -12,8 +12,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Core shoot-on-the-move calculator, adapted from Mechanical Advantage (6328).
@@ -287,17 +287,17 @@ public class LaunchCalculator {
         timeOfFlight);
 
     // ---- Step 10: Telemetry ----
-    SmartDashboard.putNumber("LaunchCalc/RawDistance", rawDistance);
-    SmartDashboard.putNumber("LaunchCalc/LookaheadDistance", lookaheadDistance);
-    SmartDashboard.putNumber("LaunchCalc/TimeOfFlight", timeOfFlight);
-    SmartDashboard.putNumber("LaunchCalc/DriveAngleDeg", driveAngle.getDegrees());
-    SmartDashboard.putNumber("LaunchCalc/DriveVelocityRadPerSec", driveVelocityRadPerSec);
-    SmartDashboard.putNumber("LaunchCalc/PivotAngleDeg", pivotAngleDegrees);
-    SmartDashboard.putNumber("LaunchCalc/PivotVelocityDegPerSec", pivotVelocityDegPerSec);
-    SmartDashboard.putNumber("LaunchCalc/FlywheelRPM", flywheelRPM);
-    SmartDashboard.putBoolean("LaunchCalc/IsValid", isValid);
-    SmartDashboard.putNumber("LaunchCalc/FieldVelX", fieldVelX);
-    SmartDashboard.putNumber("LaunchCalc/FieldVelY", fieldVelY);
+    Logger.recordOutput("LaunchCalc/RawDistance", rawDistance);
+    Logger.recordOutput("LaunchCalc/LookaheadDistance", lookaheadDistance);
+    Logger.recordOutput("LaunchCalc/TimeOfFlight", timeOfFlight);
+    Logger.recordOutput("LaunchCalc/DriveAngleDeg", driveAngle.getDegrees());
+    Logger.recordOutput("LaunchCalc/DriveVelocityRadPerSec", driveVelocityRadPerSec);
+    Logger.recordOutput("LaunchCalc/PivotAngleDeg", pivotAngleDegrees);
+    Logger.recordOutput("LaunchCalc/PivotVelocityDegPerSec", pivotVelocityDegPerSec);
+    Logger.recordOutput("LaunchCalc/FlywheelRPM", flywheelRPM);
+    Logger.recordOutput("LaunchCalc/IsValid", isValid);
+    Logger.recordOutput("LaunchCalc/FieldVelX", fieldVelX);
+    Logger.recordOutput("LaunchCalc/FieldVelY", fieldVelY);
   }
 
   /**

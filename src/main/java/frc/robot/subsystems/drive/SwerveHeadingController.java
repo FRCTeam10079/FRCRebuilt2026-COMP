@@ -7,8 +7,8 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.HeadingControllerConstants;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * This class controls the rotational heading of the drivetrain seperately from translation control.
@@ -195,8 +195,8 @@ public class SwerveHeadingController {
     }
 
     // Log gain changes for debugging
-    SmartDashboard.putString("HeadingController/State", m_state.toString());
-    SmartDashboard.putNumber("HeadingController/ActiveKP", m_pidController.getP());
+    Logger.recordOutput("HeadingController/State", m_state.toString());
+    Logger.recordOutput("HeadingController/ActiveKP", m_pidController.getP());
   }
 
   /** Reset the heading controller Clears accumulated integral error and resets state */
@@ -215,15 +215,16 @@ public class SwerveHeadingController {
   /** Print one CSV data line with all heading controller state. */
   private void logCSV(double currentHeadingDegrees, double totalOutput) {
     /*
-    if (!m_csvHeaderPrinted) {
-      System.out.println("HDG_CSV,timestamp_s,state,goal_deg,current_deg,error_deg,"
-          + "kP,kD,p_output,d_approx,total_output,"
-          + "omega_cmd_radps,omega_actual_radps");
-      m_csvHeaderPrinted = true;
-      m_lastErrorDeg = getError();
-      m_lastTimestamp = Timer.getFPGATimestamp();
-    }
-    */
+     * if (!m_csvHeaderPrinted) {
+     * System.out.println(
+     * "HDG_CSV,timestamp_s,state,goal_deg,current_deg,error_deg,"
+     * + "kP,kD,p_output,d_approx,total_output,"
+     * + "omega_cmd_radps,omega_actual_radps");
+     * m_csvHeaderPrinted = true;
+     * m_lastErrorDeg = getError();
+     * m_lastTimestamp = Timer.getFPGATimestamp();
+     * }
+     */
 
     double now = Timer.getFPGATimestamp();
     double dt = now - m_lastTimestamp;
@@ -256,12 +257,12 @@ public class SwerveHeadingController {
     m_lastTimestamp = now;
   }
 
-  /** Log telemetry data to SmartDashboard Call this from a subsystem's periodic() method */
+  /** Log telemetry data via AdvantageKit. Call this from a subsystem's periodic() method */
   public void logTelemetry(double currentHeadingDegrees) {
-    SmartDashboard.putString("HeadingController/State", m_state.toString());
-    SmartDashboard.putNumber("HeadingController/GoalDeg", m_goalDegrees);
-    SmartDashboard.putNumber("HeadingController/CurrentDeg", currentHeadingDegrees);
-    SmartDashboard.putNumber("HeadingController/ErrorDeg", getError());
-    SmartDashboard.putBoolean("HeadingController/AtGoal", isAtGoal());
+    Logger.recordOutput("HeadingController/State", m_state.toString());
+    Logger.recordOutput("HeadingController/GoalDeg", m_goalDegrees);
+    Logger.recordOutput("HeadingController/CurrentDeg", currentHeadingDegrees);
+    Logger.recordOutput("HeadingController/ErrorDeg", getError());
+    Logger.recordOutput("HeadingController/AtGoal", isAtGoal());
   }
 }

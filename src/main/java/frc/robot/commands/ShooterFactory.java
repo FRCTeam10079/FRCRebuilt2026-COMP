@@ -12,7 +12,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.ShooterConstants;
@@ -26,6 +25,7 @@ import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Static factory for distance-based shooting commands.
@@ -72,10 +72,10 @@ public final class ShooterFactory {
     boolean headingReady = headingOnTarget.get();
 
     // Telemetry for debugging
-    SmartDashboard.putBoolean("Shooter/OnTarget/Flywheel", flywheelReady);
-    SmartDashboard.putBoolean("Shooter/OnTarget/Pivot", pivotReady);
-    SmartDashboard.putBoolean("Shooter/OnTarget/Heading", headingReady);
-    SmartDashboard.putBoolean("Shooter/OnTarget/All", flywheelReady && pivotReady && headingReady);
+    Logger.recordOutput("Shooter/OnTarget/Flywheel", flywheelReady);
+    Logger.recordOutput("Shooter/OnTarget/Pivot", pivotReady);
+    Logger.recordOutput("Shooter/OnTarget/Heading", headingReady);
+    Logger.recordOutput("Shooter/OnTarget/All", flywheelReady && pivotReady && headingReady);
 
     return flywheelReady && pivotReady && headingReady;
   }
@@ -216,7 +216,7 @@ public final class ShooterFactory {
                       ? sp.flywheelRPM()
                       : RPM.zero();
                   boolean ready = targetRPM.gt(RPM.zero()) && shooter.isAt(targetRPM);
-                  SmartDashboard.putBoolean("Shooter/ForceShoot/FlywheelReady", ready);
+                  Logger.recordOutput("Shooter/ForceShoot/FlywheelReady", ready);
                   return ready && !shooterPivot.isInTrenchZone();
                 })
                 .andThen(indexer.feedCommand()))

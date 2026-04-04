@@ -5,9 +5,9 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.ShooterSetpoint;
+import frc.robot.lib.SmartShootController;
 import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
@@ -86,6 +86,7 @@ public class Superstructure extends SubsystemBase {
   private final RobotStateMachine stateMachine;
   private final Supplier<ShooterSetpoint> setpointSupplier;
   private final Supplier<Boolean> headingAlignedSupplier;
+  private final SmartShootController smartShootController;
 
   // ==================== STATE TRACKING ====================
 
@@ -110,7 +111,8 @@ public class Superstructure extends SubsystemBase {
       ClimberSubsystem climber,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
-      Supplier<Boolean> headingAlignedSupplier) {
+      Supplier<Boolean> headingAlignedSupplier,
+      SmartShootController smartShootController) {
     this.shooter = shooter;
     this.shooterPivot = shooterPivot;
     this.indexer = indexer;
@@ -120,12 +122,16 @@ public class Superstructure extends SubsystemBase {
     this.stateMachine = stateMachine;
     this.setpointSupplier = setpointSupplier;
     this.headingAlignedSupplier = headingAlignedSupplier;
+    this.smartShootController = smartShootController;
   }
 
   // ==================== PERIODIC ====================
 
   @Override
   public void periodic() {
+    // Update smart shoot controller with current driver intent
+    smartShootController.update(wantedSuperState == WantedSuperState.SHOOT);
+
     handleStateTransitions();
     applyStates();
     syncGameState();
@@ -135,6 +141,9 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentSuperState.name());
     Logger.recordOutput("Superstructure/PreviousState", previousSuperState.name());
     Logger.recordOutput("Superstructure/ShooterPivotOverride", shooterPivotOverride);
+    Logger.recordOutput(
+        "Superstructure/SmartShoot/State", smartShootController.getState().name());
+    Logger.recordOutput("Superstructure/SmartShoot/ShouldFeed", smartShootController.shouldFeed());
   }
 
   // ==================== PUBLIC API ====================
@@ -175,7 +184,7 @@ public class Superstructure extends SubsystemBase {
       case STOW -> currentSuperState = CurrentSuperState.STOWING;
       case AIM -> currentSuperState = CurrentSuperState.AIMING;
       case SHOOT -> {
-        if (isOnTarget()) {
+        if (isOnTarget() && smartShootController.shouldFeed()) {
           currentSuperState = CurrentSuperState.SHOOTING;
         } else {
           currentSuperState = CurrentSuperState.WAITING_FOR_TARGET;
@@ -332,7 +341,15 @@ public class Superstructure extends SubsystemBase {
     GameState desired =
         switch (currentSuperState) {
           case COLLECTING -> GameState.COLLECTING;
-          case AIMING, WAITING_FOR_TARGET, SHOOTING, FORCE_SHOOTING -> GameState.SCORING;
+          case AIMING, SHOOTING, FORCE_SHOOTING -> GameState.SCORING;
+          case WAITING_FOR_TARGET -> {
+            // If SmartShoot is queued (hub inactive), don't override to SCORING
+            // let the RobotStateMachine's HUB_INACTIVE state stand.
+            if (smartShootController.getState() == SmartShootController.SmartShootState.QUEUED) {
+              yield null;
+            }
+            yield GameState.SCORING;
+          }
           case CLIMBING -> GameState.CLIMBING;
           case UNJAMMING -> GameState.MANUAL_OVERRIDE;
           default -> null; // Don't force a game state for IDLE/STOW/STOPPED
@@ -357,7 +374,7 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/OnTarget/Flywheel", flywheelReady);
     Logger.recordOutput("Superstructure/OnTarget/Pivot", pivotReady);
     Logger.recordOutput("Superstructure/OnTarget/Heading", headingReady);
-    SmartDashboard.putBoolean("Shooter/OnTarget/All", flywheelReady && pivotReady && headingReady);
+    Logger.recordOutput("Superstructure/OnTarget/All", flywheelReady && pivotReady && headingReady);
 
     return flywheelReady && pivotReady && headingReady;
   }

@@ -8,10 +8,10 @@ import static edu.wpi.first.units.Units.Meters;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.HubShiftTracker;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.PowerDiagnosticsLogger;
 import frc.robot.lib.ShooterMath;
@@ -95,16 +95,22 @@ public class Robot extends LoggedRobot {
     // They will be re-populated by the shootOnTheMoveDriveCommand if active.
     LaunchCalculator.getInstance().clearParameters();
 
-    SmartDashboard.putNumber(
-        "Shooter/Distance To Hub (Meters)",
+    Logger.recordOutput(
+        "Shooter/DistanceToHub",
         ShooterMath.getDistanceToHub(m_robotContainer.drivetrain.getState().Pose)
             .in(Meters));
+
+    // Update HubShiftTracker (FMS game data + shift phase detection)
+    HubShiftTracker.getInstance().periodic();
 
     // Update master state machine
     m_stateMachine.periodic();
 
     // Run command scheduler
     CommandScheduler.getInstance().run();
+
+    // Update dashboard publisher (NT4 telemetry for Elastic Dashboard)
+    m_robotContainer.getDashboardPublisher().periodic();
 
     // Throttle power diagnostics to every 5th cycle (~100ms) to reduce loop
     // overruns

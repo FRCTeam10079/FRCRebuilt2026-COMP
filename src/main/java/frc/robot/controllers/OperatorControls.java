@@ -17,7 +17,6 @@ import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.HubShiftState;
-import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
@@ -157,24 +156,20 @@ public final class OperatorControls {
           }
         }));
 
-    // ======== CLIMB SAFETY (through Superstructure + direct climber commands)
-    // ========
-    // Start + Back together -> Arm endgame and begin extending climber (safety
-    // interlock)
+    // ======== CLIMB (through Superstructure + direct climber commands) ========
+    // Start + Back together -> Set Superstructure to CLIMB and extend climber to
+    // max position.
+    // Works from any state (idle or retracted) to allow re-extension.
     new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
         .onTrue(Commands.sequence(
-            Commands.runOnce(() -> {
-              stateMachine.setMatchState(MatchState.ENDGAME);
-            }),
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
             climber.extendCommand()));
 
-    // A button (while in climb mode) -> Trigger retract/climb phase after hooking
-    // on bar
+    // A button (while in climb mode and extended) -> Retract to climb position
     operator
         .a()
         .and(() -> superstructure.isClimbing() && climber.isExtended())
-        .onTrue(climber.climbCommand());
+        .onTrue(climber.retractCommand());
 
     // Back alone (not with Start) -> Abort climb from any state
     operator

@@ -19,8 +19,7 @@ public class ClimberIOSim implements ClimberIO {
 
   private enum ControlMode {
     NEUTRAL,
-    VOLTAGE,
-    POSITION
+    VOLTAGE
   }
 
   private ControlMode controlMode = ControlMode.NEUTRAL;
@@ -28,19 +27,12 @@ public class ClimberIOSim implements ClimberIO {
   private double positionRotations = 0.0;
   private double velocityRPS = 0.0;
   private double appliedVolts = 0.0;
-  private double positionSetpointRotations = 0.0;
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
     inputs.motorConnected = true;
 
-    if (controlMode == ControlMode.POSITION) {
-      double error = positionSetpointRotations - positionRotations;
-      appliedVolts = MathUtil.clamp(
-          error * ClimberConstants.SIM_POSITION_KP_VOLTS_PER_ROT,
-          ClimberConstants.PEAK_REVERSE_VOLTAGE,
-          ClimberConstants.PEAK_FORWARD_VOLTAGE);
-    } else if (controlMode == ControlMode.NEUTRAL) {
+    if (controlMode == ControlMode.NEUTRAL) {
       appliedVolts = 0.0;
     }
 
@@ -75,11 +67,8 @@ public class ClimberIOSim implements ClimberIO {
     inputs.supplyCurrentAmps = Math.abs(appliedVolts) * 3.0; // rough estimate
     inputs.statorCurrentAmps = Math.abs(appliedVolts) * 5.0;
     inputs.tempCelsius = 30.0; // nominal sim temperature
-    inputs.closedLoopError = (controlMode == ControlMode.POSITION)
-        ? (positionSetpointRotations - positionRotations)
-        : 0.0;
-    inputs.closedLoopReference =
-        (controlMode == ControlMode.POSITION) ? positionSetpointRotations : positionRotations;
+    inputs.closedLoopError = 0.0;
+    inputs.closedLoopReference = positionRotations;
     inputs.dutyCycle = appliedVolts / NOMINAL_VOLTAGE;
     inputs.supplyVoltage = NOMINAL_VOLTAGE;
   }
@@ -91,13 +80,6 @@ public class ClimberIOSim implements ClimberIO {
   }
 
   @Override
-  public void setPosition(double rotations) {
-    controlMode = ControlMode.POSITION;
-    positionSetpointRotations = MathUtil.clamp(
-        rotations, ClimberConstants.FULL_RETRACT_ROTATIONS, ClimberConstants.FULL_EXTEND_ROTATIONS);
-  }
-
-  @Override
   public void stop() {
     controlMode = ControlMode.NEUTRAL;
     appliedVolts = 0.0;
@@ -106,6 +88,5 @@ public class ClimberIOSim implements ClimberIO {
   @Override
   public void setEncoderPosition(double rotations) {
     positionRotations = rotations;
-    positionSetpointRotations = rotations;
   }
 }

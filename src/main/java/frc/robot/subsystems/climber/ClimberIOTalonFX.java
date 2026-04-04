@@ -6,14 +6,12 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -26,7 +24,6 @@ public class ClimberIOTalonFX implements ClimberIO {
 
   private final TalonFX motor;
   private final VoltageOut voltageRequest = new VoltageOut(0.0);
-  private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0.0);
   private final NeutralOut neutralRequest = new NeutralOut();
 
   private final StatusSignal<Angle> positionSignal;
@@ -78,7 +75,6 @@ public class ClimberIOTalonFX implements ClimberIO {
     ParentDevice.optimizeBusUtilizationForAll(motor);
 
     voltageRequest.EnableFOC = ClimberConstants.ENABLE_FOC;
-    positionRequest.EnableFOC = ClimberConstants.ENABLE_FOC;
   }
 
   private void configureMotor() {
@@ -99,20 +95,6 @@ public class ClimberIOTalonFX implements ClimberIO {
         .withSupplyCurrentLimit(ClimberConstants.SUPPLY_CURRENT_LIMIT)
         .withStatorCurrentLimitEnable(true)
         .withStatorCurrentLimit(ClimberConstants.STATOR_CURRENT_LIMIT);
-
-    // Lynx-style closed-loop tuning for position-controlled CIAB moves
-    config.Slot0.withKP(ClimberConstants.KP)
-        .withKI(ClimberConstants.KI)
-        .withKD(ClimberConstants.KD)
-        .withKS(ClimberConstants.KS)
-        .withKV(ClimberConstants.KV)
-        .withKA(ClimberConstants.KA)
-        .withKG(ClimberConstants.KG);
-
-    config.MotionMagic.withMotionMagicCruiseVelocity(
-            ClimberConstants.MOTION_MAGIC_CRUISE_VELOCITY_RPS)
-        .withMotionMagicAcceleration(ClimberConstants.MOTION_MAGIC_ACCELERATION_RPS2)
-        .withMotionMagicJerk(ClimberConstants.MOTION_MAGIC_JERK_RPS3);
 
     // Software limits to prevent over-extension and over-retraction
     config.SoftwareLimitSwitch = new SoftwareLimitSwitchConfigs()
@@ -154,13 +136,6 @@ public class ClimberIOTalonFX implements ClimberIO {
   @Override
   public void setVoltage(double volts) {
     motor.setControl(voltageRequest.withOutput(volts));
-  }
-
-  @Override
-  public void setPosition(double rotations) {
-    double target = MathUtil.clamp(
-        rotations, ClimberConstants.FULL_RETRACT_ROTATIONS, ClimberConstants.FULL_EXTEND_ROTATIONS);
-    motor.setControl(positionRequest.withPosition(target));
   }
 
   @Override

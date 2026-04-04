@@ -21,16 +21,25 @@ import org.littletonrobotics.junction.Logger;
 /**
  * Core shoot-on-the-move calculator, adapted from Mechanical Advantage (6328).
  *
- * <p>This class computes velocity-compensated launch parameters so the robot can shoot while
- * moving. Instead of aiming where the hub IS, it computes where to aim based on where the robot's
+ * <p>
+ * This class computes velocity-compensated launch parameters so the robot can
+ * shoot while
+ * moving. Instead of aiming where the hub IS, it computes where to aim based on
+ * where the robot's
  * velocity would carry the ball during its flight time.
  *
- * <p>Algorithm overview: 1. Project the robot pose forward by a phase delay (latency compensation)
- * 2. Iteratively solve for a self-consistent (distance, TOF) pair using the robot's field-relative
- * velocity - the "lookahead" 3. Look up RPM, pivot angle, and heading from the lookahead distance
+ * <p>
+ * Algorithm overview: 1. Project the robot pose forward by a phase delay
+ * (latency compensation)
+ * 2. Iteratively solve for a self-consistent (distance, TOF) pair using the
+ * robot's field-relative
+ * velocity - the "lookahead" 3. Look up RPM, pivot angle, and heading from the
+ * lookahead distance
  * 4. Compute angular velocity feedforward for smooth heading and pivot tracking
  *
- * <p>Usage: Call {@link #update(Pose2d, ChassisSpeeds, Rotation2d)} once per robot loop, then read
+ * <p>
+ * Usage: Call {@link #update(Pose2d, ChassisSpeeds, Rotation2d)} once per robot
+ * loop, then read
  * the latest {@link LaunchParameters} via {@link #getParameters()}.
  */
 public class LaunchCalculator {
@@ -48,22 +57,28 @@ public class LaunchCalculator {
   // ==================== TUNING CONSTANTS ====================
 
   /**
-   * Phase delay in seconds - compensates for latency between sensing and actuation. Projection
+   * Phase delay in seconds - compensates for latency between sensing and
+   * actuation. Projection
    * forward along current velocity by this amount.
    *
-   * <p>TODO: TUNE ON THE ROBOT - start at 0.03 (30ms) and adjust if shots consistently lead/lag.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - start at 0.03 (30ms) and adjust if shots
+   * consistently lead/lag.
    */
   private static final double PHASE_DELAY_SECONDS = 0.03;
 
   /**
-   * Number of iterations for the lookahead convergence loop. 20 is more than enough for convergence
+   * Number of iterations for the lookahead convergence loop. 20 is more than
+   * enough for convergence
    * - MA uses 20.
    */
   private static final int LOOKAHEAD_ITERATIONS = 20;
 
   /**
-   * Maximum allowed lookahead offset in meters. Prevents the iterative loop from diverging when TOF
-   * values are imprecise or the robot is moving very fast. At 5 m/s with 0.5s TOF the natural
+   * Maximum allowed lookahead offset in meters. Prevents the iterative loop from
+   * diverging when TOF
+   * values are imprecise or the robot is moving very fast. At 5 m/s with 0.5s TOF
+   * the natural
    * offset is 2.5m, so 3.0m is a safe cap.
    */
   private static final double MAX_LOOKAHEAD_OFFSET_METERS = 3.0;
@@ -72,53 +87,72 @@ public class LaunchCalculator {
   private static final double LOOP_PERIOD_SECONDS = 0.02;
 
   /**
-   * Moving average filter window for pivot angle velocity feedforward. Smooths out the derivative
+   * Moving average filter window for pivot angle velocity feedforward. Smooths
+   * out the derivative
    * to prevent jitter.
    *
-   * <p>0.4s window = 20 samples at 50Hz. Wider than MA default for smoother pivot tracking.
+   * <p>
+   * 0.4s window = 20 samples at 50Hz. Wider than MA default for smoother pivot
+   * tracking.
    */
   private static final double PIVOT_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
 
   /**
-   * Moving average filter window for drive heading velocity feedforward. Wider window = smoother
+   * Moving average filter window for drive heading velocity feedforward. Wider
+   * window = smoother
    * but more lag. Heavily smoothed to prevent heading oscillation.
    *
-   * <p>0.4s window = 20 samples at 50Hz. Reduced to lower feedforward phase lag when changing
+   * <p>
+   * 0.4s window = 20 samples at 50Hz. Reduced to lower feedforward phase lag when
+   * changing
    * translation direction while retaining meaningful smoothing.
    */
   private static final double DRIVE_ANGLE_FILTER_WINDOW_SECONDS = 0.4;
 
   /**
-   * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the robot is too
+   * Minimum distance (meters) at which shoot-on-the-move is valid. Below this the
+   * robot is too
    * close for the system to work well.
    *
-   * <p>TODO: TUNE ON THE ROBOT - should match the closest distance in the interp tables.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - should match the closest distance in the interp
+   * tables.
    */
   private static final double MIN_VALID_DISTANCE = 0.8;
 
   /**
    * Maximum distance (meters) at which shoot-on-the-move is valid.
    *
-   * <p>TODO: TUNE ON THE ROBOT - should match the farthest distance in the interp tables.
+   * <p>
+   * TODO: TUNE ON THE ROBOT - should match the farthest distance in the interp
+   * tables.
    */
   private static final double MAX_VALID_DISTANCE = 5.0;
 
   /**
    * Shooter offset from robot center as (x, y) in robot frame.
    *
-   * <p>x = forward/back from center (positive = forward) y = left/right from center (positive =
+   * <p>
+   * x = forward/back from center (positive = forward) y = left/right from center
+   * (positive =
    * left)
    *
-   * <p>TODO: MEASURE ON THE ROBOT - set to (0, 0) if shooter is roughly centered. If lateral offset
+   * <p>
+   * TODO: MEASURE ON THE ROBOT - set to (0, 0) if shooter is roughly centered. If
+   * lateral offset
    * is > ~5cm, measure and set it for accurate heading compensation.
    */
   /**
    * Shooter offset from robot center as (x, y) in robot frame.
    *
-   * <p>x = forward/back from center (positive = forward) y = left/right from center (positive =
+   * <p>
+   * x = forward/back from center (positive = forward) y = left/right from center
+   * (positive =
    * left)
    *
-   * <p>Public so that the COR shifting in shootOnTheMoveDriveCommand can reference them.
+   * <p>
+   * Public so that the COR shifting in shootOnTheMoveDriveCommand can reference
+   * them.
    */
   public static final double SHOOTER_OFFSET_X = 10.5 * 0.0254; // 10.5 inches forward in meters
 
@@ -129,12 +163,14 @@ public class LaunchCalculator {
   // catch.
   // Adapted from MA (6328). X is near the wall, Y is offset from center.
   // TODO: TUNE THESE FOR OUR FIELD STRATEGY
-  private static final double PASS_TARGET_X = 37.0 * 0.0254; // ~0.94m from alliance wall
+  private static final double PASS_TARGET_X = 54.0 * 0.0254; // ~1.37m from alliance wall
   private static final double PASS_TARGET_Y = 65.0 * 0.0254; // ~1.65m across field
 
   /**
-   * Auto-pass target switching can cause heading to rotate away from the hub when crossing the hub
-   * X line. Keep enabled so far-side SOTM uses the pass target while near-side SOTM still uses the
+   * Auto-pass target switching can cause heading to rotate away from the hub when
+   * crossing the hub
+   * X line. Keep enabled so far-side SOTM uses the pass target while near-side
+   * SOTM still uses the
    * hub.
    */
   private static final boolean ENABLE_AUTO_PASSING = true;
@@ -142,10 +178,11 @@ public class LaunchCalculator {
   // ==================== FIELD GEOMETRY (for bad boxes) ====================
 
   /** Field length derived from symmetric hub placement. ~16.54 m. */
-  private static final double FIELD_LENGTH =
-      GameConstants.RED_HUB_CENTER.getX() + GameConstants.BLUE_HUB_CENTER.getX();
+  private static final double FIELD_LENGTH = GameConstants.RED_HUB_CENTER.getX() + GameConstants.BLUE_HUB_CENTER.getX();
 
-  /** Field width derived from hub Y-center (hubs are at field midline). ~8.07 m. */
+  /**
+   * Field width derived from hub Y-center (hubs are at field midline). ~8.07 m.
+   */
   private static final double FIELD_WIDTH = GameConstants.BLUE_HUB_CENTER.getY() * 2.0;
 
   /** Hub half-width in meters (47 inches / 2). Used for bad box Y-span. */
@@ -156,19 +193,24 @@ public class LaunchCalculator {
   // Adapted from Mechanical Advantage (6328)
 
   /**
-   * Under-tower zone near the (blue) alliance wall. Robot cannot reliably shoot from underneath the
+   * Under-tower zone near the (blue) alliance wall. Robot cannot reliably shoot
+   * from underneath the
    * tower structure.
    *
-   * <p>MA values: Bounds(0, 46", 129", 168") = (0, 1.17m, 3.28m, 4.27m)
+   * <p>
+   * MA values: Bounds(0, 46", 129", 168") = (0, 1.17m, 3.28m, 4.27m)
    */
   private static final Bounds TOWER_BOUND = new Bounds(0.0, 1.17, 3.28, 4.27);
 
   /**
-   * Behind our (blue) hub, toward field center. The hub structure physically blocks shot
-   * trajectories from this region. Runs from the neutral zone line to field midline, within the
+   * Behind our (blue) hub, toward field center. The hub structure physically
+   * blocks shot
+   * trajectories from this region. Runs from the neutral zone line to field
+   * midline, within the
    * hub's Y-span.
    *
-   * <p>minX = field_center - 120" (~5.22 m), maxX = field_center (~8.27 m)
+   * <p>
+   * minX = field_center - 120" (~5.22 m), maxX = field_center (~8.27 m)
    */
   private static final Bounds NEAR_HUB_BOUND = new Bounds(
       FIELD_LENGTH / 2.0 - 3.048, // neutral zone near line
@@ -179,7 +221,8 @@ public class LaunchCalculator {
   /**
    * Behind the opponent's (red) hub, toward the red alliance wall.
    *
-   * <p>minX ~ red hub near face, maxX = field length.
+   * <p>
+   * minX ~ red hub near face, maxX = field length.
    */
   private static final Bounds FAR_HUB_BOUND = new Bounds(
       GameConstants.RED_HUB_CENTER.getX() - HUB_HALF_WIDTH_M,
@@ -189,11 +232,11 @@ public class LaunchCalculator {
 
   // ==================== FILTERS ====================
 
-  private final LinearFilter pivotAngleFilter =
-      LinearFilter.movingAverage((int) (PIVOT_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
+  private final LinearFilter pivotAngleFilter = LinearFilter
+      .movingAverage((int) (PIVOT_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
 
-  private final LinearFilter driveAngleFilter =
-      LinearFilter.movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
+  private final LinearFilter driveAngleFilter = LinearFilter
+      .movingAverage((int) (DRIVE_ANGLE_FILTER_WINDOW_SECONDS / LOOP_PERIOD_SECONDS));
 
   // Low pass filters for velocities to prevent noise-induced oscillation loop.
   // Window of 10 samples (0.2s at 50Hz) for heavier smoothing to reduce jitter.
@@ -212,15 +255,22 @@ public class LaunchCalculator {
   /**
    * Complete set of launch parameters computed each cycle.
    *
-   * @param isValid whether all conditions are met to shoot from this location/distance
-   * @param driveAngle the field-relative heading the robot should face (Rotation2d)
-   * @param driveVelocityRadPerSec angular velocity feedforward for heading tracking (rad/s)
-   * @param pivotAngleDegrees target pivotangle for the shooter (degrees)
-   * @param pivotVelocityDegPerSec angular velocity feedforward for pivot tracking (deg/s)
-   * @param flywheelRPM target flywheel RPM from interpolation table
-   * @param lookaheadDistance the velocity-compensated effective distance (meters)
-   * @param rawDistance the static distance to hub with no velocity compensation (meters)
-   * @param timeOfFlight estimated time for the ball to reach the hub (seconds)
+   * @param isValid                whether all conditions are met to shoot from
+   *                               this location/distance
+   * @param driveAngle             the field-relative heading the robot should
+   *                               face (Rotation2d)
+   * @param driveVelocityRadPerSec angular velocity feedforward for heading
+   *                               tracking (rad/s)
+   * @param pivotAngleDegrees      target pivotangle for the shooter (degrees)
+   * @param pivotVelocityDegPerSec angular velocity feedforward for pivot tracking
+   *                               (deg/s)
+   * @param flywheelRPM            target flywheel RPM from interpolation table
+   * @param lookaheadDistance      the velocity-compensated effective distance
+   *                               (meters)
+   * @param rawDistance            the static distance to hub with no velocity
+   *                               compensation (meters)
+   * @param timeOfFlight           estimated time for the ball to reach the hub
+   *                               (seconds)
    */
   public record LaunchParameters(
       boolean isValid,
@@ -232,20 +282,27 @@ public class LaunchCalculator {
       double lookaheadDistance,
       double rawDistance,
       double timeOfFlight,
-      boolean passing) {}
+      boolean passing) {
+  }
 
   // ==================== CORE UPDATE ====================
 
   /**
    * Compute all launch parameters for the current robot state.
    *
-   * <p>Call this ONCE per robot loop (typically from robotPeriodic or the drive command). The
-   * result is cached and returned by {@link #getParameters()} until {@link #clearParameters()} is
+   * <p>
+   * Call this ONCE per robot loop (typically from robotPeriodic or the drive
+   * command). The
+   * result is cached and returned by {@link #getParameters()} until
+   * {@link #clearParameters()} is
    * called.
    *
-   * @param robotPose current field-relative robot pose from drivetrain odometry
-   * @param robotRelativeVelocity current robot-relative ChassisSpeeds from drivetrain
-   * @param robotHeading current robot heading (for field-relative velocity conversion)
+   * @param robotPose             current field-relative robot pose from
+   *                              drivetrain odometry
+   * @param robotRelativeVelocity current robot-relative ChassisSpeeds from
+   *                              drivetrain
+   * @param robotHeading          current robot heading (for field-relative
+   *                              velocity conversion)
    */
   public void update(
       Pose2d robotPose, ChassisSpeeds rawRobotRelativeVelocity, Rotation2d robotHeading) {
@@ -287,8 +344,7 @@ public class LaunchCalculator {
     boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
     // On blue, passing = robot X > hub X (robot past hub toward red side)
     // On red, passing = robot X < hub X (robot past hub toward blue side)
-    boolean sideBasedPassing =
-        isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
+    boolean sideBasedPassing = isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
     boolean passing = ENABLE_AUTO_PASSING && sideBasedPassing;
     boolean mirrorY = estimatedPose.getY() > FIELD_WIDTH / 2.0;
     Translation2d passingTarget = getPassingTarget(estimatedPose);
@@ -313,8 +369,8 @@ public class LaunchCalculator {
     // Compute launcher position on the field (applying robot-frame offset)
     // Adapted from MA (6328): use launcher position, not robot center, as the
     // base for distance and lookahead calculations.
-    Translation2d launcherOffset =
-        new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y).rotateBy(estimatedPose.getRotation());
+    Translation2d launcherOffset = new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y)
+        .rotateBy(estimatedPose.getRotation());
     Translation2d launcherFieldPos = estimatedPose.getTranslation().plus(launcherOffset);
     Logger.recordOutput(
         "LaunchCalc/Poses/LauncherPose", new Pose2d(launcherFieldPos, estimatedPose.getRotation()));
@@ -324,8 +380,7 @@ public class LaunchCalculator {
     // In auto, use the raw (setpoint) velocity for more predictable lookahead.
     // In teleop, transform robot-center velocity to launcher frame to account for
     // the offset between robot center and launcher during rotation.
-    ChassisSpeeds fieldVelocity =
-        ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
+    ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeVelocity, robotHeading);
     ChassisSpeeds launcherVelocity;
     if (DriverStation.isAutonomous()) {
       // In auto the measured velocity is the setpoint velocity (no driver input),
@@ -381,8 +436,7 @@ public class LaunchCalculator {
     // (similar to MA's getDriveAngleWithLauncherOffset)
     if (Math.abs(SHOOTER_OFFSET_Y) > 0.01) {
 
-      double offsetAngleRad =
-          Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / lookaheadDistance, -1.0, 1.0));
+      double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y / lookaheadDistance, -1.0, 1.0));
       driveAngle = driveAngle.plus(Rotation2d.fromRadians(offsetAngleRad));
       // double distForOffset = target.getDistance(estimatedPose.getTranslation());
       // double offsetAngleRad = Math.asin(MathUtil.clamp(SHOOTER_OFFSET_Y /
@@ -399,8 +453,7 @@ public class LaunchCalculator {
     if (passing) {
       pivotAngleDegrees = ShooterInterpolationTable.getPassingAngle(Meters.of(lookaheadDistance))
           .in(Degrees);
-      flywheelRPM =
-          ShooterInterpolationTable.getPassingRPM(Meters.of(lookaheadDistance)).in(RPM);
+      flywheelRPM = ShooterInterpolationTable.getPassingRPM(Meters.of(lookaheadDistance)).in(RPM);
     } else {
       ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
       pivotAngleDegrees = setpoint.pivotAngle().in(Degrees);
@@ -479,10 +532,12 @@ public class LaunchCalculator {
   /**
    * Get the latest computed launch parameters.
    *
-   * <p>Returns null if {@link #update} has not been called this cycle (i.e., if
+   * <p>
+   * Returns null if {@link #update} has not been called this cycle (i.e., if
    * {@link #clearParameters()} was called and update hasn't been called yet).
    *
-   * <p>If null, callers should fall back to static/stop-and-shoot behavior.
+   * <p>
+   * If null, callers should fall back to static/stop-and-shoot behavior.
    *
    * @return the latest LaunchParameters, or null
    */
@@ -491,7 +546,8 @@ public class LaunchCalculator {
   }
 
   /**
-   * Clear the cached parameters. Call this at the START of each robot periodic loop so that
+   * Clear the cached parameters. Call this at the START of each robot periodic
+   * loop so that
    * parameters are recomputed fresh each cycle.
    */
   public void clearParameters() {
@@ -499,7 +555,8 @@ public class LaunchCalculator {
   }
 
   /**
-   * Get the raw (non-velocity-compensated) time of flight for a given distance. Useful for velocity
+   * Get the raw (non-velocity-compensated) time of flight for a given distance.
+   * Useful for velocity
    * limiting calculations.
    *
    * @param distanceMeters distance to hub in meters
@@ -510,14 +567,18 @@ public class LaunchCalculator {
   }
 
   /**
-   * Create a ShooterSetpoint supplier backed by the LaunchCalculator. This returns setpoints
+   * Create a ShooterSetpoint supplier backed by the LaunchCalculator. This
+   * returns setpoints
    * computed from the velocity-compensated lookahead distance.
    *
-   * <p>When the calculator has no valid parameters (e.g., first cycle), falls back to the static
+   * <p>
+   * When the calculator has no valid parameters (e.g., first cycle), falls back
+   * to the static
    * distance-based setpoint from the provided pose supplier.
    *
-   * @param poseFallbackSupplier supplier for robot pose (used as fallback when LaunchCalc has no
-   *     data)
+   * @param poseFallbackSupplier supplier for robot pose (used as fallback when
+   *                             LaunchCalc has no
+   *                             data)
    * @return a supplier producing velocity-compensated ShooterSetpoints
    */
   public Supplier<ShooterSetpoint> createLaunchSetpointSupplier(
@@ -535,7 +596,8 @@ public class LaunchCalculator {
   }
 
   /**
-   * Reset all internal state (filters, last angles). Call when the robot is disabled or the
+   * Reset all internal state (filters, last angles). Call when the robot is
+   * disabled or the
    * shooting system is not active, to prevent stale filter data.
    */
   public void reset() {
@@ -552,9 +614,11 @@ public class LaunchCalculator {
   // ==================== BAD BOX HELPERS ====================
 
   /**
-   * Check whether the robot is inside any exclusion zone where shooting is unsafe.
+   * Check whether the robot is inside any exclusion zone where shooting is
+   * unsafe.
    *
-   * <p>Bad boxes are defined from the BLUE alliance perspective and flipped for red.
+   * <p>
+   * Bad boxes are defined from the BLUE alliance perspective and flipped for red.
    *
    * @param robotPosition field-relative robot position
    * @return true if the robot is inside a bad box (should NOT shoot)
@@ -572,7 +636,9 @@ public class LaunchCalculator {
   /**
    * Flip a Bounds from blue alliance coordinates to red alliance coordinates.
    *
-   * <p>Both X and Y are mirrored (field is rotationally symmetric). Min/max swap because the axis
+   * <p>
+   * Both X and Y are mirrored (field is rotationally symmetric). Min/max swap
+   * because the axis
    * direction reverses, following the same pattern as MA's AllianceFlipUtil.
    */
   private static Bounds flipBounds(Bounds bounds) {
@@ -588,9 +654,13 @@ public class LaunchCalculator {
   /**
    * Compute the passing target position on the field.
    *
-   * <p>The target is near the alliance wall, mirrored based on which side of the field (Y axis) the
-   * robot is on, so the pass goes to the near side. For blue alliance, the target is at
-   * (PASS_TARGET_X, PASS_TARGET_Y or mirrored). For red alliance, it is flipped to the opposite end
+   * <p>
+   * The target is near the alliance wall, mirrored based on which side of the
+   * field (Y axis) the
+   * robot is on, so the pass goes to the near side. For blue alliance, the target
+   * is at
+   * (PASS_TARGET_X, PASS_TARGET_Y or mirrored). For red alliance, it is flipped
+   * to the opposite end
    * of the field.
    *
    * @param robotPose current robot pose (for Y-side detection)
@@ -610,7 +680,8 @@ public class LaunchCalculator {
   /**
    * Axis-aligned bounding box for field exclusion zones.
    *
-   * <p>Adapted from Mechanical Advantage (6328).
+   * <p>
+   * Adapted from Mechanical Advantage (6328).
    */
   public record Bounds(double minX, double maxX, double minY, double maxY) {
     /** Whether the translation is contained within these bounds. */
@@ -625,16 +696,22 @@ public class LaunchCalculator {
   // ==================== VELOCITY TRANSFORM ====================
 
   /**
-   * Transform field-relative velocity from robot center to a point offset in the robot frame.
+   * Transform field-relative velocity from robot center to a point offset in the
+   * robot frame.
    *
-   * <p>Adapted from MA (6328) GeomUtil.transformVelocity. When the robot rotates, a point offset
-   * from the center of rotation has additional tangential velocity. This method adds that component
+   * <p>
+   * Adapted from MA (6328) GeomUtil.transformVelocity. When the robot rotates, a
+   * point offset
+   * from the center of rotation has additional tangential velocity. This method
+   * adds that component
    * so the lookahead uses the launcher's actual velocity, not the robot center's.
    *
-   * @param velocity field-relative ChassisSpeeds at robot center
-   * @param robotFrameOffset offset from robot center to the target point (robot frame)
-   * @param currentRotation current robot heading (for frame conversion)
-   * @return ChassisSpeeds representing the velocity at the offset point in field frame
+   * @param velocity         field-relative ChassisSpeeds at robot center
+   * @param robotFrameOffset offset from robot center to the target point (robot
+   *                         frame)
+   * @param currentRotation  current robot heading (for frame conversion)
+   * @return ChassisSpeeds representing the velocity at the offset point in field
+   *         frame
    */
   private static ChassisSpeeds transformVelocityForLauncher(
       ChassisSpeeds velocity, Translation2d robotFrameOffset, Rotation2d currentRotation) {

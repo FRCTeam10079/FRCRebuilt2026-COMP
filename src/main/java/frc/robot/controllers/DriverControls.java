@@ -99,7 +99,7 @@ public final class DriverControls {
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
         .onTrue(Commands.runOnce(
-            () -> superstructure.setWantedSuperState(WantedSuperState.SOTM_SHOOT)))
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Rumble while actively shooting

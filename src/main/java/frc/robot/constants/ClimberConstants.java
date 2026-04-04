@@ -18,25 +18,28 @@ public class ClimberConstants {
 
   public static final double PEAK_REVERSE_VOLTAGE = -12.0;
 
-  public static final int SUPPLY_CURRENT_LIMIT = 30;
-  public static final int STATOR_CURRENT_LIMIT = 40;
+  public static final int SUPPLY_CURRENT_LIMIT = 80;
+  public static final int STATOR_CURRENT_LIMIT = 120;
 
   // ==================== CLOSED-LOOP TUNING ====================
   /** Mechanism velocity gain estimate in rotations/sec per volt. */
   public static final double RPS_PER_VOLT = 7.9;
 
-  public static final double KP = 2.0;
+  public static final double KP = 4.0;
   public static final double KI = 0.0;
-  public static final double KD = 0.0;
-  public static final double KS = 0.22;
+  public static final double KD = 0.1;
+  public static final double KS = 0.25;
   public static final double KV = 1.0 / RPS_PER_VOLT;
-  public static final double KA = 0.0;
+  public static final double KA = 0.01;
   public static final double KG = 0.0;
 
-  /** Motion Magic trajectory limits - kept conservative for climb load. */
-  public static final double MOTION_MAGIC_CRUISE_VELOCITY_RPS = 60.0;
+  /** Motion Magic trajectory limits — kept conservative for climb load. */
+  public static final double MOTION_MAGIC_CRUISE_VELOCITY_RPS = 80.0;
 
-  public static final double MOTION_MAGIC_ACCELERATION_RPS2 = 30.0;
+  public static final double MOTION_MAGIC_ACCELERATION_RPS2 = 40.0;
+
+  /** Jerk limit for smoother Motion Magic S-curve. 0 = trapezoidal (no jerk limit). */
+  public static final double MOTION_MAGIC_JERK_RPS3 = 800.0;
 
   /** Frequency (Hz) for climber Talon status signals. */
   public static final double STATUS_SIGNAL_UPDATE_HZ = 50.0;

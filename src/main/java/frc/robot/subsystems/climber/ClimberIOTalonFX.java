@@ -99,7 +99,8 @@ public class ClimberIOTalonFX implements ClimberIO {
 
     config.MotionMagic.withMotionMagicCruiseVelocity(
             ClimberConstants.MOTION_MAGIC_CRUISE_VELOCITY_RPS)
-        .withMotionMagicAcceleration(ClimberConstants.MOTION_MAGIC_ACCELERATION_RPS2);
+        .withMotionMagicAcceleration(ClimberConstants.MOTION_MAGIC_ACCELERATION_RPS2)
+        .withMotionMagicJerk(ClimberConstants.MOTION_MAGIC_JERK_RPS3);
 
     // Software limits to prevent over-extension and over-retraction
     config.SoftwareLimitSwitch = new SoftwareLimitSwitchConfigs()

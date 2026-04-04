@@ -19,6 +19,8 @@ public interface ClimberIO {
 
   default void setVoltage(double volts) {}
 
+  default void setPosition(double rotations) {}
+
   default void stop() {}
 
   default void setEncoderPosition(double rotations) {}

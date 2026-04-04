@@ -13,8 +13,31 @@ public class ClimberConstants {
   /** Enable TalonFX FOC for smoother voltage control under heavy climb load. */
   public static final boolean ENABLE_FOC = true;
 
+  /** Peak command voltages allowed by TalonFX closed-loop requests. */
+  public static final double PEAK_FORWARD_VOLTAGE = 12.0;
+
+  public static final double PEAK_REVERSE_VOLTAGE = -12.0;
+
   public static final int SUPPLY_CURRENT_LIMIT = 30;
   public static final int STATOR_CURRENT_LIMIT = 40;
+
+  // ==================== CLOSED-LOOP TUNING (Lynx-style) ====================
+  /** Mechanism velocity gain estimate in rotations/sec per volt. */
+  public static final double RPS_PER_VOLT = 7.9;
+
+  public static final double KP = 0.50;
+  public static final double KI = 0.0;
+  public static final double KD = 0.0;
+  public static final double KS = 0.22;
+  public static final double KV = 1.0 / RPS_PER_VOLT;
+  public static final double KA = 0.0;
+  public static final double KG = 0.0;
+
+  /** Motion Magic trajectory limits for climber position moves. */
+  public static final double MOTION_MAGIC_CRUISE_VELOCITY_RPS = 120.0;
+
+  public static final double MOTION_MAGIC_ACCELERATION_RPS2 =
+      MOTION_MAGIC_CRUISE_VELOCITY_RPS * 0.5;
 
   /** Frequency (Hz) for climber Talon status signals. */
   public static final double STATUS_SIGNAL_UPDATE_HZ = 50.0;
@@ -67,6 +90,9 @@ public class ClimberConstants {
 
   /** Tolerance band for "at position" checks (motor rotations). */
   public static final double POSITION_TOLERANCE_ROTATIONS = 5.0;
+
+  /** Sim-only position controller proportional gain (volts/rotation). */
+  public static final double SIM_POSITION_KP_VOLTS_PER_ROT = 0.08;
 
   // ==================== VOLTAGE COMMANDS ====================
   /** Voltage to pay out rope (positive = extend direction). */

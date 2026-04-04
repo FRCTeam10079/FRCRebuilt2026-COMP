@@ -17,16 +17,38 @@ public class ClimberIOSim implements ClimberIO {
   /** Time constant for velocity ramping (seconds). Models rotor + spool inertia. */
   private static final double TAU = 0.3;
 
+  private enum ControlMode {
+    NEUTRAL,
+    VOLTAGE,
+    POSITION
+  }
+
+  private ControlMode controlMode = ControlMode.NEUTRAL;
+
   private double positionRotations = 0.0;
   private double velocityRPS = 0.0;
   private double appliedVolts = 0.0;
+  private double positionSetpointRotations = 0.0;
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
     inputs.motorConnected = true;
 
+    if (controlMode == ControlMode.POSITION) {
+      double error = positionSetpointRotations - positionRotations;
+      appliedVolts = MathUtil.clamp(
+          error * ClimberConstants.SIM_POSITION_KP_VOLTS_PER_ROT,
+          ClimberConstants.PEAK_REVERSE_VOLTAGE,
+          ClimberConstants.PEAK_FORWARD_VOLTAGE);
+    } else if (controlMode == ControlMode.NEUTRAL) {
+      appliedVolts = 0.0;
+    }
+
     // First-order model: velocity approaches target exponentially
     double targetVelocityRPS = appliedVolts * KV_RPS_PER_VOLT;
+    if (controlMode == ControlMode.NEUTRAL) {
+      targetVelocityRPS = 0.0;
+    }
     double alpha = 1.0 - Math.exp(-LOOP_PERIOD_SEC / TAU);
     velocityRPS += alpha * (targetVelocityRPS - velocityRPS);
 
@@ -57,16 +79,26 @@ public class ClimberIOSim implements ClimberIO {
 
   @Override
   public void setVoltage(double volts) {
+    controlMode = ControlMode.VOLTAGE;
     appliedVolts = MathUtil.clamp(volts, -NOMINAL_VOLTAGE, NOMINAL_VOLTAGE);
   }
 
   @Override
+  public void setPosition(double rotations) {
+    controlMode = ControlMode.POSITION;
+    positionSetpointRotations = MathUtil.clamp(
+        rotations, ClimberConstants.FULL_RETRACT_ROTATIONS, ClimberConstants.FULL_EXTEND_ROTATIONS);
+  }
+
+  @Override
   public void stop() {
+    controlMode = ControlMode.NEUTRAL;
     appliedVolts = 0.0;
   }
 
   @Override
   public void setEncoderPosition(double rotations) {
     positionRotations = rotations;
+    positionSetpointRotations = rotations;
   }
 }

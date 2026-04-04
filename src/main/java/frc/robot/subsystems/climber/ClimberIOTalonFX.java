@@ -4,7 +4,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -32,8 +31,6 @@ public class ClimberIOTalonFX implements ClimberIO {
   private final StatusSignal<Current> statorCurrentSignal;
   private final StatusSignal<Voltage> voltageSignal;
   private final StatusSignal<Temperature> temperatureSignal;
-  private final StatusSignal<Double> closedLoopErrorSignal;
-  private final StatusSignal<Double> closedLoopReferenceSignal;
   private final StatusSignal<Double> dutyCycleSignal;
   private final StatusSignal<Voltage> supplyVoltageSignal;
 
@@ -55,8 +52,6 @@ public class ClimberIOTalonFX implements ClimberIO {
     statorCurrentSignal = motor.getStatorCurrent();
     voltageSignal = motor.getMotorVoltage();
     temperatureSignal = motor.getDeviceTemp();
-    closedLoopErrorSignal = motor.getClosedLoopError();
-    closedLoopReferenceSignal = motor.getClosedLoopReference();
     dutyCycleSignal = motor.getDutyCycle();
     supplyVoltageSignal = motor.getSupplyVoltage();
 
@@ -68,8 +63,6 @@ public class ClimberIOTalonFX implements ClimberIO {
         statorCurrentSignal,
         voltageSignal,
         temperatureSignal,
-        closedLoopErrorSignal,
-        closedLoopReferenceSignal,
         dutyCycleSignal,
         supplyVoltageSignal);
     ParentDevice.optimizeBusUtilizationForAll(motor);
@@ -96,12 +89,10 @@ public class ClimberIOTalonFX implements ClimberIO {
         .withStatorCurrentLimitEnable(true)
         .withStatorCurrentLimit(ClimberConstants.STATOR_CURRENT_LIMIT);
 
-    // Software limits to prevent over-extension and over-retraction
-    config.SoftwareLimitSwitch = new SoftwareLimitSwitchConfigs()
-        .withForwardSoftLimitEnable(true)
-        .withForwardSoftLimitThreshold(ClimberConstants.FULL_EXTEND_ROTATIONS)
-        .withReverseSoftLimitEnable(true)
-        .withReverseSoftLimitThreshold(ClimberConstants.FULL_RETRACT_ROTATIONS);
+    // No software limits - stall detection handles stopping.
+    // This also eliminates software limits as a possible failure cause.
+    config.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+    config.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
 
     motor.getConfigurator().apply(config);
   }
@@ -115,8 +106,6 @@ public class ClimberIOTalonFX implements ClimberIO {
         statorCurrentSignal,
         voltageSignal,
         temperatureSignal,
-        closedLoopErrorSignal,
-        closedLoopReferenceSignal,
         dutyCycleSignal,
         supplyVoltageSignal);
 
@@ -127,8 +116,6 @@ public class ClimberIOTalonFX implements ClimberIO {
     inputs.statorCurrentAmps = statorCurrentSignal.getValueAsDouble();
     inputs.appliedVoltage = voltageSignal.getValueAsDouble();
     inputs.tempCelsius = temperatureSignal.getValueAsDouble();
-    inputs.closedLoopError = closedLoopErrorSignal.getValueAsDouble();
-    inputs.closedLoopReference = closedLoopReferenceSignal.getValueAsDouble();
     inputs.dutyCycle = dutyCycleSignal.getValueAsDouble();
     inputs.supplyVoltage = supplyVoltageSignal.getValueAsDouble();
   }

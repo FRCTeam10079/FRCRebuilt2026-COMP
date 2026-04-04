@@ -13,7 +13,7 @@ public class ClimberConstants {
   /** Enable TalonFX FOC for smoother control under heavy climb load. */
   public static final boolean ENABLE_FOC = true;
 
-  /** Peak command voltages allowed by TalonFX closed-loop requests. */
+  /** Peak command voltages allowed by TalonFX voltage requests. */
   public static final double PEAK_FORWARD_VOLTAGE = 12.0;
 
   public static final double PEAK_REVERSE_VOLTAGE = -12.0;
@@ -28,6 +28,32 @@ public class ClimberConstants {
   /** Voltage applied when retracting the climber (negative = retract direction). */
   public static final double RETRACT_VOLTAGE = -12.0;
 
+  // ==================== STALL DETECTION ====================
+  /**
+   * Stator current (amps) above this threshold indicates the motor is under heavy load or stalled.
+   * Normal running current is ~5-9A; stalled against a hard stop will hit the 60A stator limit.
+   */
+  public static final double STALL_CURRENT_THRESHOLD_AMPS = 30.0;
+
+  /**
+   * Velocity (RPS) below this threshold indicates the motor is barely moving. Normal running
+   * velocity is 30-80 RPS; at a stall it drops to ~0 RPS.
+   */
+  public static final double STALL_VELOCITY_THRESHOLD_RPS = 5.0;
+
+  /**
+   * Stall condition must persist this many seconds before declaring done. Prevents false triggers
+   * from brief current spikes.
+   */
+  public static final double STALL_DEBOUNCE_SECONDS = 0.25;
+
+  /**
+   * Ignore stall detection for this many seconds after starting to move. The motor draws high
+   * current during initial acceleration which would look like a stall.
+   */
+  public static final double RAMP_UP_SECONDS = 0.5;
+
+  // ==================== STATUS SIGNALS ====================
   /** Frequency (Hz) for climber Talon status signals. */
   public static final double STATUS_SIGNAL_UPDATE_HZ = 50.0;
 
@@ -37,23 +63,6 @@ public class ClimberConstants {
   // ==================== MECHANISM GEOMETRY ====================
   /** Installed climber reduction (motor turns : winch turns). */
   public static final double GEAR_RATIO = 25.0;
-
-  // ==================== POSITION THRESHOLDS (motor rotations)
-  // ====================
-  /** Motor rotations at full retract (encoder zero reference). */
-  public static final double FULL_RETRACT_ROTATIONS = 0.0;
-
-  /** Motor rotations at full extension (physical max ~164, according to my test). */
-  public static final double FULL_EXTEND_ROTATIONS = 164.0;
-
-  /** Motor rotations for the climb (retract) position - halfway, tunable. */
-  public static final double CLIMB_RETRACT_ROTATIONS = 82.0;
-
-  /** Tolerance band for "at position" checks (motor rotations). */
-  public static final double POSITION_TOLERANCE_ROTATIONS = 5.0;
-
-  /** Sim-only position controller proportional gain (volts/rotation). */
-  public static final double SIM_POSITION_KP_VOLTS_PER_ROT = 0.08;
 
   protected ClimberConstants() {}
 }

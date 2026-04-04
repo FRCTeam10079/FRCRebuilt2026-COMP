@@ -26,7 +26,7 @@ public class IndexerIOTalonFX implements IndexerIO {
     TalonFXConfiguration feederConfig = new TalonFXConfiguration();
     feederConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
     feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     feederConfig.Slot0 = new Slot0Configs()
         .withKP(IndexerConstants.kFeederKP)
         .withKI(IndexerConstants.kFeederKI)
@@ -40,7 +40,7 @@ public class IndexerIOTalonFX implements IndexerIO {
     TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
     spindexerConfig.CurrentLimits.StatorCurrentLimit = IndexerConstants.kCurrentLimit;
     spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-    spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     spindexerConfig.Slot0 = new Slot0Configs()
         .withKP(IndexerConstants.kSpindexerKP)
         .withKI(IndexerConstants.kSpindexerKI)

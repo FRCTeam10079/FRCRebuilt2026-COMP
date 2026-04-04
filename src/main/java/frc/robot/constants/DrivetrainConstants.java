@@ -69,13 +69,13 @@ public class DrivetrainConstants {
    * Maximum translation speed (m/s) while in shoot-on-the-move mode. This is the
    * driver-controllable max speed; the velocity limiter may further reduce it.
    */
-  public static final double MAX_SHOOTING_SPEED_MPS = 4.0;
+  public static final double MAX_SHOOTING_SPEED_MPS = 2.0;
 
   /**
    * Maximum angular velocity (rad/s) while in shoot-on-the-move mode. This is the cap on the
    * heading controller output.
    */
-  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 2.0;
+  public static final double MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC = Math.PI * 1.0;
 
   /**
    * Heading error (degrees) below which center-of-rotation shifting is NOT applied. When the

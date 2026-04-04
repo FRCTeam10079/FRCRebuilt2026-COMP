@@ -229,7 +229,8 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     Distance x = Meters.of(pose.getX());
     Distance y = Meters.of(pose.getY());
     Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
-    Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance approachMarginX = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance approachMarginY = ShooterPivotConstants.TRENCH_Y_APPROACH_MARGIN;
 
     if (trenchMode) {
       boolean inX =
@@ -238,10 +239,11 @@ public class ShooterPivotSubsystem extends SubsystemBase {
           || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
       return inX && inY;
     } else {
-      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
-          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
-      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
-          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(margin));
+      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(approachMarginX))
+          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(approachMarginX));
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(approachMarginY))
+          || y.gte(
+              fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(approachMarginY));
       return inX && inY;
     }
   }

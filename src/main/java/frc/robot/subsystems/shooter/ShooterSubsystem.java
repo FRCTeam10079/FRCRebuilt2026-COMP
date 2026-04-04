@@ -28,14 +28,16 @@ public class ShooterSubsystem extends SubsystemBase {
     OFF,
     SPIN_UP,
     HOLD_RPM,
-    SHOOT
+    SHOOT,
+    REVERSE
   }
 
   private enum SystemState {
     IDLE,
     SPINNING_UP,
     AT_SPEED,
-    SHOOTING
+    SHOOTING,
+    REVERSING
   }
 
   private WantedState wantedState = WantedState.OFF;
@@ -106,6 +108,10 @@ public class ShooterSubsystem extends SubsystemBase {
         }
         return SystemState.IDLE;
 
+      case REVERSE:
+        targetRPM = ShooterConstants.SHOOTER_REVERSE_SPEED;
+        return SystemState.REVERSING;
+
       case SHOOT:
         if (targetRPM.gt(RPM.zero())) {
           if (currentRPM.isNear(targetRPM, ShooterConstants.SHOOTER_SPEED_TOLERANCE)) {
@@ -130,6 +136,7 @@ public class ShooterSubsystem extends SubsystemBase {
       case SPINNING_UP:
       case AT_SPEED:
       case SHOOTING:
+      case REVERSING:
         io.setVelocity(targetRPM.in(RotationsPerSecond));
         break;
       case IDLE:
@@ -195,6 +202,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
   public Command stopCommand() {
     return runOnce(() -> setWantedState(WantedState.OFF)).withName("Shooter Stop");
+  }
+
+  public Command reverseCommand() {
+    return startEnd(
+            () -> setWantedState(WantedState.REVERSE), () -> setWantedState(WantedState.OFF))
+        .withName("Shooter Reverse");
   }
 
   public Command holdRPMCommand(AngularVelocity rpm) {

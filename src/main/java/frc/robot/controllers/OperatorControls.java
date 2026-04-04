@@ -71,7 +71,7 @@ public final class OperatorControls {
             stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
     // ======== UNJAM / EJECT (through Superstructure) ========
-    // B - Hold reverse intake + indexer
+    // B - Hold shooter/indexer reverse without touching intake
     operator
         .b()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))

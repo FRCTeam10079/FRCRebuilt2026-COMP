@@ -16,6 +16,8 @@ public class ShooterConstants {
   public static final double SHOOTER_IDLE_RPM = 0;
   /** Default fixed spin-up RPM (used when NOT in distance-based mode). */
   public static final AngularVelocity SHOOTER_SPINUP_SPEED = RPM.of(2200);
+  /** Reverse RPM used to clear jams in the shooter feed path. */
+  public static final AngularVelocity SHOOTER_REVERSE_SPEED = RPM.of(-2200);
 
   public static final AngularVelocity SHOOTER_MAX_SPEED = RPM.of(5500);
 

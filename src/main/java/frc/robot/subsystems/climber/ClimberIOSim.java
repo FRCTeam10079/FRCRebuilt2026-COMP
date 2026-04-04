@@ -1,11 +1,10 @@
 package frc.robot.subsystems.climber;
 
 import edu.wpi.first.math.MathUtil;
-import frc.robot.Constants.ClimberConstants;
 
 /**
- * Simulated climber IO. Models a first-order winch driven by voltage, tracking motor position and
- * velocity.
+ * Simulated climber IO. Models a first-order winch driven by voltage with stall simulation at
+ * physical limits.
  */
 public class ClimberIOSim implements ClimberIO {
   private static final double LOOP_PERIOD_SEC = 0.02;
@@ -17,13 +16,15 @@ public class ClimberIOSim implements ClimberIO {
   /** Time constant for velocity ramping (seconds). Models rotor + spool inertia. */
   private static final double TAU = 0.3;
 
-  private enum ControlMode {
-    NEUTRAL,
-    VOLTAGE
-  }
+  /** Sim physical limits (rotations) — stall is simulated at these bounds. */
+  private static final double SIM_MIN_POSITION = 0.0;
 
-  private ControlMode controlMode = ControlMode.NEUTRAL;
+  private static final double SIM_MAX_POSITION = 200.0;
 
+  /** Stator current when stalled at a physical limit (amps). */
+  private static final double STALL_CURRENT_AMPS = 60.0;
+
+  private boolean isVoltageMode = false;
   private double positionRotations = 0.0;
   private double velocityRPS = 0.0;
   private double appliedVolts = 0.0;
@@ -32,56 +33,58 @@ public class ClimberIOSim implements ClimberIO {
   public void updateInputs(ClimberIOInputs inputs) {
     inputs.motorConnected = true;
 
-    if (controlMode == ControlMode.NEUTRAL) {
+    if (!isVoltageMode) {
       appliedVolts = 0.0;
     }
 
     // First-order model: velocity approaches target exponentially
-    double targetVelocityRPS = appliedVolts * KV_RPS_PER_VOLT;
-    if (controlMode == ControlMode.NEUTRAL) {
-      targetVelocityRPS = 0.0;
-    }
+    double targetVelocityRPS = isVoltageMode ? appliedVolts * KV_RPS_PER_VOLT : 0.0;
     double alpha = 1.0 - Math.exp(-LOOP_PERIOD_SEC / TAU);
     velocityRPS += alpha * (targetVelocityRPS - velocityRPS);
 
     // Integrate position
     positionRotations += velocityRPS * LOOP_PERIOD_SEC;
 
-    // Clamp position to software limits (simulates TalonFX software limits)
-    positionRotations = MathUtil.clamp(
-        positionRotations,
-        ClimberConstants.FULL_RETRACT_ROTATIONS,
-        ClimberConstants.FULL_EXTEND_ROTATIONS);
-
-    // If clamped at a limit, zero velocity in that direction
-    if (positionRotations <= ClimberConstants.FULL_RETRACT_ROTATIONS && velocityRPS < 0) {
+    // Simulate stall at physical limits
+    boolean atLimit = false;
+    if (positionRotations <= SIM_MIN_POSITION && velocityRPS < 0) {
+      positionRotations = SIM_MIN_POSITION;
       velocityRPS = 0.0;
+      atLimit = true;
     }
-    if (positionRotations >= ClimberConstants.FULL_EXTEND_ROTATIONS && velocityRPS > 0) {
+    if (positionRotations >= SIM_MAX_POSITION && velocityRPS > 0) {
+      positionRotations = SIM_MAX_POSITION;
       velocityRPS = 0.0;
+      atLimit = true;
     }
 
     inputs.positionRotations = positionRotations;
     inputs.velocityRPS = velocityRPS;
     inputs.appliedVoltage = appliedVolts;
-    inputs.supplyCurrentAmps = Math.abs(appliedVolts) * 3.0; // rough estimate
-    inputs.statorCurrentAmps = Math.abs(appliedVolts) * 5.0;
-    inputs.tempCelsius = 30.0; // nominal sim temperature
-    inputs.closedLoopError = 0.0;
-    inputs.closedLoopReference = positionRotations;
+
+    if (atLimit && isVoltageMode && Math.abs(appliedVolts) > 0.1) {
+      // Simulated stall: high current, zero velocity
+      inputs.statorCurrentAmps = STALL_CURRENT_AMPS;
+      inputs.supplyCurrentAmps = STALL_CURRENT_AMPS * 0.5;
+    } else {
+      inputs.statorCurrentAmps = Math.abs(appliedVolts) * 5.0;
+      inputs.supplyCurrentAmps = Math.abs(appliedVolts) * 3.0;
+    }
+
+    inputs.tempCelsius = 30.0;
     inputs.dutyCycle = appliedVolts / NOMINAL_VOLTAGE;
     inputs.supplyVoltage = NOMINAL_VOLTAGE;
   }
 
   @Override
   public void setVoltage(double volts) {
-    controlMode = ControlMode.VOLTAGE;
+    isVoltageMode = true;
     appliedVolts = MathUtil.clamp(volts, -NOMINAL_VOLTAGE, NOMINAL_VOLTAGE);
   }
 
   @Override
   public void stop() {
-    controlMode = ControlMode.NEUTRAL;
+    isVoltageMode = false;
     appliedVolts = 0.0;
   }
 

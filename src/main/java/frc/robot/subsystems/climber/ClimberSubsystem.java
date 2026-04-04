@@ -7,6 +7,7 @@ package frc.robot.subsystems.climber;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -23,32 +24,35 @@ public class ClimberSubsystem extends SubsystemBase {
   // ==================== STATE MACHINE ====================
 
   public enum WantedState {
-    /** Do nothing - motor stopped, brake mode holds position. */
     IDLE,
-    /** Move to full extension position (164 rotations). */
     EXTEND,
-    /** Retract to climb position (~82 rotations) to lift robot. */
     RETRACT,
-    /** Stop immediately and return to idle from any state. */
     ABORT
   }
 
   public enum SystemState {
     /** Motor off, brake holds position. */
     IDLE,
-    /** Applying extend voltage until position target is reached. */
+    /** Applying extend voltage, waiting for stall. */
     EXTENDING,
-    /** At full extension, motor stopped, brake holds. */
+    /** Motor stalled at full extension, brake holds. */
     EXTENDED,
-    /** Applying retract voltage until position target is reached. */
+    /** Applying retract voltage, waiting for stall. */
     RETRACTING,
-    /** At retract/climb position, motor stopped, brake holds. */
+    /** Motor stalled at retract position, brake holds. */
     RETRACTED
   }
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLE;
-  private double activeTargetRotations = ClimberConstants.FULL_RETRACT_ROTATIONS;
+
+  // ==================== STALL DETECTION ====================
+  private final Timer moveTimer = new Timer();
+  private int stallCycleCount = 0;
+  private static final int STALL_CYCLES_REQUIRED =
+      (int) (ClimberConstants.STALL_DEBOUNCE_SECONDS / 0.02);
+  private static final int RAMP_UP_CYCLES = (int) (ClimberConstants.RAMP_UP_SECONDS / 0.02);
+  private int moveCycleCount = 0;
 
   public ClimberSubsystem(ClimberIO io) {
     this.io = io;
@@ -63,58 +67,62 @@ public class ClimberSubsystem extends SubsystemBase {
       climberMotorDisconnectedAlert.set(!inputs.motorConnected);
     }
 
-    systemState = handleStateTransitions();
+    SystemState previousState = systemState;
+    systemState = handleStateTransitions(previousState);
     applyStates();
 
     Logger.recordOutput("Climber/WantedState", wantedState.name());
     Logger.recordOutput("Climber/SystemState", systemState.name());
     Logger.recordOutput("Climber/PositionRotations", inputs.positionRotations);
-    Logger.recordOutput("Climber/TargetRotations", activeTargetRotations);
     Logger.recordOutput("Climber/MotorConnected", inputs.motorConnected);
     Logger.recordOutput("Climber/AppliedVoltage", inputs.appliedVoltage);
     Logger.recordOutput("Climber/StatorCurrentAmps", inputs.statorCurrentAmps);
     Logger.recordOutput("Climber/VelocityRPS", inputs.velocityRPS);
-    Logger.recordOutput("Climber/ClosedLoopError", inputs.closedLoopError);
-    Logger.recordOutput("Climber/ClosedLoopReference", inputs.closedLoopReference);
     Logger.recordOutput("Climber/DutyCycle", inputs.dutyCycle);
     Logger.recordOutput("Climber/SupplyVoltage", inputs.supplyVoltage);
     Logger.recordOutput("Climber/SupplyCurrentAmps", inputs.supplyCurrentAmps);
     Logger.recordOutput("Climber/TempCelsius", inputs.tempCelsius);
 
-    // Mechanical load indicator: if motor is moving fast with low current, it's
-    // unloaded
-    boolean isMoving = Math.abs(inputs.velocityRPS) > 5.0;
-    boolean isUnderLoad = inputs.statorCurrentAmps > 15.0;
-    Logger.recordOutput("Climber/IsMoving", isMoving);
-    Logger.recordOutput("Climber/IsUnderLoad", isUnderLoad);
-    Logger.recordOutput("Climber/MechanicallyConnected", !isMoving || isUnderLoad);
+    // Stall detection diagnostics
+    Logger.recordOutput("Climber/StallCycleCount", stallCycleCount);
+    Logger.recordOutput("Climber/MoveCycleCount", moveCycleCount);
+    Logger.recordOutput("Climber/StallConditionMet", isStallCondition());
   }
 
   // ==================== STATE TRANSITIONS ====================
 
-  private SystemState handleStateTransitions() {
+  private SystemState handleStateTransitions(SystemState previous) {
     switch (wantedState) {
       case IDLE:
+      case ABORT:
+        resetStallDetection();
         return SystemState.IDLE;
 
       case EXTEND:
-        if (inputs.positionRotations
-            >= ClimberConstants.FULL_EXTEND_ROTATIONS
-                - ClimberConstants.POSITION_TOLERANCE_ROTATIONS) {
+        if (previous == SystemState.EXTENDED) {
+          return SystemState.EXTENDED;
+        }
+        if (previous != SystemState.EXTENDING) {
+          resetStallDetection();
+        }
+        moveCycleCount++;
+        if (checkStalled()) {
           return SystemState.EXTENDED;
         }
         return SystemState.EXTENDING;
 
       case RETRACT:
-        if (inputs.positionRotations
-            <= ClimberConstants.CLIMB_RETRACT_ROTATIONS
-                + ClimberConstants.POSITION_TOLERANCE_ROTATIONS) {
+        if (previous == SystemState.RETRACTED) {
+          return SystemState.RETRACTED;
+        }
+        if (previous != SystemState.RETRACTING) {
+          resetStallDetection();
+        }
+        moveCycleCount++;
+        if (checkStalled()) {
           return SystemState.RETRACTED;
         }
         return SystemState.RETRACTING;
-
-      case ABORT:
-        return SystemState.IDLE;
 
       default:
         return SystemState.IDLE;
@@ -124,27 +132,45 @@ public class ClimberSubsystem extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case EXTENDING:
-        activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
         io.setVoltage(ClimberConstants.EXTEND_VOLTAGE);
         break;
-      case EXTENDED:
-        activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
-        io.stop();
-        break;
       case RETRACTING:
-        activeTargetRotations = ClimberConstants.CLIMB_RETRACT_ROTATIONS;
         io.setVoltage(ClimberConstants.RETRACT_VOLTAGE);
         break;
+      case EXTENDED:
       case RETRACTED:
-        activeTargetRotations = ClimberConstants.CLIMB_RETRACT_ROTATIONS;
-        io.stop();
-        break;
       case IDLE:
       default:
         io.stop();
-        activeTargetRotations = inputs.positionRotations;
         break;
     }
+  }
+
+  // ==================== STALL DETECTION ====================
+
+  private void resetStallDetection() {
+    moveCycleCount = 0;
+    stallCycleCount = 0;
+  }
+
+  private boolean isStallCondition() {
+    return inputs.statorCurrentAmps >= ClimberConstants.STALL_CURRENT_THRESHOLD_AMPS
+        && Math.abs(inputs.velocityRPS) < ClimberConstants.STALL_VELOCITY_THRESHOLD_RPS;
+  }
+
+  private boolean checkStalled() {
+    if (moveCycleCount < RAMP_UP_CYCLES) {
+      stallCycleCount = 0;
+      return false;
+    }
+
+    if (isStallCondition()) {
+      stallCycleCount++;
+    } else {
+      stallCycleCount = 0;
+    }
+
+    return stallCycleCount >= STALL_CYCLES_REQUIRED;
   }
 
   // ==================== PUBLIC API ====================
@@ -161,27 +187,20 @@ public class ClimberSubsystem extends SubsystemBase {
     return systemState;
   }
 
-  /** True when the mechanism has reached full extension and is holding. */
   public boolean isExtended() {
     return systemState == SystemState.EXTENDED;
   }
 
-  /** True when the mechanism has retracted to the climb position and is holding. */
   public boolean isRetracted() {
     return systemState == SystemState.RETRACTED;
   }
 
-  /** Current motor position in rotor rotations (for logging / dashboard). */
   public double getPositionRotations() {
     return inputs.positionRotations;
   }
 
   // ==================== COMMAND FACTORIES ====================
 
-  /**
-   * Extend the climber to full extension (164 rotations). The command ends when the position
-   * threshold is reached. If interrupted, returns to IDLE (brake holds).
-   */
   public Command extendCommand() {
     return run(() -> setWantedState(WantedState.EXTEND))
         .until(this::isExtended)
@@ -193,11 +212,6 @@ public class ClimberSubsystem extends SubsystemBase {
         .withName("Climber Extend");
   }
 
-  /**
-   * Retract the climber to the climb position (~82 rotations) to lift the robot. The command ends
-   * when the position threshold is reached. If interrupted, returns to IDLE (brake holds). On
-   * completion the state machine stays in RETRACT -> RETRACTED, actively holding position.
-   */
   public Command retractCommand() {
     return run(() -> setWantedState(WantedState.RETRACT))
         .until(this::isRetracted)
@@ -209,12 +223,10 @@ public class ClimberSubsystem extends SubsystemBase {
         .withName("Climber Retract");
   }
 
-  /** Abort the climb from any state. Motor stops immediately, brake holds. */
   public Command abortCommand() {
     return Commands.runOnce(() -> setWantedState(WantedState.IDLE), this).withName("Climber Abort");
   }
 
-  /** Stop command — alias for abort for backward compatibility. */
   public Command stopCommand() {
     return abortCommand();
   }

@@ -10,11 +10,14 @@ import static edu.wpi.first.units.Units.Seconds;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -352,6 +355,8 @@ public class ShootOnTheMoveDrive extends Command {
       return new Pose2d();
     }
 
+    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+
     // Convert tag position to Pose2d
     Pose2d aprilTagPose = calculateTagPose();
 
@@ -364,16 +369,22 @@ public class ShootOnTheMoveDrive extends Command {
     ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
         drivetrain.getState().Speeds, drivetrain.getState().Pose.getRotation());
 
-    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond * 1.5;
+    double xVelFieldCentric = fieldVelocity.vxMetersPerSecond;
 
-    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond * 1.5;
-
-    boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
 
     hubPose = (isRed) ? new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d())
         : new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
 
-    distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation());
+    double xVelRobotCentric = drivetrain.getState().Speeds.vxMetersPerSecond;
+
+    double movingBackwardsFactor = (Math.min(0, xVelRobotCentric) * 0.75 + 1);
+
+
+    SmartDashboard.putNumber("Moving Backwards Factor", movingBackwardsFactor);
+
+    distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation())
+                    * movingBackwardsFactor;
 
     correctedHubPose = new Pose2d(
         hubPose.getX() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
@@ -388,7 +399,9 @@ public class ShootOnTheMoveDrive extends Command {
           new Rotation2d());
       SmartDashboard.putNumber(
           "AlignToAprilTag/ToF " + (i + 1), ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
+      
     }
+    SmartDashboard.putNumber("AlignToAprilTag/Final Target Dist", distanceToHub);
 
     return correctedHubPose;
 

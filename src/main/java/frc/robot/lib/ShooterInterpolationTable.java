@@ -62,7 +62,7 @@ public final class ShooterInterpolationTable {
     // rpmTable.put(4.5, 3300.0);
     rpmTable.put(5.0, 2750.0);
     // rpmTable.put(5.5, 3900.0);
-    // rpmTable.put(6.0, 4200.0);
+    rpmTable.put(6.0, 3000.0);
   }
 
   // ==================== ANGLE TABLE ====================
@@ -85,6 +85,7 @@ public final class ShooterInterpolationTable {
     // angleTable.put(3.5, 64.0);
     putAngle(4.5, 72.5);
     // Don't need 5, max is 4.5
+    putAngle(5.2, 77.5);
   }
 
   /**
@@ -113,8 +114,8 @@ public final class ShooterInterpolationTable {
     // - Hub height delta ~1.33m, pivot angles 60-80deg
     // - At 60deg launch, v~15m/s, horizontal component ~7.5m/s
     // - TOF ~ distance / horizontal_velocity (rough)
-    // ------------------------------------------------------- 
-    
+    // -------------------------------------------------------
+
     tofTable.put(1.0, 1.15); // very close - short flight
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
     tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate

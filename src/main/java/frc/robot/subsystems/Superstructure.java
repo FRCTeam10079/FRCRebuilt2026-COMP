@@ -47,7 +47,7 @@ public class Superstructure extends SubsystemBase {
     SHOOT,
     /** Force-shoot: aim + feed as soon as flywheel is at speed (bypass heading/pivot gates). */
     FORCE_SHOOT,
-    /** Reverse shooter flywheel and feed path without touching intake. */
+    /** Reverse feeder/indexer without touching intake. */
     UNJAM,
     /** Extend climber for endgame. */
     CLIMB,
@@ -283,7 +283,7 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyUnjam() {
-    shooter.setWantedState(ShooterSubsystem.WantedState.REVERSE);
+    shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
     indexer.setWantedState(IndexerSubsystem.WantedState.REVERSE);
   }
 

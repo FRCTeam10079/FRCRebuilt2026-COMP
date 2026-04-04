@@ -24,6 +24,7 @@ import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleSupplier;
@@ -55,6 +56,7 @@ public final class OperatorControls {
   public static void configure(
       CommandXboxController operator,
       Superstructure superstructure,
+      IntakeWheelsSubsystem intake,
       ShooterPivotSubsystem shooterPivot,
       ClimberSubsystem climber,
       RobotStateMachine stateMachine,
@@ -70,12 +72,15 @@ public final class OperatorControls {
         .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
             stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
-    // ======== UNJAM / EJECT (through Superstructure) ========
-    // B - Hold shooter/indexer reverse without touching intake
+    // ======== REVERSE (through Superstructure) ========
+    // B - Hold feeder/indexer reverse only
     operator
         .b()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))
         .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
+
+    // Left Trigger - Reverse intake only
+    operator.leftTrigger(0.5).whileTrue(intake.intakeOutCommand());
 
     // ==================== SHOOTER PIVOT ====================
     // Superstructure manages the shooter pivot in AIM/SHOOT states.

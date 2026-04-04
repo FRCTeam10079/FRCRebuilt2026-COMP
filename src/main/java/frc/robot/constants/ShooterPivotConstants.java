@@ -100,7 +100,7 @@ public class ShooterPivotConstants {
    * trench". Trench
    * posts at ~0.644m from each wall; add half robot width + safety margin.
    */
-  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(0.5);
+  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.0);
 
   /**
    * Extra distance to start lowering BEFORE entering the trench zone (meters).
@@ -111,7 +111,13 @@ public class ShooterPivotConstants {
    * Smaller Y-only approach margin to avoid over-triggering while
    * ferrying/shooting.
    */
-  public static final Distance TRENCH_Y_APPROACH_MARGIN = Meters.of(0.5);
+  public static final Distance TRENCH_Y_APPROACH_MARGIN = Meters.of(0.2);
+
+  /**
+   * Extra Y buffer used only to keep the trench state from flickering at the
+   * edge.
+   */
+  public static final Distance TRENCH_Y_EXIT_HYSTERESIS = Meters.of(0.08);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE

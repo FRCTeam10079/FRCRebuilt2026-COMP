@@ -175,7 +175,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
       case AT_ANGLE:
       case TRENCH_LOWERED:
         io.setMotionMagicPosition(ShooterPivotConstants.degreesToMotorRotations(
-                targetAngle.minus(ShooterPivotConstants.MIN_ANGLE))
+            targetAngle.minus(ShooterPivotConstants.MIN_ANGLE))
             .in(Rotations));
         break;
       case MANUAL_OVERRIDE:
@@ -192,8 +192,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   public void setWantedState(WantedState state, Angle angle) {
     this.wantedState = state;
-    Angle clamped =
-        Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
+    Angle clamped = Constants.clamp(angle, ShooterPivotConstants.MIN_ANGLE, ShooterPivotConstants.MAX_ANGLE);
     this.targetAngle = clamped;
     this.angleSupplier = () -> clamped;
   }
@@ -222,29 +221,32 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   // ==================== TRENCH ZONE DETECTION ====================
 
   public boolean isInTrenchZone() {
-    if (poseSupplier == null) return false;
+    if (poseSupplier == null)
+      return false;
     Pose2d pose = poseSupplier.get();
-    if (pose == null) return false;
+    if (pose == null)
+      return false;
 
     Distance x = Meters.of(pose.getX());
     Distance y = Meters.of(pose.getY());
     Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
     Distance approachMarginX = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
     Distance approachMarginY = ShooterPivotConstants.TRENCH_Y_APPROACH_MARGIN;
+    Distance exitMarginY = approachMarginY.plus(ShooterPivotConstants.TRENCH_Y_EXIT_HYSTERESIS);
+    boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(approachMarginX))
+        && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(approachMarginX));
 
     if (trenchMode) {
-      boolean inX =
-          x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
-      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
-          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
-      return inX && inY;
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(exitMarginY))
+          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(exitMarginY));
+      trenchMode = inX && inY;
+      return trenchMode;
     } else {
-      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(approachMarginX))
-          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(approachMarginX));
       boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(approachMarginY))
           || y.gte(
               fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(approachMarginY));
-      return inX && inY;
+      trenchMode = inX && inY;
+      return trenchMode;
     }
   }
 
@@ -288,38 +290,38 @@ public class ShooterPivotSubsystem extends SubsystemBase {
 
   public Command homeCommand() {
     return Commands.sequence(
-            Commands.runOnce(() -> setWantedState(WantedState.HOME)),
-            Commands.waitUntil(this::isHomed),
-            Commands.runOnce(() -> setWantedState(WantedState.IDLE)))
+        Commands.runOnce(() -> setWantedState(WantedState.HOME)),
+        Commands.waitUntil(this::isHomed),
+        Commands.runOnce(() -> setWantedState(WantedState.IDLE)))
         .withName("ShooterPivot Home");
   }
 
   public Command trackAngleCommand(Supplier<Angle> supplier) {
     return Commands.runEnd(
-            () -> {
-              setAngleSupplier(supplier);
-              setWantedState(WantedState.TRACK_ANGLE);
-            },
-            () -> setWantedState(WantedState.IDLE),
-            this)
+        () -> {
+          setAngleSupplier(supplier);
+          setWantedState(WantedState.TRACK_ANGLE);
+        },
+        () -> setWantedState(WantedState.IDLE),
+        this)
         .withName("ShooterPivot Track Angle");
   }
 
   public Command goToAngleCommand(Angle angle) {
     return Commands.sequence(
-            Commands.runOnce(() -> setWantedState(WantedState.HOLD_ANGLE, angle)),
-            Commands.waitUntil(this::isAtTarget))
+        Commands.runOnce(() -> setWantedState(WantedState.HOLD_ANGLE, angle)),
+        Commands.waitUntil(this::isAtTarget))
         .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
         .withName("ShooterPivot GoTo " + angle.in(Degrees) + "deg");
   }
 
   public Command manualControlCommand(DoubleSupplier axisSupplier) {
     return run(() -> {
-          double raw = axisSupplier.getAsDouble();
-          double deadbanded = MathUtil.applyDeadband(raw, ShooterPivotConstants.MANUAL_DEADBAND);
-          setManualOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
-          setWantedState(WantedState.MANUAL);
-        })
+      double raw = axisSupplier.getAsDouble();
+      double deadbanded = MathUtil.applyDeadband(raw, ShooterPivotConstants.MANUAL_DEADBAND);
+      setManualOutput(deadbanded * ShooterPivotConstants.MANUAL_MAX_OUTPUT);
+      setWantedState(WantedState.MANUAL);
+    })
         .finallyDo(interrupted -> setWantedState(WantedState.IDLE))
         .withName("ShooterPivot Manual");
   }

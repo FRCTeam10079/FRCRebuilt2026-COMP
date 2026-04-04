@@ -16,7 +16,6 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.lib.SmartShootController;
 import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.GameState;
-import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
@@ -288,11 +287,10 @@ public class Superstructure extends SubsystemBase {
   /** Dispatch to per-state handler methods that set each child subsystem's wanted state. */
   private void applyStates() {
     // Detect state-change side effects
-    // When leaving CLIMBING super state, only reset climber if it hasn't completed
-    // the climb
+    // When leaving CLIMBING super state, only reset climber if it hasn't retracted
     if (previousSuperState == CurrentSuperState.CLIMBING
         && currentSuperState != CurrentSuperState.CLIMBING
-        && !climber.isClimbComplete()) {
+        && !climber.isRetracted()) {
       climber.setWantedState(ClimberSubsystem.WantedState.IDLE);
     }
 
@@ -386,13 +384,6 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyClimb() {
-    // Endgame gate: refuse to climb unless we are in endgame
-    if (stateMachine.getMatchState() != MatchState.ENDGAME && !stateMachine.isEndgamePeriod()) {
-      Logger.recordOutput("Superstructure/ClimbBlocked", true);
-      return;
-    }
-    Logger.recordOutput("Superstructure/ClimbBlocked", false);
-
     // Shut down all non-climb subsystems
     shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
     indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
@@ -467,8 +458,8 @@ public class Superstructure extends SubsystemBase {
     ClimbState climbDesired =
         switch (climber.getSystemState()) {
           case EXTENDING, EXTENDED -> ClimbState.APPROACHING;
-          case CLIMBING -> ClimbState.CLIMBING_L1;
-          case HELD -> ClimbState.ENGAGED;
+          case RETRACTING -> ClimbState.CLIMBING_L1;
+          case RETRACTED -> ClimbState.ENGAGED;
           default -> ClimbState.NOT_CLIMBING;
         };
     if (stateMachine.getClimbState() != climbDesired) {
@@ -489,7 +480,7 @@ public class Superstructure extends SubsystemBase {
             yield GameState.SCORING;
           }
           case CLIMBING -> {
-            if (climber.isClimbComplete()) {
+            if (climber.isRetracted()) {
               yield GameState.CLIMBED;
             }
             yield GameState.CLIMBING;

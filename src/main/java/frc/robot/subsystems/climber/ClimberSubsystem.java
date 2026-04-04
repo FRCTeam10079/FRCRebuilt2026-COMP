@@ -36,13 +36,13 @@ public class ClimberSubsystem extends SubsystemBase {
   public enum SystemState {
     /** Motor off, brake holds position. */
     IDLE,
-    /** Moving toward full extension via Motion Magic. */
+    /** Applying extend voltage until position target is reached. */
     EXTENDING,
-    /** At full extension, actively holding position. */
+    /** At full extension, motor stopped, brake holds. */
     EXTENDED,
-    /** Moving toward retract/climb position via Motion Magic. */
+    /** Applying retract voltage until position target is reached. */
     RETRACTING,
-    /** At retract/climb position, actively holding position. */
+    /** At retract/climb position, motor stopped, brake holds. */
     RETRACTED
   }
 
@@ -125,19 +125,19 @@ public class ClimberSubsystem extends SubsystemBase {
     switch (systemState) {
       case EXTENDING:
         activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
-        io.setPosition(activeTargetRotations);
+        io.setVoltage(ClimberConstants.EXTEND_VOLTAGE);
         break;
       case EXTENDED:
         activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
-        io.setPosition(activeTargetRotations);
+        io.stop();
         break;
       case RETRACTING:
         activeTargetRotations = ClimberConstants.CLIMB_RETRACT_ROTATIONS;
-        io.setPosition(activeTargetRotations);
+        io.setVoltage(ClimberConstants.RETRACT_VOLTAGE);
         break;
       case RETRACTED:
         activeTargetRotations = ClimberConstants.CLIMB_RETRACT_ROTATIONS;
-        io.setPosition(activeTargetRotations);
+        io.stop();
         break;
       case IDLE:
       default:

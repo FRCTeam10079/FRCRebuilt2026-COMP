@@ -75,6 +75,13 @@ public class ClimberIOSim implements ClimberIO {
     inputs.supplyCurrentAmps = Math.abs(appliedVolts) * 3.0; // rough estimate
     inputs.statorCurrentAmps = Math.abs(appliedVolts) * 5.0;
     inputs.tempCelsius = 30.0; // nominal sim temperature
+    inputs.closedLoopError = (controlMode == ControlMode.POSITION)
+        ? (positionSetpointRotations - positionRotations)
+        : 0.0;
+    inputs.closedLoopReference =
+        (controlMode == ControlMode.POSITION) ? positionSetpointRotations : positionRotations;
+    inputs.dutyCycle = appliedVolts / NOMINAL_VOLTAGE;
+    inputs.supplyVoltage = NOMINAL_VOLTAGE;
   }
 
   @Override

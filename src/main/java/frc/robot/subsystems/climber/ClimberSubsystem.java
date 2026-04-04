@@ -74,6 +74,20 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/AppliedVoltage", inputs.appliedVoltage);
     Logger.recordOutput("Climber/StatorCurrentAmps", inputs.statorCurrentAmps);
     Logger.recordOutput("Climber/VelocityRPS", inputs.velocityRPS);
+    Logger.recordOutput("Climber/ClosedLoopError", inputs.closedLoopError);
+    Logger.recordOutput("Climber/ClosedLoopReference", inputs.closedLoopReference);
+    Logger.recordOutput("Climber/DutyCycle", inputs.dutyCycle);
+    Logger.recordOutput("Climber/SupplyVoltage", inputs.supplyVoltage);
+    Logger.recordOutput("Climber/SupplyCurrentAmps", inputs.supplyCurrentAmps);
+    Logger.recordOutput("Climber/TempCelsius", inputs.tempCelsius);
+
+    // Mechanical load indicator: if motor is moving fast with low current, it's
+    // unloaded
+    boolean isMoving = Math.abs(inputs.velocityRPS) > 5.0;
+    boolean isUnderLoad = inputs.statorCurrentAmps > 15.0;
+    Logger.recordOutput("Climber/IsMoving", isMoving);
+    Logger.recordOutput("Climber/IsUnderLoad", isUnderLoad);
+    Logger.recordOutput("Climber/MechanicallyConnected", !isMoving || isUnderLoad);
   }
 
   // ==================== STATE TRANSITIONS ====================

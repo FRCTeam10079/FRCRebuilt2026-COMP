@@ -35,6 +35,10 @@ public class ClimberIOTalonFX implements ClimberIO {
   private final StatusSignal<Current> statorCurrentSignal;
   private final StatusSignal<Voltage> voltageSignal;
   private final StatusSignal<Temperature> temperatureSignal;
+  private final StatusSignal<Double> closedLoopErrorSignal;
+  private final StatusSignal<Double> closedLoopReferenceSignal;
+  private final StatusSignal<Double> dutyCycleSignal;
+  private final StatusSignal<Voltage> supplyVoltageSignal;
 
   private final Debouncer motorConnectedDebouncer =
       new Debouncer(ClimberConstants.MOTOR_CONNECTED_DEBOUNCE_SECONDS);
@@ -54,6 +58,10 @@ public class ClimberIOTalonFX implements ClimberIO {
     statorCurrentSignal = motor.getStatorCurrent();
     voltageSignal = motor.getMotorVoltage();
     temperatureSignal = motor.getDeviceTemp();
+    closedLoopErrorSignal = motor.getClosedLoopError();
+    closedLoopReferenceSignal = motor.getClosedLoopReference();
+    dutyCycleSignal = motor.getDutyCycle();
+    supplyVoltageSignal = motor.getSupplyVoltage();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         ClimberConstants.STATUS_SIGNAL_UPDATE_HZ,
@@ -62,7 +70,11 @@ public class ClimberIOTalonFX implements ClimberIO {
         supplyCurrentSignal,
         statorCurrentSignal,
         voltageSignal,
-        temperatureSignal);
+        temperatureSignal,
+        closedLoopErrorSignal,
+        closedLoopReferenceSignal,
+        dutyCycleSignal,
+        supplyVoltageSignal);
     ParentDevice.optimizeBusUtilizationForAll(motor);
 
     voltageRequest.EnableFOC = ClimberConstants.ENABLE_FOC;
@@ -120,7 +132,11 @@ public class ClimberIOTalonFX implements ClimberIO {
         supplyCurrentSignal,
         statorCurrentSignal,
         voltageSignal,
-        temperatureSignal);
+        temperatureSignal,
+        closedLoopErrorSignal,
+        closedLoopReferenceSignal,
+        dutyCycleSignal,
+        supplyVoltageSignal);
 
     inputs.motorConnected = motorConnectedDebouncer.calculate(status.isOK());
     inputs.positionRotations = positionSignal.getValueAsDouble();
@@ -129,6 +145,10 @@ public class ClimberIOTalonFX implements ClimberIO {
     inputs.statorCurrentAmps = statorCurrentSignal.getValueAsDouble();
     inputs.appliedVoltage = voltageSignal.getValueAsDouble();
     inputs.tempCelsius = temperatureSignal.getValueAsDouble();
+    inputs.closedLoopError = closedLoopErrorSignal.getValueAsDouble();
+    inputs.closedLoopReference = closedLoopReferenceSignal.getValueAsDouble();
+    inputs.dutyCycle = dutyCycleSignal.getValueAsDouble();
+    inputs.supplyVoltage = supplyVoltageSignal.getValueAsDouble();
   }
 
   @Override

@@ -48,7 +48,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLE;
-  private double requestedVolts = 0.0;
+  private double activeTargetRotations = ClimberConstants.FULL_RETRACT_ROTATIONS;
 
   public ClimberSubsystem(ClimberIO io) {
     this.io = io;
@@ -68,8 +68,8 @@ public class ClimberSubsystem extends SubsystemBase {
 
     Logger.recordOutput("Climber/WantedState", wantedState.name());
     Logger.recordOutput("Climber/SystemState", systemState.name());
-    Logger.recordOutput("Climber/RequestedVolts", requestedVolts);
     Logger.recordOutput("Climber/PositionRotations", inputs.positionRotations);
+    Logger.recordOutput("Climber/TargetRotations", activeTargetRotations);
     Logger.recordOutput("Climber/MotorConnected", inputs.motorConnected);
   }
 
@@ -114,19 +114,25 @@ public class ClimberSubsystem extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case EXTENDING:
-        requestedVolts = ClimberConstants.EXTEND_VOLTAGE;
-        io.setVoltage(requestedVolts);
+        activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
+        io.setPosition(activeTargetRotations);
         break;
       case CLIMBING:
-        requestedVolts = ClimberConstants.RETRACT_VOLTAGE;
-        io.setVoltage(requestedVolts);
+        activeTargetRotations = ClimberConstants.CLIMB_SCORED_ROTATIONS;
+        io.setPosition(activeTargetRotations);
         break;
       case EXTENDED:
+        activeTargetRotations = ClimberConstants.FULL_EXTEND_ROTATIONS;
+        io.setPosition(activeTargetRotations);
+        break;
       case HELD:
+        activeTargetRotations = ClimberConstants.CLIMB_SCORED_ROTATIONS;
+        io.setPosition(activeTargetRotations);
+        break;
       case IDLE:
       default:
-        requestedVolts = 0.0;
         io.stop();
+        activeTargetRotations = inputs.positionRotations;
         break;
     }
   }

@@ -63,6 +63,8 @@ public final class ShooterInterpolationTable {
     rpmTable.put(5.0, 2750.0);
     // rpmTable.put(5.5, 3900.0);
     rpmTable.put(6.0, 3000.0);
+
+    rpmTable.put(7.0, 3500.0);
   }
 
   // ==================== ANGLE TABLE ====================
@@ -86,6 +88,8 @@ public final class ShooterInterpolationTable {
     putAngle(4.5, 72.5);
     // Don't need 5, max is 4.5
     putAngle(5.2, 77.5);
+
+    putAngle(6.0, 77.5);
   }
 
   /**
@@ -125,6 +129,8 @@ public final class ShooterInterpolationTable {
     tofTable.put(4.0, 2.2); // TODO: TUNE - placeholder estimate
     // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
     tofTable.put(5.0, 2.55); // TODO: TUNE - placeholder estimate
+
+    tofTable.put(7.0, 3.0);
   }
 
   /**

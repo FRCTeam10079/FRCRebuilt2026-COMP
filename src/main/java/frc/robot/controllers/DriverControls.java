@@ -70,14 +70,13 @@ public final class DriverControls {
         Constants.DrivetrainConstants.MAX_SPEED_MPS,
         Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
 
-    // ==================== INTAKE (through Superstructure) ====================
-    // Left Trigger - Hold to collect (deploy pivot + run intake wheels + index)
-    // On release, control falls back to any other still-held mechanism action.
+    // ==================== INTAKE (independent of main state) ====================
+    // Left Trigger - Hold to collect (deploy pivot + run intake wheels).
+    // Runs alongside any main state (AIM, SHOOT, SOTM, etc.).
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(
-            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
-        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
+        .onTrue(Commands.runOnce(() -> superstructure.setIntakeActive(true)))
+        .onFalse(Commands.runOnce(() -> superstructure.setIntakeActive(false)));
 
     // ==================== SHOOTING (through Superstructure) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin via
@@ -173,11 +172,8 @@ public final class DriverControls {
     }));
 
     // ==================== STOW (through Superstructure) ====================
-    // D-pad Down - Stow intake pivot
-    controller
-        .povDown()
-        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
-        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
+    // D-pad Down - Stow intake pivot + stop intake wheels
+    controller.povDown().onTrue(Commands.runOnce(() -> superstructure.stowIntake()));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -225,12 +221,6 @@ public final class DriverControls {
         desiredState = WantedSuperState.AIM;
       } else if (controller.leftBumper().getAsBoolean()) {
         desiredState = WantedSuperState.SOTM;
-      } else if (controller
-          .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-          .getAsBoolean()) {
-        desiredState = WantedSuperState.COLLECT;
-      } else if (controller.povDown().getAsBoolean()) {
-        desiredState = WantedSuperState.STOW;
       }
 
       superstructure.setWantedSuperState(desiredState);

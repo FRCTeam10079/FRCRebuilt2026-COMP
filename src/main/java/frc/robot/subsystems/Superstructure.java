@@ -114,6 +114,12 @@ public class Superstructure extends SubsystemBase {
   private boolean shooterPivotOverride = false;
 
   /**
+   * When true, intake wheels run and intake pivot deploys regardless of the current super-state.
+   * This allows intaking to happen simultaneously with aiming, shooting, or SOTM actions.
+   */
+  private boolean intakeActive = false;
+
+  /**
    * Hold-on timer for SOTM feeding. Once all on-target conditions are met the indexer feeds; if
    * conditions briefly flicker false the state machine holds SOTM_SHOOTING for up to this duration
    * before falling back to SOTM_AIMING. Replicates the 0.25 s kFalling debounce that was previously
@@ -172,6 +178,7 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput(
         "Superstructure/SmartShoot/State", smartShootController.getState().name());
     Logger.recordOutput("Superstructure/SmartShoot/ShouldFeed", smartShootController.shouldFeed());
+    Logger.recordOutput("Superstructure/IntakeActive", intakeActive);
   }
 
   // ==================== PUBLIC API ====================
@@ -195,6 +202,21 @@ public class Superstructure extends SubsystemBase {
    */
   public void setShooterPivotOverride(boolean override) {
     this.shooterPivotOverride = override;
+  }
+
+  /** Enable or disable the independent intake overlay (intake runs alongside any main state). */
+  public void setIntakeActive(boolean active) {
+    this.intakeActive = active;
+  }
+
+  public boolean isIntakeActive() {
+    return intakeActive;
+  }
+
+  /** Convenience: stop intake and stow the intake pivot. */
+  public void stowIntake() {
+    this.intakeActive = false;
+    pivot.setWantedState(PivotSubsystem.WantedState.STOW);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -273,6 +295,9 @@ public class Superstructure extends SubsystemBase {
       case CLIMBING -> applyClimb();
       case STOPPED -> applyStopped();
     }
+
+    // Independent intake overlay - runs alongside any main state
+    applyIntakeOverlay();
   }
 
   // ==================== STATE HANDLERS ====================
@@ -363,6 +388,30 @@ public class Superstructure extends SubsystemBase {
     climber.setWantedState(ClimberSubsystem.WantedState.IDLE);
   }
 
+  // ==================== INDEPENDENT INTAKE OVERLAY ====================
+
+  /**
+   * Independent intake overlay. When {@link #intakeActive} is true, intake wheels spin and the
+   * intake pivot deploys regardless of the current super-state. Skipped for states that have their
+   * own intake behavior (unjam, climb, stopped, and the legacy COLLECT/STOW states used by auto).
+   */
+  private void applyIntakeOverlay() {
+    if (currentSuperState == CurrentSuperState.UNJAMMING
+        || currentSuperState == CurrentSuperState.CLIMBING
+        || currentSuperState == CurrentSuperState.STOPPED
+        || currentSuperState == CurrentSuperState.COLLECTING
+        || currentSuperState == CurrentSuperState.STOWING) {
+      return;
+    }
+
+    if (intakeActive) {
+      pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY);
+      intake.setWantedState(IntakeWheelsSubsystem.WantedState.INTAKE);
+    } else {
+      intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
+    }
+  }
+
   // ==================== CONTINUOUS PIVOT TRACKING ====================
 
   /**
@@ -401,7 +450,7 @@ public class Superstructure extends SubsystemBase {
           }
           case CLIMBING -> GameState.CLIMBING;
           case UNJAMMING -> GameState.MANUAL_OVERRIDE;
-          default -> null; // Don't force a game state for IDLE/STOW/STOPPED
+          default -> intakeActive ? GameState.COLLECTING : null;
         };
 
     if (desired != null && stateMachine.getGameState() != desired) {

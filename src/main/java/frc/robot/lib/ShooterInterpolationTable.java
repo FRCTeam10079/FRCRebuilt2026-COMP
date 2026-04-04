@@ -162,7 +162,7 @@ public final class ShooterInterpolationTable {
     // These placeholders are adapted from MA's data as starting points.
     // Distance (m) -> RPM (higher than normal for long range)
     // -------------------------------------------------------
-    //passingRpmTable.put(5.5, 3000.0);
+    // passingRpmTable.put(5.5, 3000.0);
     passingRpmTable.put(7.0, 3200.0);
     passingRpmTable.put(8.0, 3400.0);
     passingRpmTable.put(17.0, 4500.0);
@@ -174,7 +174,7 @@ public final class ShooterInterpolationTable {
     // Passing shots use a fixed steep angle for consistent lob trajectory.
     // Distance (m) -> Pivot angle (degrees)
     // -------------------------------------------------------
-    //passingAngleTable.put(5.5, 77.0);
+    // passingAngleTable.put(5.5, 77.0);
     passingAngleTable.put(7.0, 77.0);
     passingAngleTable.put(8.0, 77.0);
     passingAngleTable.put(17.0, 77.0);

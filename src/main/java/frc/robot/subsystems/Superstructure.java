@@ -47,7 +47,7 @@ public class Superstructure extends SubsystemBase {
     SHOOT,
     /** Force-shoot: aim + feed as soon as flywheel is at speed (bypass heading/pivot gates). */
     FORCE_SHOOT,
-    /** Reverse intake + indexer to clear jams. */
+    /** Reverse feeder/indexer without touching intake. */
     UNJAM,
     /** Extend climber for endgame. */
     CLIMB,
@@ -283,10 +283,8 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyUnjam() {
-    pivot.setWantedState(PivotSubsystem.WantedState.DEPLOY);
-    intake.setWantedState(IntakeWheelsSubsystem.WantedState.REVERSE);
+    shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
     indexer.setWantedState(IndexerSubsystem.WantedState.REVERSE);
-    trackPivotContinuously();
   }
 
   private void applyClimb() {

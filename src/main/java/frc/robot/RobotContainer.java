@@ -229,6 +229,7 @@ public class RobotContainer {
     OperatorControls.configure(
         m_operatorController,
         superstructure,
+        intake,
         shooterPivot,
         climber,
         m_stateMachine,

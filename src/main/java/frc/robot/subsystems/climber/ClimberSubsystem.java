@@ -71,6 +71,9 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/PositionRotations", inputs.positionRotations);
     Logger.recordOutput("Climber/TargetRotations", activeTargetRotations);
     Logger.recordOutput("Climber/MotorConnected", inputs.motorConnected);
+    Logger.recordOutput("Climber/AppliedVoltage", inputs.appliedVoltage);
+    Logger.recordOutput("Climber/StatorCurrentAmps", inputs.statorCurrentAmps);
+    Logger.recordOutput("Climber/VelocityRPS", inputs.velocityRPS);
   }
 
   // ==================== STATE TRANSITIONS ====================

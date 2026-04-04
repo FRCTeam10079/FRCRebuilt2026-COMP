@@ -97,23 +97,18 @@ public final class ShooterInterpolationTable {
 
   static {
     // -------------------------------------------------------
-    // TODO: MUST BE MEASURED ON REAL ROBOT!
-    // Use slow-motion video (240fps phone camera) from the side.
-    // Time from ball exit to hub entry at each distance.
-    // These are ESTIMATED placeholders based on physics:
-    // - Hub height delta ~1.33m, pivot angles 60-80deg
-    // - At 60deg launch, v~15m/s, horizontal component ~7.5m/s
-    // - TOF ~ distance / horizontal_velocity (rough)
+    // Estimated from projectile physics given our RPM/angle tables.
+    // At 60deg launch with ~8-10 m/s exit velocity, horizontal
+    // component is ~4-5 m/s -> TOF ~ distance / horizontal_velocity.
+    // Steeper angles (72.5deg at 4.5m) have smaller horizontal
+    // component, so TOF rises faster at long range.
+    // TUNE NEEDED!
     // -------------------------------------------------------
-    tofTable.put(1.0, 1.1); // very close - short flight
-    // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
-    tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate
-    // tofTable.put(2.5, 1.55); // TODO: TUNE - placeholder estimate
-    tofTable.put(3.0, 1.35); // TODO: TUNE - placeholder estimate
-    // tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
-    tofTable.put(4.0, 1.75); // TODO: TUNE - placeholder estimate
-    // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
-    tofTable.put(5.0, 2.7); // TODO: TUNE - placeholder estimate
+    tofTable.put(1.0, 0.14); // 60deg, ~8m/s exit → horiz ~4m/s
+    tofTable.put(2.0, 0.27); // 60deg
+    tofTable.put(3.0, 0.36); // 64deg, ~9m/s exit → horiz ~3.9m/s
+    tofTable.put(4.0, 0.50); // ~68deg interpolated
+    tofTable.put(5.0, 0.65); // 72.5deg, ~10m/s exit → horiz ~3m/s
   }
 
   /**

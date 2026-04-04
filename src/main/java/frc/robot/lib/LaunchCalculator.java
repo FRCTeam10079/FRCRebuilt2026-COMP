@@ -61,6 +61,13 @@ public class LaunchCalculator {
    */
   private static final int LOOKAHEAD_ITERATIONS = 20;
 
+  /**
+   * Maximum allowed lookahead offset in meters. Prevents the iterative loop from diverging when TOF
+   * values are imprecise or the robot is moving very fast. At 5 m/s with 0.5s TOF the natural
+   * offset is 2.5m, so 3.0m is a safe cap.
+   */
+  private static final double MAX_LOOKAHEAD_OFFSET_METERS = 3.0;
+
   /** Robot loop period in seconds (50Hz = 0.02s). */
   private static final double LOOP_PERIOD_SECONDS = 0.02;
 
@@ -127,9 +134,10 @@ public class LaunchCalculator {
 
   /**
    * Auto-pass target switching can cause heading to rotate away from the hub when crossing the hub
-   * X line. Keep disabled by default and only enable when actively validating passing behavior.
+   * X line. Keep enabled so far-side SOTM uses the pass target while near-side SOTM still uses the
+   * hub.
    */
-  private static final boolean ENABLE_AUTO_PASSING = false;
+  private static final boolean ENABLE_AUTO_PASSING = true;
 
   // ==================== FIELD GEOMETRY (for bad boxes) ====================
 
@@ -282,9 +290,25 @@ public class LaunchCalculator {
     boolean sideBasedPassing =
         isRed ? estimatedPose.getX() < hubCenterX : estimatedPose.getX() > hubCenterX;
     boolean passing = ENABLE_AUTO_PASSING && sideBasedPassing;
+    boolean mirrorY = estimatedPose.getY() > FIELD_WIDTH / 2.0;
+    Translation2d passingTarget = getPassingTarget(estimatedPose);
 
     // ---- Step 3: Determine target ----
-    Translation2d target = passing ? getPassingTarget(estimatedPose) : hubPos;
+    Translation2d target = passing ? passingTarget : hubPos;
+
+    Logger.recordOutput("LaunchCalc/Poses/RobotPose", robotPose);
+    Logger.recordOutput("LaunchCalc/Poses/EstimatedPose", estimatedPose);
+    Logger.recordOutput("LaunchCalc/Poses/HubPose", new Pose2d(hubPos, new Rotation2d()));
+    Logger.recordOutput(
+        "LaunchCalc/Poses/PassTargetPose", new Pose2d(passingTarget, new Rotation2d()));
+    Logger.recordOutput("LaunchCalc/GoalPose", new Pose2d(target, new Rotation2d()));
+
+    Logger.recordOutput("LaunchCalc/Passing/AutoEnabled", ENABLE_AUTO_PASSING);
+    Logger.recordOutput("LaunchCalc/Passing/SideBasedPassing", sideBasedPassing);
+    Logger.recordOutput("LaunchCalc/Passing/AllianceIsRed", isRed);
+    Logger.recordOutput("LaunchCalc/Passing/HubCenterX", hubCenterX);
+    Logger.recordOutput("LaunchCalc/Passing/MirrorY", mirrorY);
+    Logger.recordOutput("LaunchCalc/Passing/TargetType", passing ? "PASS" : "HUB");
 
     // Compute launcher position on the field (applying robot-frame offset)
     // Adapted from MA (6328): use launcher position, not robot center, as the
@@ -292,6 +316,8 @@ public class LaunchCalculator {
     Translation2d launcherOffset =
         new Translation2d(SHOOTER_OFFSET_X, SHOOTER_OFFSET_Y).rotateBy(estimatedPose.getRotation());
     Translation2d launcherFieldPos = estimatedPose.getTranslation().plus(launcherOffset);
+    Logger.recordOutput(
+        "LaunchCalc/Poses/LauncherPose", new Pose2d(launcherFieldPos, estimatedPose.getRotation()));
     double rawDistance = target.getDistance(launcherFieldPos);
 
     // ---- Step 3: Field-relative launcher velocity ----
@@ -333,9 +359,20 @@ public class LaunchCalculator {
           : ShooterInterpolationTable.getTimeOfFlight(lookaheadDistance);
       double offsetX = fieldVelX * timeOfFlight;
       double offsetY = fieldVelY * timeOfFlight;
+
+      // Clamp the total offset magnitude to prevent runaway when TOF is imprecise
+      double offsetMag = Math.hypot(offsetX, offsetY);
+      if (offsetMag > MAX_LOOKAHEAD_OFFSET_METERS) {
+        double scale = MAX_LOOKAHEAD_OFFSET_METERS / offsetMag;
+        offsetX *= scale;
+        offsetY *= scale;
+      }
+
       lookaheadPos = launcherFieldPos.plus(new Translation2d(offsetX, offsetY));
       lookaheadDistance = target.getDistance(lookaheadPos);
     }
+    Logger.recordOutput(
+        "LaunchCalc/Poses/LookaheadPose", new Pose2d(lookaheadPos, estimatedPose.getRotation()));
 
     // ---- Step 5: Compute drive heading angle ----
     // The robot should face from the lookahead position toward the target
@@ -396,15 +433,21 @@ public class LaunchCalculator {
     boolean outsideOfBadBoxes = !isInsideBadBox(estimatedPose.getTranslation());
     double minDist = passing ? ShooterInterpolationTable.PASSING_MIN_DISTANCE : MIN_VALID_DISTANCE;
     double maxDist = passing ? ShooterInterpolationTable.PASSING_MAX_DISTANCE : MAX_VALID_DISTANCE;
-    boolean isValid =
-        outsideOfBadBoxes && lookaheadDistance >= minDist && lookaheadDistance <= maxDist;
+    boolean distanceValid = lookaheadDistance >= minDist && lookaheadDistance <= maxDist;
+    boolean setpointValid = true;
+    boolean isValid = outsideOfBadBoxes && distanceValid;
     // For non-passing shots, also check that the setpoint itself is valid
     if (!passing) {
       ShooterSetpoint setpoint = ShooterSetpoint.fromDistance(Meters.of(lookaheadDistance));
-      isValid = isValid && setpoint.isValid();
+      setpointValid = setpoint.isValid();
+      isValid = isValid && setpointValid;
     }
     Logger.recordOutput("LaunchCalc/OutsideBadBoxes", outsideOfBadBoxes);
     Logger.recordOutput("LaunchCalc/Passing", passing);
+    Logger.recordOutput("LaunchCalc/Validity/DistanceValid", distanceValid);
+    Logger.recordOutput("LaunchCalc/Validity/SetpointValid", setpointValid);
+    Logger.recordOutput("LaunchCalc/Validity/MinDistance", minDist);
+    Logger.recordOutput("LaunchCalc/Validity/MaxDistance", maxDist);
 
     // ---- Step 10: Build the result ----
     latestParameters = new LaunchParameters(

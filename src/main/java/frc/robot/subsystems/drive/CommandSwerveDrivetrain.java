@@ -108,6 +108,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private static final LoggedTunableNumber sotmMaxPolarVelocity = new LoggedTunableNumber(
       "SOTM/MaxPolarVelocityRadPerSec",
       Constants.DrivetrainConstants.MAX_POLAR_VELOCITY_RAD_PER_SEC);
+  private static final LoggedTunableNumber sotmAdaptivePolarFullErrorDeg =
+      new LoggedTunableNumber("SOTM/AdaptivePolarFullErrorDeg", 30.0);
+  private static final LoggedTunableNumber sotmAdaptivePolarMaxScale =
+      new LoggedTunableNumber("SOTM/AdaptivePolarMaxScale", 1.8);
   private static final LoggedTunableNumber sotmMaxShootingSpeedMps = new LoggedTunableNumber(
       "SOTM/MaxShootingSpeedMps", Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS);
   private static final LoggedTunableNumber sotmMaxShootingAngularRate = new LoggedTunableNumber(
@@ -570,7 +574,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    */
   private final SwerveRequest.ApplyFieldSpeeds m_fieldCentricRequest =
       new SwerveRequest.ApplyFieldSpeeds()
-          .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage);
+          .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage)
+          .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
 
   /**
    * Calculate chassis speeds with skew compensation for smooth driving.
@@ -967,8 +972,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           // Skipped for passing shots (MA 6328): passing doesn't need precision aiming.
           Translation2d velocityVector = new Translation2d(xVelocity, yVelocity);
           double linearSpeed = velocityVector.getNorm();
+          double headingErrorDegAbs = Math.abs(Math.toDegrees(headingErrorRad));
+          double adaptivePolarScale = 1.0;
+          double effectiveMaxPolarVelocity = sotmMaxPolarVelocity.get();
+          double maxLinearSpeedFromLimiter = sotmMaxShootingSpeedMps.get();
+          boolean velocityLimited = false;
 
           if (!params.passing() && linearSpeed > 0.01) { // avoid division by zero
+            double errorNorm = MathUtil.clamp(
+                headingErrorDegAbs / Math.max(1.0, sotmAdaptivePolarFullErrorDeg.get()), 0.0, 1.0);
+            double adaptiveMaxScale = Math.max(1.0, sotmAdaptivePolarMaxScale.get());
+            adaptivePolarScale = 1.0 + (adaptiveMaxScale - 1.0) * errorNorm;
+            effectiveMaxPolarVelocity = sotmMaxPolarVelocity.get() * adaptivePolarScale;
+
             Translation2d hubPos = ShooterMath.getHubPosition();
             Rotation2d hubDirection = hubPos.minus(currentPose.getTranslation()).getAngle();
             Rotation2d velocityDirection = velocityVector.getAngle();
@@ -977,18 +993,22 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             double rawDistance = params.rawDistance();
             double naiveTOF = calc.getNaiveTOF(rawDistance);
 
-            double hubAngle = sotmMaxPolarVelocity.get() * naiveTOF;
-            double lookaheadAngle = Math.PI - robotAngle - hubAngle;
+            if (naiveTOF > 1e-3) {
+              double hubAngle = effectiveMaxPolarVelocity * naiveTOF;
+              double lookaheadAngle = Math.PI - robotAngle - hubAngle;
 
-            if (lookaheadAngle > 0) {
-              double robotLookaheadDist =
-                  rawDistance * Math.sin(hubAngle) / Math.sin(lookaheadAngle);
-              double maxLinearSpeed = robotLookaheadDist / naiveTOF;
+              if (lookaheadAngle > 0) {
+                double robotLookaheadDist =
+                    rawDistance * Math.sin(hubAngle) / Math.sin(lookaheadAngle);
+                double maxLinearSpeed = robotLookaheadDist / naiveTOF;
+                maxLinearSpeedFromLimiter = maxLinearSpeed;
 
-              if (linearSpeed > maxLinearSpeed) {
-                double scale = maxLinearSpeed / linearSpeed;
-                xVelocity *= scale;
-                yVelocity *= scale;
+                if (linearSpeed > maxLinearSpeed) {
+                  double scale = maxLinearSpeed / linearSpeed;
+                  xVelocity *= scale;
+                  yVelocity *= scale;
+                  velocityLimited = true;
+                }
               }
             }
           }
@@ -998,9 +1018,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           // shooter so the robot rotates around the launch point instead of its
           // geometric center. This improves aiming responsiveness.
           // Linear interpolation: no shift below COR_MIN, full shift at COR_MAX.
-          double headingErrorDeg = Math.abs(Math.toDegrees(headingErrorRad));
           double corScalar = MathUtil.clamp(
-              (headingErrorDeg - sotmCorMinErrorDeg.get())
+              (headingErrorDegAbs - sotmCorMinErrorDeg.get())
                   / (sotmCorMaxErrorDeg.get() - sotmCorMinErrorDeg.get()),
               0.0,
               1.0);
@@ -1043,6 +1062,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           Logger.recordOutput("SOTM/HeadingErrorDeg", Math.toDegrees(headingErrorRad));
           Logger.recordOutput("SOTM/OmegaOutput", omegaOutput);
           Logger.recordOutput("SOTM/IsValid", params.isValid());
+          Logger.recordOutput("SOTM/Passing", params.passing());
+          Logger.recordOutput(
+              "SOTM/YawToleranceDeg",
+              params.passing() ? sotmPassingYawToleranceDeg.get() : sotmYawToleranceDeg.get());
+          Logger.recordOutput("SOTM/AdaptivePolarScale", adaptivePolarScale);
+          Logger.recordOutput("SOTM/EffectiveMaxPolarVelocityRadPerSec", effectiveMaxPolarVelocity);
+          Logger.recordOutput("SOTM/MaxLinearSpeedLimiterMps", maxLinearSpeedFromLimiter);
+          Logger.recordOutput("SOTM/VelocityLimited", velocityLimited);
           Logger.recordOutput("SOTM/CORScalar", corScalar);
           Logger.recordOutput("SOTM/OLock", oLock);
 
@@ -1086,6 +1113,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     Logger.recordOutput("SOTM/HeadingOk", headingOk);
     Logger.recordOutput("SOTM/LevelOk", levelOk);
+    Logger.recordOutput("SOTM/Passing", params.passing());
+    Logger.recordOutput("SOTM/YawToleranceDeg", yawTolerance);
+    Logger.recordOutput("SOTM/HeadingErrorDegGate", errorDeg);
 
     // ---- Heading state transition logging (event-based, not periodic) ----
     boolean currentHeadingOk = headingOk && levelOk;

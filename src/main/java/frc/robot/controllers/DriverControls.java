@@ -128,11 +128,13 @@ public final class DriverControls {
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // SOTM drive command (drivetrain-only, parallel to Superstructure SOTM state)
+    // Uses translationY/translationX instead of raw controller to respect
+    // invertTranslation toggle.
     controller
         .leftBumper()
         .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
-        .whileTrue(
-            drivetrain.shootOnTheMoveDriveCommand(controller::getLeftY, controller::getLeftX));
+        .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
+            () -> translationY.get(), () -> translationX.get()));
 
     // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
     new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)

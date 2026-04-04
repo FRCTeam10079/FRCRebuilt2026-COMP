@@ -49,7 +49,7 @@ public final class ShooterInterpolationTable {
     // rpmTable.put(2.5, 2100.0);
     rpmTable.put(3.0, 2355.0);
     // rpmTable.put(3.5, 2500.0);
-    rpmTable.put(4.5, 2700.0);
+    rpmTable.put(4.5, 2600.0);
     // rpmTable.put(4.5, 3300.0);
     // rpmTable.put(5.0, 2500.0);
     // rpmTable.put(5.5, 3900.0);
@@ -104,11 +104,11 @@ public final class ShooterInterpolationTable {
     // component, so TOF rises faster at long range.
     // TUNE NEEDED!
     // -------------------------------------------------------
-    tofTable.put(1.0, 0.14); // 60deg, ~8m/s exit → horiz ~4m/s
-    tofTable.put(2.0, 0.27); // 60deg
-    tofTable.put(3.0, 0.36); // 64deg, ~9m/s exit → horiz ~3.9m/s
-    tofTable.put(4.0, 0.50); // ~68deg interpolated
-    tofTable.put(5.0, 0.65); // 72.5deg, ~10m/s exit → horiz ~3m/s
+    tofTable.put(1.0, 1.10); // 60deg, ~8m/s exit → horiz ~4m/s
+    tofTable.put(2.0, 1.27); // 60deg
+    tofTable.put(3.0, 1.46); // 64deg, ~9m/s exit → horiz ~3.9m/s
+    tofTable.put(4.0, 1.60); // ~68deg interpolated
+    tofTable.put(5.0, 1.85); // 72.5deg, ~10m/s exit → horiz ~3m/s
   }
 
   /**
@@ -162,7 +162,7 @@ public final class ShooterInterpolationTable {
     // These placeholders are adapted from MA's data as starting points.
     // Distance (m) -> RPM (higher than normal for long range)
     // -------------------------------------------------------
-    passingRpmTable.put(5.5, 3000.0);
+    //passingRpmTable.put(5.5, 3000.0);
     passingRpmTable.put(7.0, 3200.0);
     passingRpmTable.put(8.0, 3400.0);
     passingRpmTable.put(17.0, 4500.0);
@@ -174,10 +174,10 @@ public final class ShooterInterpolationTable {
     // Passing shots use a fixed steep angle for consistent lob trajectory.
     // Distance (m) -> Pivot angle (degrees)
     // -------------------------------------------------------
-    passingAngleTable.put(5.5, 62.0);
-    passingAngleTable.put(7.0, 62.0);
-    passingAngleTable.put(8.0, 62.0);
-    passingAngleTable.put(17.0, 62.0);
+    //passingAngleTable.put(5.5, 77.0);
+    passingAngleTable.put(7.0, 77.0);
+    passingAngleTable.put(8.0, 77.0);
+    passingAngleTable.put(17.0, 77.0);
   }
 
   static {

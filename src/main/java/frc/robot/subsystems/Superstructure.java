@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.GameState;
 import frc.robot.statemachine.RobotStateMachine;
@@ -52,7 +53,9 @@ public class Superstructure extends SubsystemBase {
     /** Extend climber for endgame. */
     CLIMB,
     /** E-stop all mechanisms. */
-    STOPPED
+    STOPPED,
+
+    SOTM_SHOOT
   }
 
   /** What the robot is actually doing this cycle (derived from wanted + sensor feedback). */
@@ -67,6 +70,7 @@ public class Superstructure extends SubsystemBase {
     SHOOTING,
     /** Actively feeding - force-shoot bypass. */
     FORCE_SHOOTING,
+    SOTM_SHOOTING,
     UNJAMMING,
     CLIMBING,
     STOPPED
@@ -85,6 +89,7 @@ public class Superstructure extends SubsystemBase {
 
   private final RobotStateMachine stateMachine;
   private final Supplier<ShooterSetpoint> setpointSupplier;
+  private final Supplier<ShooterSetpoint> sotmSetpointSupplier;
   private final Supplier<Boolean> headingAlignedSupplier;
 
   // ==================== STATE TRACKING ====================
@@ -120,6 +125,7 @@ public class Superstructure extends SubsystemBase {
     this.stateMachine = stateMachine;
     this.setpointSupplier = setpointSupplier;
     this.headingAlignedSupplier = headingAlignedSupplier;
+    this.sotmSetpointSupplier = ShootOnTheMoveDrive.getShooterSetpointSupplier();
   }
 
   // ==================== PERIODIC ====================
@@ -181,6 +187,7 @@ public class Superstructure extends SubsystemBase {
           currentSuperState = CurrentSuperState.WAITING_FOR_TARGET;
         }
       }
+      case SOTM_SHOOT -> currentSuperState = CurrentSuperState.SOTM_SHOOTING;
       case FORCE_SHOOT -> {
         if (isFlywheelReady() && !shooterPivot.isInTrenchZone()) {
           currentSuperState = CurrentSuperState.FORCE_SHOOTING;
@@ -212,6 +219,7 @@ public class Superstructure extends SubsystemBase {
       case AIMING -> applyAim();
       case WAITING_FOR_TARGET -> applyAim(); // Same outputs - still spinning up
       case SHOOTING -> applyShoot();
+      case SOTM_SHOOTING -> applySotmShoot();
       case FORCE_SHOOTING -> applyForceShoot();
       case UNJAMMING -> applyUnjam();
       case CLIMBING -> applyClimb();
@@ -272,6 +280,17 @@ public class Superstructure extends SubsystemBase {
 
   private void applyForceShoot() {
     ShooterSetpoint sp = setpointSupplier.get();
+    if (sp != null && sp.isValid()) {
+      shooter.setWantedState(ShooterSubsystem.WantedState.HOLD_RPM, sp.flywheelRPM());
+      if (!shooterPivotOverride) {
+        shooterPivot.setWantedState(ShooterPivotSubsystem.WantedState.TRACK_ANGLE, sp.pivotAngle());
+      }
+    }
+    // Force feed - flywheel at speed is the only gate
+    indexer.setWantedState(IndexerSubsystem.WantedState.FEED);
+  }
+  private void applySotmShoot() {
+    ShooterSetpoint sp = sotmSetpointSupplier.get();
     if (sp != null && sp.isValid()) {
       shooter.setWantedState(ShooterSubsystem.WantedState.HOLD_RPM, sp.flywheelRPM());
       if (!shooterPivotOverride) {

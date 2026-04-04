@@ -13,6 +13,12 @@ public interface ClimberIO {
     public double statorCurrentAmps = 0.0;
     public double appliedVoltage = 0.0;
     public double tempCelsius = 0.0;
+
+    // Diagnostic fields for debugging mechanical vs electrical issues
+    public double closedLoopError = 0.0;
+    public double closedLoopReference = 0.0;
+    public double dutyCycle = 0.0;
+    public double supplyVoltage = 0.0;
   }
 
   default void updateInputs(ClimberIOInputs inputs) {}

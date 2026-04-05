@@ -7,21 +7,25 @@ package frc.robot.controllers;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.ClimbConstants;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
-import frc.robot.statemachine.HubShiftState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
+import java.util.Set;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -45,6 +49,7 @@ public final class OperatorControls {
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
    * @param climbPathfindCommand command that pathfinds to the selected climb lane
+   * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
       CommandXboxController operator,
@@ -54,7 +59,8 @@ public final class OperatorControls {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
       Supplier<Distance> hubDistanceSupplier,
-      Command climbPathfindCommand) {
+      Command climbPathfindCommand,
+      CommandSwerveDrivetrain drivetrain) {
 
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
@@ -68,11 +74,44 @@ public final class OperatorControls {
     // stop)
     operator.povUp().whileTrue(climbPathfindCommand);
 
-    // D-Pad Down - Force hub inactive (defense/hoard)
+    // D-Pad Down - Full auto-climb sequence:
+    // 1. Pathfind to climb spot
+    // 2. Set superstructure to CLIMB mode and extend climber
+    // 3. Retract climber to pull robot up
+    // 4. Final small forward nudge (live tunable, default 1 inch)
     operator
         .povDown()
-        .onTrue(
-            Commands.runOnce(() -> stateMachine.setHubShiftState(HubShiftState.MY_HUB_INACTIVE)));
+        .onTrue(Commands.defer(
+            () -> {
+              SwerveRequest.ApplyRobotSpeeds finalForwardRequest =
+                  new SwerveRequest.ApplyRobotSpeeds();
+
+              double finalForwardSpeedMps =
+                  Math.max(0.05, Math.abs(ClimbConstants.getAutoClimbFinalForwardSpeedMps()));
+              double finalForwardDistanceMeters =
+                  Math.max(0.0, Math.abs(ClimbConstants.getAutoClimbFinalForwardDistanceMeters()));
+              double postMoveSettleSeconds =
+                  Math.max(0.0, ClimbConstants.getAutoClimbPostMoveSettleSeconds());
+              double finalForwardTimeSec = finalForwardDistanceMeters / finalForwardSpeedMps;
+
+              return Commands.sequence(
+                      // Phase 1: Pathfind to climb position
+                      climbPathfindCommand,
+                      // Phase 2: Enter climb mode and extend climber hook up
+                      Commands.runOnce(
+                          () -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+                      climber.extendCommand(),
+                      // Phase 3: Retract climber to pull robot up
+                      climber.retractCommand(),
+                      // Phase 4: Final small forward nudge
+                      drivetrain
+                          .applyRequest(() -> finalForwardRequest.withSpeeds(
+                              new ChassisSpeeds(finalForwardSpeedMps, 0, 0)))
+                          .withTimeout(finalForwardTimeSec),
+                      Commands.waitSeconds(postMoveSettleSeconds))
+                  .withName("Auto Climb Sequence");
+            },
+            Set.of(drivetrain, climber, superstructure)));
 
     // ======== UNJAM / EJECT (through Superstructure) ========
     // B - Hold reverse intake + indexer

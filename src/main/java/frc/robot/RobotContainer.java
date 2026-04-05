@@ -269,7 +269,8 @@ public class RobotContainer {
         m_stateMachine,
         m_setpointSupplier,
         () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose),
-        climbPathfindCommand);
+        climbPathfindCommand,
+        drivetrain);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }

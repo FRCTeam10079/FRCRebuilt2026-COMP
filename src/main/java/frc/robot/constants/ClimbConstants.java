@@ -93,6 +93,19 @@ public class ClimbConstants {
   private static final LoggedNetworkNumber APPROACH_STANDOFF_METERS =
       new LoggedNetworkNumber("/Tuning/Climb/ApproachStandoffMeters", 1.5);
 
+  // ======================== AUTO CLIMB SEQUENCE ========================
+  /** Final forward nudge distance after climb pull-up. Default is 1 inch. */
+  private static final LoggedNetworkNumber AUTO_CLIMB_FINAL_FORWARD_DISTANCE_METERS =
+      new LoggedNetworkNumber("/Tuning/Climb/AutoSequence/FinalForwardDistanceMeters", 0.0254);
+
+  /** Final forward nudge speed (m/s). */
+  private static final LoggedNetworkNumber AUTO_CLIMB_FINAL_FORWARD_SPEED_MPS =
+      new LoggedNetworkNumber("/Tuning/Climb/AutoSequence/FinalForwardSpeedMps", 0.30);
+
+  /** Small settle delay after the final nudge. */
+  private static final LoggedNetworkNumber AUTO_CLIMB_POST_MOVE_SETTLE_SECONDS =
+      new LoggedNetworkNumber("/Tuning/Climb/AutoSequence/PostMoveSettleSeconds", 0.15);
+
   /**
    * Resolve the climb approach pose for the given lane and alliance.
    *
@@ -182,5 +195,20 @@ public class ClimbConstants {
     Logger.recordOutput("Climb/ApproachPose", approachPose);
 
     return approachPose;
+  }
+
+  /** Live-tunable final forward nudge distance (meters) for auto-climb sequence. */
+  public static double getAutoClimbFinalForwardDistanceMeters() {
+    return AUTO_CLIMB_FINAL_FORWARD_DISTANCE_METERS.get();
+  }
+
+  /** Live-tunable final forward nudge speed (m/s) for auto-climb sequence. */
+  public static double getAutoClimbFinalForwardSpeedMps() {
+    return AUTO_CLIMB_FINAL_FORWARD_SPEED_MPS.get();
+  }
+
+  /** Live-tunable settle delay (seconds) after final auto-climb nudge. */
+  public static double getAutoClimbPostMoveSettleSeconds() {
+    return AUTO_CLIMB_POST_MOVE_SETTLE_SECONDS.get();
   }
 }

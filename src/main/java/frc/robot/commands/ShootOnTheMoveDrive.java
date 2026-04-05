@@ -10,14 +10,10 @@ import static edu.wpi.first.units.Units.Seconds;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -44,15 +40,11 @@ import java.util.function.Supplier;
 /**
  * Command to align the robot to an AprilTag using vision
  *
- * <p>
- * This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag)
- * 2. Calculates
- * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control
- * to drive the robot
+ * <p>This command: 1. Finds the closest AprilTag (or uses Limelight-detected tag) 2. Calculates
+ * target position with optional offset (LEFT/RIGHT/CENTER) 3. Uses PID control to drive the robot
  * to the target pose 4. Rotates to face opposite the tag (facing the tag)
  *
- * <p>
- * For REBUILT 2026 - Generic AprilTag alignment for any field element
+ * <p>For REBUILT 2026 - Generic AprilTag alignment for any field element
  */
 public class ShootOnTheMoveDrive extends Command {
 
@@ -77,8 +69,8 @@ public class ShootOnTheMoveDrive extends Command {
   DoubleSupplier yInputSupplier;
 
   // Swerve drive request - field centric with velocity control
-  private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric()
-      .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+  private final SwerveRequest.FieldCentric driveRequest =
+      new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
   // Stop request
   private final SwerveRequest stop;
@@ -108,8 +100,8 @@ public class ShootOnTheMoveDrive extends Command {
   /**
    * Creates a new AlignToAprilTag command
    *
-   * @param drivetrain    The swerve drivetrain subsystem
-   * @param vision        The vision subsystem
+   * @param drivetrain The swerve drivetrain subsystem
+   * @param vision The vision subsystem
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public ShootOnTheMoveDrive(
@@ -208,9 +200,9 @@ public class ShootOnTheMoveDrive extends Command {
         "AlignToAprilTag/VelocityX", drivetrain.getState().Speeds.vyMetersPerSecond);
 
     SmartDashboard.putNumberArray("CorrectedPose", new double[] {
-        correctedHubPose.getX(),
-        correctedHubPose.getY(),
-        correctedHubPose.getRotation().getDegrees()
+      correctedHubPose.getX(),
+      correctedHubPose.getY(),
+      correctedHubPose.getRotation().getDegrees()
     });
 
     // Apply velocities to drivetrain
@@ -243,8 +235,7 @@ public class ShootOnTheMoveDrive extends Command {
 
     for (int id : allianceTags) {
       double[] tagData = AprilTagMaps.aprilTagMap.get(id);
-      if (tagData == null)
-        continue;
+      if (tagData == null) continue;
       Pose2d tagPose = new Pose2d(
           tagData[0] * Constants.INCHES_TO_METERS,
           tagData[1] * Constants.INCHES_TO_METERS,
@@ -373,38 +364,41 @@ public class ShootOnTheMoveDrive extends Command {
 
     double yVelFieldCentric = fieldVelocity.vyMetersPerSecond;
 
-    hubPose = (isRed) ? new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d())
+    hubPose = (isRed)
+        ? new Pose2d(GameConstants.RED_HUB_CENTER, new Rotation2d())
         : new Pose2d(GameConstants.BLUE_HUB_CENTER, new Rotation2d());
 
     double xVelRobotCentric = drivetrain.getState().Speeds.vxMetersPerSecond;
 
     double movingBackwardsFactor = (Math.min(0, xVelRobotCentric) * 0.75 + 1);
 
-
     SmartDashboard.putNumber("Moving Backwards Factor", movingBackwardsFactor);
 
-    distanceToHub = currentPose.getTranslation().getDistance(hubPose.getTranslation())
-                    * movingBackwardsFactor;
+    distanceToHub =
+        currentPose.getTranslation().getDistance(hubPose.getTranslation()) * movingBackwardsFactor;
 
     correctedHubPose = new Pose2d(
-        hubPose.getX() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
-        hubPose.getY() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
+        hubPose.getX()
+            - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
+        hubPose.getY()
+            - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
         new Rotation2d());
     // Change the number of loops for more precision in estimating the pose
     for (int i = 0; i < 11; i++) {
       distanceToHub = currentPose.getTranslation().getDistance(correctedHubPose.getTranslation());
       correctedHubPose = new Pose2d(
-          hubPose.getX() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
-          hubPose.getY() - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
+          hubPose.getX()
+              - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * xVelFieldCentric),
+          hubPose.getY()
+              - (ShooterInterpolationTable.getTimeOfFlight(distanceToHub) * yVelFieldCentric),
           new Rotation2d());
       SmartDashboard.putNumber(
-          "AlignToAprilTag/ToF " + (i + 1), ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
-      
+          "AlignToAprilTag/ToF " + (i + 1),
+          ShooterInterpolationTable.getTimeOfFlight(distanceToHub));
     }
     SmartDashboard.putNumber("AlignToAprilTag/Final Target Dist", distanceToHub);
 
     return correctedHubPose;
-
   }
 
   public static Supplier<ShooterSetpoint> getShooterSetpointSupplier() {
@@ -455,7 +449,7 @@ public class ShootOnTheMoveDrive extends Command {
     SmartDashboard.putNumber("AlignToAprilTag/TargetX", targetPose.getX());
     SmartDashboard.putNumber("AlignToAprilTag/TargetY", targetPose.getY());
 
-    return new double[] { velocityX, velocityY, velocityYaw };
+    return new double[] {velocityX, velocityY, velocityYaw};
   }
 
   /** Calculate distance between two poses */

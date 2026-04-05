@@ -109,7 +109,7 @@ public final class ShooterInterpolationTable {
     // component, so TOF rises faster at long range.
     // TUNE NEEDED!
     // -------------------------------------------------------
-    
+
     tofTable.put(1.0, 1.15); // very close - short flight
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
     tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate
@@ -121,7 +121,6 @@ public final class ShooterInterpolationTable {
     tofTable.put(5.0, 2.55); // TODO: TUNE - placeholder estimate
 
     tofTable.put(7.0, 3.0);
-
   }
 
   /**

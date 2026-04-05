@@ -28,9 +28,7 @@ public class ShooterPivotConstants {
   public static final Angle MAX_ANGLE = Degrees.of(80.0);
 
   // ==================== HOMING ====================
-  /**
-   * Duty cycle output for slow hard-stop homing (negative = toward hard stop).
-   */
+  /** Duty cycle output for slow hard-stop homing (negative = toward hard stop). */
   public static final double HOMING_SPEED = -0.06;
 
   /** Stator current threshold (amps) to detect the hard stop. */
@@ -48,10 +46,8 @@ public class ShooterPivotConstants {
   public static final double KV = 0.12;
 
   /**
-   * Gravity feedforward coefficient. Applied as kG * cos(pivotAngle) to hold
-   * position against
-   * gravity. Tune by finding the minimum voltage to hold the pivot at various
-   * angles.
+   * Gravity feedforward coefficient. Applied as kG * cos(pivotAngle) to hold position against
+   * gravity. Tune by finding the minimum voltage to hold the pivot at various angles.
    */
   public static final double KG = 0.3;
 
@@ -59,10 +55,11 @@ public class ShooterPivotConstants {
   /** Cruise velocity in motor rotations per second. */
   public static final AngularVelocity MOTION_MAGIC_CRUISE_VELOCITY = RotationsPerSecond.of(40.0);
   /** Acceleration in motor rotations per second^2. */
-  public static final AngularAcceleration MOTION_MAGIC_ACCELERATION = RotationsPerSecondPerSecond.of(80.0);
+  public static final AngularAcceleration MOTION_MAGIC_ACCELERATION =
+      RotationsPerSecondPerSecond.of(80.0);
   /** Jerk in motor rotations per second^3 (0 = trapezoidal, >0 = S-curve). */
-  public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK = RotationsPerSecondPerSecond.per(Second)
-      .of(400.0);
+  public static final Velocity<AngularAccelerationUnit> MOTION_MAGIC_JERK =
+      RotationsPerSecondPerSecond.per(Second).of(400.0);
 
   // ==================== TOLERANCES ====================
 
@@ -80,65 +77,56 @@ public class ShooterPivotConstants {
   public static final double MANUAL_DEADBAND = 0.1;
 
   // ==================== TRENCH AUTO-LOWER ====================
-  // Derived from 2026 REBUILT AprilTag field layout (2026-rebuilt-welded.json).
-  // Trench posts at y~0.644m from each side wall, beam spans between hub X
-  // positions.
+  // Derived from 2026 REBUILT field drawings + AprilTag layout
+  // (2026-rebuilt-welded.json).
+  // Trench uprights are centered near each hub X, close to each side wall. For
+  // pivot safety we model trench "danger" as two hub-centered wall-side windows
+  // (not one continuous strip between hubs).
   // Clearance under trench arm: 22.25in (56.5cm). Tune thresholds on the real
   // field!
 
   /** Field width in meters (from WPILib AprilTag JSON). */
   public static final Distance FIELD_WIDTH_METERS = Meters.of(8.069);
 
-  /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
-  public static final Distance TRENCH_X_MIN = Meters.of(4.5);
+  /** Blue trench X center from hub/trench tags (meters). */
+  public static final Distance TRENCH_BLUE_X_CENTER =
+      Meters.of(GameConstants.BLUE_HUB_CENTER.getX());
 
-  /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
-  public static final Distance TRENCH_X_MAX = Meters.of(12.0);
+  /** Red trench X center from hub/trench tags (meters). */
+  public static final Distance TRENCH_RED_X_CENTER = Meters.of(GameConstants.RED_HUB_CENTER.getX());
 
   /**
-   * Y-distance from the side wall within which the robot is considered "under the
-   * trench". Trench
+   * Half-width of each trench X window around a hub center.
+   *
+   * <p>35.95 in from FE-2026 reference drawing ~ 0.913 m.
+   */
+  public static final Distance TRENCH_X_HALF_WIDTH = Meters.of(0.91);
+
+  /**
+   * Y-distance from the side wall within which the robot is considered "under the trench". Trench
    * posts at ~0.644m from each wall; add half robot width + safety margin.
    */
-  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.0);
+  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(0.70);
 
-  /**
-   * Extra distance to start lowering BEFORE entering the trench zone (meters).
-   */
-  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
+  /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
+  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.20);
 
-  /**
-   * Smaller Y-only approach margin to avoid over-triggering while
-   * ferrying/shooting.
-   */
-  public static final Distance TRENCH_Y_APPROACH_MARGIN = Meters.of(0.2);
-
-  /**
-   * Extra Y buffer used only to keep the trench state from flickering at the
-   * edge.
-   */
-  public static final Distance TRENCH_Y_EXIT_HYSTERESIS = Meters.of(0.08);
+  /** Smaller Y-only approach margin to avoid over-triggering while ferrying/shooting. */
+  public static final Distance TRENCH_Y_APPROACH_MARGIN = Meters.of(0.15);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE
 
   // ==================== CONVERSIONS ====================
-  /**
-   * Convert position of pivot angle to motor rotations. motorRotations = position
-   * * GEAR_RATIO
-   */
+  /** Convert position of pivot angle to motor rotations. motorRotations = position * GEAR_RATIO */
   public static Angle degreesToMotorRotations(Angle position) {
     return position.times(GEAR_RATIO);
   }
 
-  /**
-   * Convert motor rotations to degrees of pivot angle. degrees = motorPosition /
-   * GEAR_RATIO
-   */
+  /** Convert motor rotations to degrees of pivot angle. degrees = motorPosition / GEAR_RATIO */
   public static Angle motorRotationsToDegrees(Angle motorPosition) {
     return motorPosition.div(GEAR_RATIO);
   }
 
-  protected ShooterPivotConstants() {
-  }
+  protected ShooterPivotConstants() {}
 }

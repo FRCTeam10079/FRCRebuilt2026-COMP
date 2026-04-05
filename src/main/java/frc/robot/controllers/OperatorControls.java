@@ -8,6 +8,8 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -16,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.ClimbConstants;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
@@ -24,6 +27,7 @@ import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,6 +57,7 @@ public final class OperatorControls {
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
    * @param climbPathfindCommand command that pathfinds to the selected climb lane
+   * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
       CommandXboxController operator,
@@ -63,7 +68,8 @@ public final class OperatorControls {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
       Supplier<Distance> hubDistanceSupplier,
-      Command climbPathfindCommand) {
+      Command climbPathfindCommand,
+      CommandSwerveDrivetrain drivetrain) {
 
     final AtomicInteger tuningEventCounter = new AtomicInteger(0);
 

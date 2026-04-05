@@ -63,6 +63,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   // Trench auto-lower
   private final Supplier<Pose2d> poseSupplier;
   private boolean trenchMode = false;
+  private boolean trenchAutoLowerEnabled = true;
 
   // Angle supplier for TRACK_ANGLE mode
   private Supplier<Angle> angleSupplier = () -> ShooterPivotConstants.MIN_ANGLE;
@@ -218,9 +219,20 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     return isHomed;
   }
 
+  public void setTrenchAutoLowerEnabled(boolean enabled) {
+    this.trenchAutoLowerEnabled = enabled;
+    if (!enabled) {
+      trenchMode = false;
+    }
+  }
+
   // ==================== TRENCH ZONE DETECTION ====================
 
   public boolean isInTrenchZone() {
+    if (!trenchAutoLowerEnabled) {
+      trenchMode = false;
+      return false;
+    }
     if (poseSupplier == null)
       return false;
     Pose2d pose = poseSupplier.get();

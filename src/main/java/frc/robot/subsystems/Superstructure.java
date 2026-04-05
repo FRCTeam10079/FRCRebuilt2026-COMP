@@ -27,11 +27,16 @@ import org.littletonrobotics.junction.Logger;
 /**
  * Superstructure - the "brain" that coordinates all mechanism subsystems.
  *
- * <p>Buttons and auto routines set a {@link WantedSuperState}. Every cycle, {@link #periodic()}
- * translates that into the appropriate {@link CurrentSuperState} and drives each child subsystem's
+ * <p>
+ * Buttons and auto routines set a {@link WantedSuperState}. Every cycle,
+ * {@link #periodic()}
+ * translates that into the appropriate {@link CurrentSuperState} and drives
+ * each child subsystem's
  * wanted state accordingly.
  *
- * <p>This centralizes all mechanism coordination so DriverControls and OperatorControls only need
+ * <p>
+ * This centralizes all mechanism coordination so DriverControls and
+ * OperatorControls only need
  * to express intent - not manage individual subsystems directly.
  */
 public class Superstructure extends SubsystemBase {
@@ -48,9 +53,15 @@ public class Superstructure extends SubsystemBase {
     STOW,
     /** Pre-spin flywheel + track shooter pivot angle (prepare to fire). */
     AIM,
-    /** Full shoot: aim + feed indexer when flywheel, pivot, and heading are on-target. */
+    /**
+     * Full shoot: aim + feed indexer when flywheel, pivot, and heading are
+     * on-target.
+     */
     SHOOT,
-    /** Force-shoot: aim + feed as soon as flywheel is at speed (bypass heading/pivot gates). */
+    /**
+     * Force-shoot: aim + feed as soon as flywheel is at speed (bypass heading/pivot
+     * gates).
+     */
     FORCE_SHOOT,
     /** Reverse feeder/indexer without touching intake. */
     UNJAM,
@@ -62,7 +73,10 @@ public class Superstructure extends SubsystemBase {
     STOPPED
   }
 
-  /** What the robot is actually doing this cycle (derived from wanted + sensor feedback). */
+  /**
+   * What the robot is actually doing this cycle (derived from wanted + sensor
+   * feedback).
+   */
   public enum CurrentSuperState {
     IDLE,
     COLLECTING,
@@ -74,7 +88,10 @@ public class Superstructure extends SubsystemBase {
     SHOOTING,
     /** Actively feeding - force-shoot bypass. */
     FORCE_SHOOTING,
-    /** SOTM: flywheel spinning up / pivot tracking, waiting for on-target conditions. */
+    /**
+     * SOTM: flywheel spinning up / pivot tracking, waiting for on-target
+     * conditions.
+     */
     SOTM_AIMING,
     /** SOTM: all conditions met, indexer feeding. */
     SOTM_SHOOTING,
@@ -108,21 +125,27 @@ public class Superstructure extends SubsystemBase {
   private CurrentSuperState previousSuperState = CurrentSuperState.IDLE;
 
   /**
-   * When true, the Superstructure will NOT set the shooter pivot's wanted state, allowing a direct
+   * When true, the Superstructure will NOT set the shooter pivot's wanted state,
+   * allowing a direct
    * command (manual control, homing) to take exclusive control.
    */
   private boolean shooterPivotOverride = false;
 
   /**
-   * When true, intake wheels run and intake pivot deploys regardless of the current super-state.
-   * This allows intaking to happen simultaneously with aiming, shooting, or SOTM actions.
+   * When true, intake wheels run and intake pivot deploys regardless of the
+   * current super-state.
+   * This allows intaking to happen simultaneously with aiming, shooting, or SOTM
+   * actions.
    */
   private boolean intakeActive = false;
 
   /**
-   * Hold-on timer for SOTM feeding. Once all on-target conditions are met the indexer feeds; if
-   * conditions briefly flicker false the state machine holds SOTM_SHOOTING for up to this duration
-   * before falling back to SOTM_AIMING. Replicates the 0.25 s kFalling debounce that was previously
+   * Hold-on timer for SOTM feeding. Once all on-target conditions are met the
+   * indexer feeds; if
+   * conditions briefly flicker false the state machine holds SOTM_SHOOTING for up
+   * to this duration
+   * before falling back to SOTM_AIMING. Replicates the 0.25 s kFalling debounce
+   * that was previously
    * in the DriverControls compound trigger.
    */
   private static final double SOTM_FEED_HOLD_DURATION = 0.25;
@@ -195,16 +218,25 @@ public class Superstructure extends SubsystemBase {
     return currentSuperState;
   }
 
+  public ShooterPivotSubsystem getShooterPivot() {
+    return shooterPivot;
+  }
+
   /**
-   * Enable/disable shooter-pivot override. When enabled, the Superstructure will skip setting the
-   * shooter pivot's wanted state so a direct command (manual control, homing) can take exclusive
+   * Enable/disable shooter-pivot override. When enabled, the Superstructure will
+   * skip setting the
+   * shooter pivot's wanted state so a direct command (manual control, homing) can
+   * take exclusive
    * control.
    */
   public void setShooterPivotOverride(boolean override) {
     this.shooterPivotOverride = override;
   }
 
-  /** Enable or disable the independent intake overlay (intake runs alongside any main state). */
+  /**
+   * Enable or disable the independent intake overlay (intake runs alongside any
+   * main state).
+   */
   public void setIntakeActive(boolean active) {
     this.intakeActive = active;
   }
@@ -222,7 +254,8 @@ public class Superstructure extends SubsystemBase {
   // ==================== STATE TRANSITIONS ====================
 
   /**
-   * Map the wanted super-state to the actual current super-state. Some wanted states branch based
+   * Map the wanted super-state to the actual current super-state. Some wanted
+   * states branch based
    * on sensor feedback (e.g., SHOOT checks on-target conditions).
    */
   private void handleStateTransitions() {
@@ -273,7 +306,10 @@ public class Superstructure extends SubsystemBase {
 
   // ==================== APPLY STATES ====================
 
-  /** Dispatch to per-state handler methods that set each child subsystem's wanted state. */
+  /**
+   * Dispatch to per-state handler methods that set each child subsystem's wanted
+   * state.
+   */
   private void applyStates() {
     // Detect state-change side effects
     if (previousSuperState == CurrentSuperState.CLIMBING
@@ -391,9 +427,12 @@ public class Superstructure extends SubsystemBase {
   // ==================== INDEPENDENT INTAKE OVERLAY ====================
 
   /**
-   * Independent intake overlay. When {@link #intakeActive} is true, intake wheels spin and the
-   * intake pivot deploys regardless of the current super-state. Skipped for states that have their
-   * own intake behavior (unjam, climb, stopped, and the legacy COLLECT/STOW states used by auto).
+   * Independent intake overlay. When {@link #intakeActive} is true, intake wheels
+   * spin and the
+   * intake pivot deploys regardless of the current super-state. Skipped for
+   * states that have their
+   * own intake behavior (unjam, climb, stopped, and the legacy COLLECT/STOW
+   * states used by auto).
    */
   private void applyIntakeOverlay() {
     if (currentSuperState == CurrentSuperState.UNJAMMING
@@ -415,11 +454,13 @@ public class Superstructure extends SubsystemBase {
   // ==================== CONTINUOUS PIVOT TRACKING ====================
 
   /**
-   * Keep the shooter pivot tracking the distance-based angle at all times. Falls back to IDLE only
+   * Keep the shooter pivot tracking the distance-based angle at all times. Falls
+   * back to IDLE only
    * when there is no valid setpoint.
    */
   private void trackPivotContinuously() {
-    if (shooterPivotOverride) return;
+    if (shooterPivotOverride)
+      return;
     ShooterSetpoint sp = setpointSupplier.get();
     if (sp != null && sp.isValid()) {
       shooterPivot.setWantedState(ShooterPivotSubsystem.WantedState.TRACK_ANGLE, sp.pivotAngle());
@@ -431,27 +472,28 @@ public class Superstructure extends SubsystemBase {
   // ==================== GAME STATE SYNC ====================
 
   /**
-   * Keep the RobotStateMachine's GameState in sync with the Superstructure's current state. This
-   * replaces the scattered stateMachine.setGameState() calls that were in DriverControls /
+   * Keep the RobotStateMachine's GameState in sync with the Superstructure's
+   * current state. This
+   * replaces the scattered stateMachine.setGameState() calls that were in
+   * DriverControls /
    * OperatorControls.
    */
   private void syncGameState() {
-    GameState desired =
-        switch (currentSuperState) {
-          case COLLECTING -> GameState.COLLECTING;
-          case AIMING, SHOOTING, FORCE_SHOOTING, SOTM_AIMING, SOTM_SHOOTING -> GameState.SCORING;
-          case WAITING_FOR_TARGET -> {
-            // If SmartShoot is queued (hub inactive), don't override to SCORING
-            // let the RobotStateMachine's HUB_INACTIVE state stand.
-            if (smartShootController.getState() == SmartShootController.SmartShootState.QUEUED) {
-              yield null;
-            }
-            yield GameState.SCORING;
-          }
-          case CLIMBING -> GameState.CLIMBING;
-          case UNJAMMING -> GameState.MANUAL_OVERRIDE;
-          default -> intakeActive ? GameState.COLLECTING : null;
-        };
+    GameState desired = switch (currentSuperState) {
+      case COLLECTING -> GameState.COLLECTING;
+      case AIMING, SHOOTING, FORCE_SHOOTING, SOTM_AIMING, SOTM_SHOOTING -> GameState.SCORING;
+      case WAITING_FOR_TARGET -> {
+        // If SmartShoot is queued (hub inactive), don't override to SCORING
+        // let the RobotStateMachine's HUB_INACTIVE state stand.
+        if (smartShootController.getState() == SmartShootController.SmartShootState.QUEUED) {
+          yield null;
+        }
+        yield GameState.SCORING;
+      }
+      case CLIMBING -> GameState.CLIMBING;
+      case UNJAMMING -> GameState.MANUAL_OVERRIDE;
+      default -> intakeActive ? GameState.COLLECTING : null;
+    };
 
     if (desired != null && stateMachine.getGameState() != desired) {
       stateMachine.setGameState(desired);
@@ -463,7 +505,8 @@ public class Superstructure extends SubsystemBase {
   /** Full on-target check: flywheel RPM + pivot angle + heading alignment. */
   private boolean isOnTarget() {
     ShooterSetpoint sp = setpointSupplier.get();
-    if (sp == null || !sp.isValid()) return false;
+    if (sp == null || !sp.isValid())
+      return false;
 
     boolean flywheelReady = shooter.isAt(sp.flywheelRPM());
     boolean pivotReady = shooterPivot.isAtAngle(sp.pivotAngle());
@@ -480,7 +523,8 @@ public class Superstructure extends SubsystemBase {
   /** Flywheel-only ready check (for force-shoot gate). */
   private boolean isFlywheelReady() {
     ShooterSetpoint sp = setpointSupplier.get();
-    if (sp == null || !sp.isValid()) return false;
+    if (sp == null || !sp.isValid())
+      return false;
     AngularVelocity targetRPM = sp.flywheelRPM();
     return targetRPM.gt(edu.wpi.first.units.Units.RPM.zero()) && shooter.isAt(targetRPM);
   }
@@ -488,7 +532,8 @@ public class Superstructure extends SubsystemBase {
   // ==================== SOTM STATE HANDLERS ====================
 
   /**
-   * SOTM aiming: spin flywheel and track pivot from LaunchCalculator predictions. Indexer stays off
+   * SOTM aiming: spin flywheel and track pivot from LaunchCalculator predictions.
+   * Indexer stays off
    * - waiting for all on-target conditions.
    */
   private void applySotmAim() {
@@ -508,7 +553,10 @@ public class Superstructure extends SubsystemBase {
     indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
   }
 
-  /** SOTM shooting: same flywheel/pivot tracking as {@link #applySotmAim()}, plus indexer feeds. */
+  /**
+   * SOTM shooting: same flywheel/pivot tracking as {@link #applySotmAim()}, plus
+   * indexer feeds.
+   */
   private void applySotmShoot() {
     LaunchParameters params = launchParametersSupplier.get();
     if (params != null && params.isValid()) {
@@ -524,10 +572,13 @@ public class Superstructure extends SubsystemBase {
   // ==================== SOTM ON-TARGET CHECK ====================
 
   /**
-   * SOTM on-target check: flywheel RPM + pivot angle + heading alignment using LaunchCalculator
+   * SOTM on-target check: flywheel RPM + pivot angle + heading alignment using
+   * LaunchCalculator
    * predictions and the wider SOTM heading tolerance.
    *
-   * <p>Each condition is evaluated into a separate variable (no short-circuit) so all gate
+   * <p>
+   * Each condition is evaluated into a separate variable (no short-circuit) so
+   * all gate
    * diagnostics are always logged.
    */
   private boolean isOnTargetSotm() {

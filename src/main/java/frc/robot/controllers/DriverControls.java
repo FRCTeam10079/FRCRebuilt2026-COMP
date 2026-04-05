@@ -15,6 +15,7 @@ import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
 import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
@@ -115,17 +116,24 @@ public final class DriverControls {
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
 
     // ==================== SHOOT ON THE MOVE ====================
-    // Left Bumper - Hold to activate SOTM: sets WantedSuperState.SOTM so the
-    // Superstructure coordinates shooter, pivot, and indexer using
-    // LaunchCalculator predictions. The drivetrain SOTM command (heading lock +
-    // velocity limiting + COR shifting) runs in parallel since the
-    // Superstructure does not manage the drivetrain.
-    // Guarded against CLIMB to prevent accidentally overriding endgame.
-    controller
+    // Left Bumper - Hold to activate SOTM. Use a single trigger lifecycle so
+    // onTrue/onFalse always pair correctly, even if the robot crosses a zone
+    // boundary while held.
+    final boolean[] useScoringZoneSotm = {true};
+    Trigger sotmTrigger = controller
         .leftBumper()
-        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
-        .and(() -> drivetrain.getState().Pose.getX() < 12.0)
+        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB);
+
+    sotmTrigger
         .onTrue(Commands.sequence(
+            // Latch which SOTM drive implementation to use for this hold to avoid
+            // jittery command swapping near the split boundary.
+            Commands.runOnce(() -> {
+              var params = LaunchCalculator.getInstance().getParameters();
+              // Passing=true means far-side ferrying mode; scoring-zone mode is
+              // the inverse.
+              useScoringZoneSotm[0] = params == null || !params.passing();
+            }),
             Commands.runOnce(
                 () -> superstructure.getShooterPivot().setTrenchAutoLowerEnabled(false)),
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM))))
@@ -134,21 +142,18 @@ public final class DriverControls {
                 () -> superstructure.getShooterPivot().setTrenchAutoLowerEnabled(true)),
             updateWantedStateFromDriverInputs(controller, superstructure)));
 
-    // SOTM drive command (drivetrain-only, parallel to Superstructure SOTM state)
-    // Uses translationY/translationX instead of raw controller to respect
-    // invertTranslation toggle.
-    controller
-        .leftBumper()
-        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
-        .and(() -> drivetrain.getState().Pose.getX() < 12.0)
+    // Scoring-zone SOTM (non-passing): use Oliver's ShootOnTheMoveDrive.
+    sotmTrigger
+        .and(() -> useScoringZoneSotm[0])
+        .whileTrue(
+            new ShootOnTheMoveDrive(drivetrain, vision, translationY::get, translationX::get));
+
+    // Passing/ferrying SOTM: use branch drivetrain SOTM implementation.
+    // Uses translationY/translationX so invertTranslation toggle is honored.
+    sotmTrigger
+        .and(() -> !useScoringZoneSotm[0])
         .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
             () -> translationY.get(), () -> translationX.get()));
-
-    controller
-        .leftBumper()
-        .and(() -> drivetrain.getState().Pose.getX() >= 12.0)
-        .whileTrue(new ShootOnTheMoveDrive(
-            drivetrain, vision, controller::getLeftY, controller::getLeftX));
 
     // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
     new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)

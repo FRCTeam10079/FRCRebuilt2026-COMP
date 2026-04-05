@@ -201,8 +201,8 @@ public class PathfindToTagCommand extends Command {
     // If no path yet, wait (but NEVER drive directly - that would ignore
     // obstacles!)
     if (!hasPath) {
-      SmartDashboard.putString("Pathfinding/Status", "Waiting for path...");
-      SmartDashboard.putNumber("Pathfinding/WaitTime", pathWaitTimer.get());
+      Logger.recordOutput("Pathfinding/Status", "Waiting for path...");
+      Logger.recordOutput("Pathfinding/WaitTime", pathWaitTimer.get());
 
       // Keep publishing current pose even while waiting - VERY IMPORTANT for
       // visibility!
@@ -228,10 +228,10 @@ public class PathfindToTagCommand extends Command {
     // Find current target waypoint using lookahead
     Translation2d targetWaypoint = findLookaheadPoint(currentPose);
 
-    // Log state to SmartDashboard (works with AdvantageScope)
-    SmartDashboard.putString("Pathfinding/Status", "Following path");
-    SmartDashboard.putNumber("Pathfinding/CurrentWaypoint", currentWaypointIndex);
-    SmartDashboard.putNumber("Pathfinding/TotalWaypoints", currentPath.size());
+    // Log state to AdvantageKit
+    Logger.recordOutput("Pathfinding/Status", "Following path");
+    Logger.recordOutput("Pathfinding/CurrentWaypoint", currentWaypointIndex);
+    Logger.recordOutput("Pathfinding/TotalWaypoints", currentPath.size());
 
     // Calculate velocities using PID
     double xVelocity = clampVelocity(
@@ -279,15 +279,14 @@ public class PathfindToTagCommand extends Command {
       pathfindingField.getObject("Path").setPoses();
     }
 
-    // Publish velocity data to SmartDashboard
-    SmartDashboard.putNumber("Pathfinding/VelX", xVelocity);
-    SmartDashboard.putNumber("Pathfinding/VelY", yVelocity);
-    SmartDashboard.putNumber("Pathfinding/VelOmega", rotationVelocity);
-    SmartDashboard.putNumber("Pathfinding/ErrorX", targetWaypoint.getX() - currentPose.getX());
-    SmartDashboard.putNumber("Pathfinding/ErrorY", targetWaypoint.getY() - currentPose.getY());
-    SmartDashboard.putNumber("Pathfinding/CurrentWaypointIdx", currentWaypointIndex);
-    SmartDashboard.putNumber(
-        "Pathfinding/PathLength", currentPath != null ? currentPath.size() : 0);
+    // Publish velocity data via Logger
+    Logger.recordOutput("Pathfinding/VelX", xVelocity);
+    Logger.recordOutput("Pathfinding/VelY", yVelocity);
+    Logger.recordOutput("Pathfinding/VelOmega", rotationVelocity);
+    Logger.recordOutput("Pathfinding/ErrorX", targetWaypoint.getX() - currentPose.getX());
+    Logger.recordOutput("Pathfinding/ErrorY", targetWaypoint.getY() - currentPose.getY());
+    Logger.recordOutput("Pathfinding/CurrentWaypointIdx", currentWaypointIndex);
+    Logger.recordOutput("Pathfinding/PathLength", currentPath != null ? currentPath.size() : 0);
 
     // Publish path for raw struct visualization too
     if (currentPath != null && !currentPath.isEmpty()) {

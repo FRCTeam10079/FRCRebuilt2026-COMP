@@ -17,8 +17,11 @@ import frc.robot.controllers.DriverControls;
 import frc.robot.controllers.OperatorControls;
 import frc.robot.controllers.TestingBindings;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.DashboardPublisher;
+import frc.robot.lib.HubShiftTracker;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
+import frc.robot.lib.SmartShootController;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
@@ -77,6 +80,10 @@ public class RobotContainer {
 
   // ==================== SUPERSTRUCTURE ====================
   private final Superstructure superstructure;
+
+  // ==================== SMART SHOOT + DASHBOARD ====================
+  private final SmartShootController smartShootController;
+  private final DashboardPublisher dashboardPublisher;
 
   // ==================== AUTO ====================
   private final AutoFactory choreoAutoFactory;
@@ -145,6 +152,13 @@ public class RobotContainer {
     // Register controllers with state machine for haptic feedback
     m_stateMachine.registerControllers(m_driverController, m_operatorController);
 
+    // ==================== SMART SHOOT ====================
+    HubShiftTracker hubTracker = HubShiftTracker.getInstance();
+    smartShootController = new SmartShootController(hubTracker, () -> drivetrain.getState().Pose);
+
+    // ==================== DASHBOARD PUBLISHER ====================
+    dashboardPublisher = new DashboardPublisher(m_stateMachine, hubTracker, smartShootController);
+
     // Wire subsystem state into the state machine so isReadyToFire() works
     m_stateMachine.registerShooterSuppliers(shooter::isReady, () -> {
       // Heading is "aligned" when robot faces the hub within tolerance
@@ -173,7 +187,8 @@ public class RobotContainer {
           Angle error = Radians.of(
               Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
           return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
-        });
+        },
+        smartShootController);
 
     // Initialize the pathfinding system
     initializePathfinding();
@@ -272,6 +287,10 @@ public class RobotContainer {
 
   public Superstructure getSuperstructure() {
     return superstructure;
+  }
+
+  public DashboardPublisher getDashboardPublisher() {
+    return dashboardPublisher;
   }
 
   /**

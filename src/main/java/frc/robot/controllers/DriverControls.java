@@ -6,6 +6,7 @@ package frc.robot.controllers;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -13,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
+import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.commands.ShooterFactory;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
@@ -123,6 +125,7 @@ public final class DriverControls {
     controller
         .leftBumper()
         .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+        .and(() -> drivetrain.getState().Pose.getX() < 12.0)
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
@@ -132,9 +135,14 @@ public final class DriverControls {
     controller
         .leftBumper()
         .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+        .and(() -> drivetrain.getState().Pose.getX() < 12.0)
         .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
             () -> translationY.get(), () -> translationX.get()));
 
+    controller
+        .leftBumper()
+        .and(() -> drivetrain.getState().Pose.getX() >= 12.0)
+        .whileTrue(new ShootOnTheMoveDrive(drivetrain, vision, controller::getLeftY, controller::getLeftX));
     // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
     new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)
         .and(controller.leftBumper())

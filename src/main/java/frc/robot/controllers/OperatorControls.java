@@ -204,10 +204,14 @@ public final class OperatorControls {
             climber.extendCommand()));
 
     // A button (while in climb mode and extended) -> Retract to climb position
+    // Use onTrue on just A button, then conditionally run retract.
+    // This prevents auto-triggering when isExtended() becomes true while A is held.
     operator
         .a()
-        .and(() -> superstructure.isClimbing() && climber.isExtended())
-        .onTrue(climber.retractCommand());
+        .onTrue(Commands.either(
+            climber.retractCommand(),
+            Commands.none(),
+            () -> superstructure.isClimbing() && climber.isExtended()));
 
     // Back alone (not with Start) -> Abort climb from any state
     operator

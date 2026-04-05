@@ -11,6 +11,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.lib.LaunchCalculator.LaunchParameters;
+import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.lib.SmartShootController;
 import frc.robot.statemachine.GameState;
@@ -390,7 +391,7 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyForceShoot() {
-    ShooterSetpoint sp = setpointSupplier.get();
+    ShooterSetpoint sp = ShootOnTheMoveDrive.getShooterSetpointSupplier().get();
     if (sp != null && sp.isValid()) {
       shooter.setWantedState(ShooterSubsystem.WantedState.HOLD_RPM, sp.flywheelRPM());
       if (!shooterPivotOverride) {

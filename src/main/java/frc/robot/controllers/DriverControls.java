@@ -124,6 +124,7 @@ public final class DriverControls {
         controller
                 .leftBumper()
                 .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+                .and(() -> drivetrain.getState().Pose.getX() < 12.0)
                 .onTrue(Commands.sequence(
                         Commands.runOnce(() -> superstructure.getShooterPivot().setTrenchAutoLowerEnabled(false)),
                         Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM))))
@@ -135,12 +136,18 @@ public final class DriverControls {
         // Uses translationY/translationX instead of raw controller to respect
         // invertTranslation toggle.
         controller
-                .leftBumper()
-                .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
-                .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
-                        () -> translationY.get(), () -> translationX.get()));
+            .leftBumper()
+            .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB)
+            .and(() -> drivetrain.getState().Pose.getX() < 12.0)
+            .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
+                            () -> translationY.get(), () -> translationX.get()));
 
-        // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
+        controller
+            .leftBumper()
+            .and(() -> drivetrain.getState().Pose.getX() >= 12.0)
+            .whileTrue(new ShootOnTheMoveDrive(drivetrain, vision, controller::getLeftY, controller::getLeftX));
+
+    // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
         new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)
                 .and(controller.leftBumper())
                 .onTrue(Commands.runOnce(() -> controller

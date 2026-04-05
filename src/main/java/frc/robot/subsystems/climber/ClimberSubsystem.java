@@ -7,7 +7,6 @@ package frc.robot.subsystems.climber;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -47,7 +46,6 @@ public class ClimberSubsystem extends SubsystemBase {
   private SystemState systemState = SystemState.IDLE;
 
   // ==================== STALL DETECTION ====================
-  private final Timer moveTimer = new Timer();
   private int stallCycleCount = 0;
   private static final int STALL_CYCLES_REQUIRED =
       (int) (ClimberConstants.STALL_DEBOUNCE_SECONDS / 0.02);
@@ -92,6 +90,25 @@ public class ClimberSubsystem extends SubsystemBase {
   // ==================== STATE TRANSITIONS ====================
 
   private SystemState handleStateTransitions(SystemState previous) {
+    // EXTENDED and RETRACTED are sticky - only the opposite direction exits them.
+    // This prevents accidental IDLE transitions (button release race,
+    // Superstructure cleanup)
+    // from dropping the climber.
+    if (previous == SystemState.EXTENDED) {
+      if (wantedState == WantedState.RETRACT) {
+        resetStallDetection();
+        return SystemState.RETRACTING;
+      }
+      return SystemState.EXTENDED;
+    }
+    if (previous == SystemState.RETRACTED) {
+      if (wantedState == WantedState.EXTEND) {
+        resetStallDetection();
+        return SystemState.EXTENDING;
+      }
+      return SystemState.RETRACTED;
+    }
+
     switch (wantedState) {
       case IDLE:
       case ABORT:
@@ -99,9 +116,6 @@ public class ClimberSubsystem extends SubsystemBase {
         return SystemState.IDLE;
 
       case EXTEND:
-        if (previous == SystemState.EXTENDED) {
-          return SystemState.EXTENDED;
-        }
         if (previous != SystemState.EXTENDING) {
           resetStallDetection();
         }
@@ -112,9 +126,6 @@ public class ClimberSubsystem extends SubsystemBase {
         return SystemState.EXTENDING;
 
       case RETRACT:
-        if (previous == SystemState.RETRACTED) {
-          return SystemState.RETRACTED;
-        }
         if (previous != SystemState.RETRACTING) {
           resetStallDetection();
         }

@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.SignalLogger;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -43,6 +44,14 @@ public class ShooterSubsystem extends SubsystemBase {
 
   private AngularVelocity targetRPM = RPM.zero();
 
+  // Slew rate limiter: prevents abrupt flywheel speed changes.
+  // Rate is in RPM/second. 3000 RPM/s means the flywheel can ramp from 0 to 3000
+  // RPM in 1s.
+  // Adapted from MA (6328). Adjust to match our motor/gearing response.
+  private static final double FLYWHEEL_SLEW_RATE_RPM_PER_SEC = 3000.0;
+  private final SlewRateLimiter flywheelSlew = new SlewRateLimiter(FLYWHEEL_SLEW_RATE_RPM_PER_SEC);
+  private double slewedTargetRPM = 0.0;
+
   // Stability tracking with debouncing
   private int stabilityCounter = 0;
 
@@ -71,6 +80,7 @@ public class ShooterSubsystem extends SubsystemBase {
     Logger.recordOutput("Shooter/WantedState", wantedState);
     Logger.recordOutput("Shooter/SystemState", systemState);
     Logger.recordOutput("Shooter/TargetRPM", targetRPM.in(RPM));
+    Logger.recordOutput("Shooter/SlewedTargetRPM", slewedTargetRPM);
     Logger.recordOutput("Shooter/CurrentRPM", getCurrentRPM().in(RPM));
     Logger.recordOutput(
         "Shooter/ClosedLoopReferenceRPM",
@@ -130,10 +140,13 @@ public class ShooterSubsystem extends SubsystemBase {
       case SPINNING_UP:
       case AT_SPEED:
       case SHOOTING:
-        io.setVelocity(targetRPM.in(RotationsPerSecond));
+        slewedTargetRPM = flywheelSlew.calculate(targetRPM.in(RPM));
+        io.setVelocity(RPM.of(slewedTargetRPM).in(RotationsPerSecond));
         break;
       case IDLE:
       default:
+        flywheelSlew.reset(0.0);
+        slewedTargetRPM = 0.0;
         io.stop();
         break;
     }

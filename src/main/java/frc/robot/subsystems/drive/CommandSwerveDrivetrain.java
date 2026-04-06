@@ -40,6 +40,7 @@ import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.LaunchCalculator.LaunchParameters;
 import frc.robot.lib.ShooterMath;
 import frc.robot.subsystems.drive.SwerveHeadingController.HeadingControllerState;
+import frc.robot.util.LoggedTunableNumber;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
@@ -78,6 +79,55 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private final SwerveHeadingController m_headingController = new SwerveHeadingController();
   private boolean m_headingLockEnabled = false;
   private double m_headingLockTarget = 0.0;
+
+  // ==================== SOTM DEBUG LOGGING ====================
+  private boolean lastHeadingOk = false;
+
+  // ==================== ODOMETRY TILT CORRECTION ====================
+  // Adapted from MA (6328): scale odometry twist by floor-projection factor
+  // when the robot is tilted (e.g. driving over field elements / defense).
+  // At 0 deg tilt, trust = 1.0; at 25 deg tilt, trust = 0.0.
+  private static final double MAX_TILT_DEG = 25.0;
+  private Pose2d m_lastRawPose = new Pose2d();
+  private Pose2d m_tiltCorrectedPose = new Pose2d();
+
+  // ==================== SOTM TUNABLE PARAMETERS ====================
+  // All SOTM gains and thresholds are live-tunable via NetworkTables under
+  // /Tuning/.
+  // Adapted from MA (6328) LoggedTunableNumber pattern.
+  private static final LoggedTunableNumber sotmLaunchKp =
+      new LoggedTunableNumber("SOTM/LaunchKp", Constants.HeadingControllerConstants.LAUNCH_KP);
+  private static final LoggedTunableNumber sotmLaunchKd =
+      new LoggedTunableNumber("SOTM/LaunchKd", Constants.HeadingControllerConstants.LAUNCH_KD);
+  private static final LoggedTunableNumber sotmYawToleranceDeg = new LoggedTunableNumber(
+      "SOTM/YawToleranceDeg", Constants.ShooterConstants.LAUNCH_HEADING_TOLERANCE_DEGREES);
+  private static final LoggedTunableNumber sotmPitchToleranceDeg = new LoggedTunableNumber(
+      "SOTM/PitchToleranceDeg", Constants.ShooterConstants.LAUNCH_PITCH_TOLERANCE_DEGREES);
+  private static final LoggedTunableNumber sotmRollToleranceDeg = new LoggedTunableNumber(
+      "SOTM/RollToleranceDeg", Constants.ShooterConstants.LAUNCH_ROLL_TOLERANCE_DEGREES);
+  private static final LoggedTunableNumber sotmMaxPolarVelocity = new LoggedTunableNumber(
+      "SOTM/MaxPolarVelocityRadPerSec",
+      Constants.DrivetrainConstants.MAX_POLAR_VELOCITY_RAD_PER_SEC);
+  private static final LoggedTunableNumber sotmAdaptivePolarFullErrorDeg =
+      new LoggedTunableNumber("SOTM/AdaptivePolarFullErrorDeg", 30.0);
+  private static final LoggedTunableNumber sotmAdaptivePolarMaxScale =
+      new LoggedTunableNumber("SOTM/AdaptivePolarMaxScale", 1.8);
+  private static final LoggedTunableNumber sotmMaxShootingSpeedMps = new LoggedTunableNumber(
+      "SOTM/MaxShootingSpeedMps", Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS);
+  private static final LoggedTunableNumber sotmMaxShootingAngularRate = new LoggedTunableNumber(
+      "SOTM/MaxShootingAngularRateRadPerSec",
+      Constants.DrivetrainConstants.MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC);
+  private static final LoggedTunableNumber sotmCorMinErrorDeg = new LoggedTunableNumber(
+      "SOTM/CORMinErrorDeg", Constants.DrivetrainConstants.COR_MIN_ERROR_DEG);
+  private static final LoggedTunableNumber sotmCorMaxErrorDeg = new LoggedTunableNumber(
+      "SOTM/CORMaxErrorDeg", Constants.DrivetrainConstants.COR_MAX_ERROR_DEG);
+  private static final LoggedTunableNumber sotmOlockLinearThreshold = new LoggedTunableNumber(
+      "SOTM/OLockLinearThresholdMps", Constants.DrivetrainConstants.OLOCK_LINEAR_THRESHOLD_MPS);
+  private static final LoggedTunableNumber sotmOlockOmegaThreshold = new LoggedTunableNumber(
+      "SOTM/OLockOmegaThresholdRadPerSec",
+      Constants.DrivetrainConstants.OLOCK_OMEGA_THRESHOLD_RAD_PER_SEC);
+  private static final LoggedTunableNumber sotmPassingYawToleranceDeg =
+      new LoggedTunableNumber("SOTM/PassingYawToleranceDeg", 15.0);
 
   /** Swerve request to apply during robot-centric path following */
   private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds =
@@ -402,6 +452,27 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // Keep legacy key for existing layouts and tools.
     Logger.recordOutput("Drive Pos", state.Pose);
+
+    // ---- Odometry tilt correction (adapted from MA 6328) ----
+    // Compute tilt from Pigeon2 pitch/roll, scale odometry delta 100%→0% over
+    // 0 deg→25 deg.
+    Pose2d rawPose = getState().Pose;
+    double pitchRad = Math.toRadians(getPigeon2().getPitch().getValueAsDouble());
+    double rollRad = Math.toRadians(getPigeon2().getRoll().getValueAsDouble());
+    double tiltDeg = Math.abs(Math.toDegrees(Math.acos(Math.cos(pitchRad) * Math.cos(rollRad))));
+    double tiltScalar =
+        MathUtil.clamp(1.0 - MathUtil.inverseInterpolate(0, MAX_TILT_DEG, tiltDeg), 0.0, 1.0);
+
+    // Compute the raw delta since last cycle and scale it by tilt trust
+    var rawTwist = m_lastRawPose.log(rawPose);
+    var correctedTwist = new edu.wpi.first.math.geometry.Twist2d(
+        rawTwist.dx * tiltScalar, rawTwist.dy * tiltScalar, rawTwist.dtheta * tiltScalar);
+    m_tiltCorrectedPose = m_tiltCorrectedPose.exp(correctedTwist);
+    m_lastRawPose = rawPose;
+
+    Logger.recordOutput("Drive/TiltDeg", tiltDeg);
+    Logger.recordOutput("Drive/TiltScalar", tiltScalar);
+    Logger.recordOutput("Drive/TiltCorrectedPose", m_tiltCorrectedPose);
   }
 
   private static SwerveModuleState[] copyModuleStates(SwerveModuleState[] source) {
@@ -410,6 +481,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       copy[i] = new SwerveModuleState(source[i].speedMetersPerSecond, source[i].angle);
     }
     return copy;
+  }
+
+  /**
+   * Returns the tilt-corrected pose estimate.
+   *
+   * <p>Unlike {@code getState().Pose}, this pose has odometry deltas scaled down when the robot is
+   * tilted (pitch/roll). At 0° tilt the poses are identical; at 25°+ tilt, odometry deltas are
+   * zeroed to prevent drift from wheel slip on ramps/defense.
+   *
+   * @return tilt-corrected Pose2d
+   */
+  public Pose2d getTiltCorrectedPose() {
+    return m_tiltCorrectedPose;
   }
 
   {
@@ -490,7 +574,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    */
   private final SwerveRequest.ApplyFieldSpeeds m_fieldCentricRequest =
       new SwerveRequest.ApplyFieldSpeeds()
-          .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage);
+          .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage)
+          .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.OperatorPerspective);
 
   /**
    * Calculate chassis speeds with skew compensation for smooth driving.
@@ -520,6 +605,32 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         ChassisSpeeds.fromFieldRelativeSpeeds(
             new ChassisSpeeds(xVelocity, yVelocity, angularVelocity), currentPose.getRotation()),
         currentPose.getRotation().plus(skewCompensationFactor));
+  }
+
+  /**
+   * Transform field-relative velocity to account for a shifted center of rotation.
+   *
+   * <p>Adapted from Mechanical Advantage (6328) GeomUtil.transformVelocity. When the swerve modules
+   * pivot around a point offset from the robot center, the linear velocity at the robot center
+   * changes due to the rotational component. This method computes the adjusted velocity.
+   *
+   * @param velocity original field-relative ChassisSpeeds
+   * @param transform robot-frame translation from robot center to the desired pivot point
+   * @param currentRotation current robot heading (for frame conversion)
+   * @return ChassisSpeeds with linear velocity adjusted for the offset pivot point
+   */
+  private static ChassisSpeeds transformVelocityForCOR(
+      ChassisSpeeds velocity, Translation2d transform, Rotation2d currentRotation) {
+    return new ChassisSpeeds(
+        velocity.vxMetersPerSecond
+            - velocity.omegaRadiansPerSecond
+                * (transform.getX() * currentRotation.getSin()
+                    + transform.getY() * currentRotation.getCos()),
+        velocity.vyMetersPerSecond
+            + velocity.omegaRadiansPerSecond
+                * (transform.getX() * currentRotation.getCos()
+                    - transform.getY() * currentRotation.getSin()),
+        velocity.omegaRadiansPerSecond);
   }
 
   /**
@@ -801,15 +912,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   public Command shootOnTheMoveDriveCommand(
       DoubleSupplier xInputSupplier, DoubleSupplier yInputSupplier) {
 
-    return run(() -> {
-          // Ensure LaunchCalculator is updated this cycle
+    return runOnce(() -> {})
+        .andThen(run(() -> {
+          // LaunchCalculator is updated in robotPeriodic() before triggers evaluate
           LaunchCalculator calc = LaunchCalculator.getInstance();
           Pose2d currentPose = getState().Pose;
           ChassisSpeeds currentSpeeds = getState().Speeds;
           Rotation2d currentHeading = currentPose.getRotation();
-
-          // Update the calculator with the latest drivetrain state
-          calc.update(currentPose, currentSpeeds, currentHeading);
 
           LaunchParameters params = calc.getParameters();
 
@@ -819,8 +928,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 xInputSupplier.getAsDouble(),
                 yInputSupplier.getAsDouble(),
                 0.0, // no rotation
-                Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS,
-                Constants.DrivetrainConstants.MAX_SHOOTING_ANGULAR_RATE_RAD_PER_SEC);
+                sotmMaxShootingSpeedMps.get(),
+                sotmMaxShootingAngularRate.get());
             return;
           }
 
@@ -829,10 +938,20 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           double headingErrorRad = params.driveAngle().minus(currentHeading).getRadians();
           double measuredOmega = currentSpeeds.omegaRadiansPerSecond;
 
-          double omegaOutput = params.driveVelocityRadPerSec()
-              + Constants.HeadingControllerConstants.LAUNCH_KP * headingErrorRad
-              + Constants.HeadingControllerConstants.LAUNCH_KD
-                  * (params.driveVelocityRadPerSec() - measuredOmega);
+          double pTerm = sotmLaunchKp.get() * headingErrorRad;
+          double dTerm = sotmLaunchKd.get() * (params.driveVelocityRadPerSec() - measuredOmega);
+
+          // Guard against derivative overpowering in the opposite direction during
+          // fast translation-direction changes. Keep this inactive near zero error.
+          if (Math.abs(Math.toDegrees(headingErrorRad)) > 3.0
+              && Math.signum(dTerm) != Math.signum(pTerm)
+              && Math.abs(dTerm) > Math.abs(pTerm) * 0.75) {
+            dTerm = Math.copySign(Math.abs(pTerm) * 0.75, dTerm);
+          }
+
+          double omegaOutput = params.driveVelocityRadPerSec() + pTerm + dTerm;
+          omegaOutput = MathUtil.clamp(
+              omegaOutput, -sotmMaxShootingAngularRate.get(), sotmMaxShootingAngularRate.get());
 
           // ---- Translation from joystick ----
           double xMagnitude = MathUtil.applyDeadband(
@@ -841,21 +960,31 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               yInputSupplier.getAsDouble(), Constants.DrivetrainConstants.DEADBAND_PERCENT);
 
           // Convert joystick to field-relative velocities
-          double xVelocity = -xMagnitude
-              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
-              * teleopVelocityCoefficient;
-          double yVelocity = -yMagnitude
-              * Constants.DrivetrainConstants.MAX_SHOOTING_SPEED_MPS
-              * teleopVelocityCoefficient;
+          double xVelocity =
+              -xMagnitude * sotmMaxShootingSpeedMps.get() * teleopVelocityCoefficient;
+          double yVelocity =
+              -yMagnitude * sotmMaxShootingSpeedMps.get() * teleopVelocityCoefficient;
 
           // ---- Velocity limiting (law of sines) ----
           // Prevents the ball from sweeping past the hub too fast.
           // Computes the maximum linear speed that keeps the ball's angular velocity
           // at the hub below MAX_POLAR_VELOCITY_RAD_PER_SEC.
+          // Skipped for passing shots (MA 6328): passing doesn't need precision aiming.
           Translation2d velocityVector = new Translation2d(xVelocity, yVelocity);
           double linearSpeed = velocityVector.getNorm();
+          double headingErrorDegAbs = Math.abs(Math.toDegrees(headingErrorRad));
+          double adaptivePolarScale = 1.0;
+          double effectiveMaxPolarVelocity = sotmMaxPolarVelocity.get();
+          double maxLinearSpeedFromLimiter = sotmMaxShootingSpeedMps.get();
+          boolean velocityLimited = false;
 
-          if (linearSpeed > 0.01) { // avoid division by zero
+          if (!params.passing() && linearSpeed > 0.01) { // avoid division by zero
+            double errorNorm = MathUtil.clamp(
+                headingErrorDegAbs / Math.max(1.0, sotmAdaptivePolarFullErrorDeg.get()), 0.0, 1.0);
+            double adaptiveMaxScale = Math.max(1.0, sotmAdaptivePolarMaxScale.get());
+            adaptivePolarScale = 1.0 + (adaptiveMaxScale - 1.0) * errorNorm;
+            effectiveMaxPolarVelocity = sotmMaxPolarVelocity.get() * adaptivePolarScale;
+
             Translation2d hubPos = ShooterMath.getHubPosition();
             Rotation2d hubDirection = hubPos.minus(currentPose.getTranslation()).getAngle();
             Rotation2d velocityDirection = velocityVector.getAngle();
@@ -864,34 +993,98 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             double rawDistance = params.rawDistance();
             double naiveTOF = calc.getNaiveTOF(rawDistance);
 
-            double hubAngle =
-                Constants.DrivetrainConstants.MAX_POLAR_VELOCITY_RAD_PER_SEC * naiveTOF;
-            double lookaheadAngle = Math.PI - robotAngle - hubAngle;
+            if (naiveTOF > 1e-3) {
+              double hubAngle = effectiveMaxPolarVelocity * naiveTOF;
+              double lookaheadAngle = Math.PI - robotAngle - hubAngle;
 
-            if (lookaheadAngle > 0) {
-              double robotLookaheadDist =
-                  rawDistance * Math.sin(hubAngle) / Math.sin(lookaheadAngle);
-              double maxLinearSpeed = robotLookaheadDist / naiveTOF;
+              if (lookaheadAngle > 0) {
+                double robotLookaheadDist =
+                    rawDistance * Math.sin(hubAngle) / Math.sin(lookaheadAngle);
+                double maxLinearSpeed = robotLookaheadDist / naiveTOF;
+                maxLinearSpeedFromLimiter = maxLinearSpeed;
 
-              if (linearSpeed > maxLinearSpeed) {
-                double scale = maxLinearSpeed / linearSpeed;
-                xVelocity *= scale;
-                yVelocity *= scale;
+                if (linearSpeed > maxLinearSpeed) {
+                  double scale = maxLinearSpeed / linearSpeed;
+                  xVelocity *= scale;
+                  yVelocity *= scale;
+                  velocityLimited = true;
+                }
               }
             }
           }
 
-          // ---- Apply skew compensation and drive ----
-          ChassisSpeeds compensatedSpeeds =
-              calculateSpeedsWithSkewCompensation(xVelocity, yVelocity, omegaOutput);
+          // ---- Center-of-rotation shifting ----
+          // When heading error is large, shift the swerve pivot point toward the
+          // shooter so the robot rotates around the launch point instead of its
+          // geometric center. This improves aiming responsiveness.
+          // Linear interpolation: no shift below COR_MIN, full shift at COR_MAX.
+          double corScalar = MathUtil.clamp(
+              (headingErrorDegAbs - sotmCorMinErrorDeg.get())
+                  / (sotmCorMaxErrorDeg.get() - sotmCorMinErrorDeg.get()),
+              0.0,
+              1.0);
 
-          setControl(m_fieldCentricRequest.withSpeeds(compensatedSpeeds));
+          // The shooter offset from robot center (robot frame).
+          // When SHOOTER_OFFSET is (0,0), this has no effect - corScalar * (0,0) = (0,0).
+          Translation2d shooterToRobot = new Translation2d(
+              -LaunchCalculator.SHOOTER_OFFSET_X, -LaunchCalculator.SHOOTER_OFFSET_Y);
+
+          // Transform field-relative velocity with the COR offset.
+          // corScalar=0 -> pivot at robot center (normal); corScalar=1 -> pivot at
+          // shooter.
+          Translation2d corOffset = shooterToRobot.times(1.0 - corScalar);
+          ChassisSpeeds fieldSpeeds = new ChassisSpeeds(xVelocity, yVelocity, omegaOutput);
+          ChassisSpeeds corAdjustedSpeeds =
+              transformVelocityForCOR(fieldSpeeds, corOffset, currentHeading);
+
+          // ---- O-Lock: brake when nearly stationary ----
+          // Adapted from MA (6328). When the robot is barely moving, sending
+          // near-zero velocities causes jitter. Instead, lock wheels in X-pattern.
+          double corLinearSpeed =
+              Math.hypot(corAdjustedSpeeds.vxMetersPerSecond, corAdjustedSpeeds.vyMetersPerSecond);
+          boolean oLock = corLinearSpeed < sotmOlockLinearThreshold.get()
+              && Math.abs(corAdjustedSpeeds.omegaRadiansPerSecond) < sotmOlockOmegaThreshold.get();
+
+          if (oLock) {
+            // X-stop: point all wheels inward to prevent drift
+            setControl(new SwerveRequest.SwerveDriveBrake());
+          } else {
+            // ---- Apply skew compensation and drive ----
+            ChassisSpeeds compensatedSpeeds = calculateSpeedsWithSkewCompensation(
+                corAdjustedSpeeds.vxMetersPerSecond,
+                corAdjustedSpeeds.vyMetersPerSecond,
+                corAdjustedSpeeds.omegaRadiansPerSecond);
+
+            setControl(m_fieldCentricRequest.withSpeeds(compensatedSpeeds));
+          }
 
           // ---- Telemetry ----
-          Logger.recordOutput("ShootOnMove/HeadingErrorDeg", Math.toDegrees(headingErrorRad));
-          Logger.recordOutput("ShootOnMove/OmegaOutput", omegaOutput);
-          Logger.recordOutput("ShootOnMove/IsValid", params.isValid());
-        })
+          Logger.recordOutput("SOTM/HeadingErrorDeg", Math.toDegrees(headingErrorRad));
+          Logger.recordOutput("SOTM/OmegaOutput", omegaOutput);
+          Logger.recordOutput("SOTM/IsValid", params.isValid());
+          Logger.recordOutput("SOTM/Passing", params.passing());
+          Logger.recordOutput(
+              "SOTM/YawToleranceDeg",
+              params.passing() ? sotmPassingYawToleranceDeg.get() : sotmYawToleranceDeg.get());
+          Logger.recordOutput("SOTM/AdaptivePolarScale", adaptivePolarScale);
+          Logger.recordOutput("SOTM/EffectiveMaxPolarVelocityRadPerSec", effectiveMaxPolarVelocity);
+          Logger.recordOutput("SOTM/MaxLinearSpeedLimiterMps", maxLinearSpeedFromLimiter);
+          Logger.recordOutput("SOTM/VelocityLimited", velocityLimited);
+          Logger.recordOutput("SOTM/CORScalar", corScalar);
+          Logger.recordOutput("SOTM/OLock", oLock);
+
+          // ---- Detailed SOTM telemetry (every cycle, logged to .wpilog) ----
+          ChassisSpeeds fieldVel =
+              ChassisSpeeds.fromRobotRelativeSpeeds(currentSpeeds, currentHeading);
+          double robotSpeedMps = Math.hypot(fieldVel.vxMetersPerSecond, fieldVel.vyMetersPerSecond);
+          Logger.recordOutput("SOTM/HeadingTargetDeg", params.driveAngle().getDegrees());
+          Logger.recordOutput("SOTM/HeadingActualDeg", currentHeading.getDegrees());
+          Logger.recordOutput("SOTM/OmegaFF", params.driveVelocityRadPerSec());
+          Logger.recordOutput("SOTM/OmegaMeasured", measuredOmega);
+          Logger.recordOutput("SOTM/RobotSpeedMps", robotSpeedMps);
+          Logger.recordOutput("SOTM/FieldVelX", fieldVel.vxMetersPerSecond);
+          Logger.recordOutput("SOTM/FieldVelY", fieldVel.vyMetersPerSecond);
+        }))
         .finallyDo(() -> {
           LaunchCalculator.getInstance().reset();
         })
@@ -899,10 +1092,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   }
 
   /**
-   * Check if the robot heading is within launch tolerance of the target. Uses the wider launch-mode
-   * tolerance (not the static 3 deg tolerance).
+   * Check if the robot heading is within launch tolerance of the target AND the robot is level
+   * enough to shoot. Uses the wider launch-mode tolerance (not the static 3 deg tolerance).
    *
-   * @return true if heading is close enough to launch target to fire
+   * <p>Combines heading (yaw) check with pitch/roll tolerance to prevent shooting while the robot
+   * is tilted (e.g., driving over field elements). Adapted from MA (6328) atLaunchGoal().
+   *
+   * @return true if heading is close enough AND robot is level enough to fire
    */
   public boolean isAtLaunchHeadingGoal() {
     LaunchParameters params = LaunchCalculator.getInstance().getParameters();
@@ -910,7 +1106,48 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     double errorDeg =
         Math.abs(params.driveAngle().minus(getState().Pose.getRotation()).getDegrees());
-    return errorDeg <= Constants.ShooterConstants.LAUNCH_HEADING_TOLERANCE_DEGREES;
+    double yawTolerance =
+        params.passing() ? sotmPassingYawToleranceDeg.get() : sotmYawToleranceDeg.get();
+    boolean headingOk = errorDeg <= yawTolerance;
+    boolean levelOk = isLevelForLaunch();
+
+    Logger.recordOutput("SOTM/HeadingOk", headingOk);
+    Logger.recordOutput("SOTM/LevelOk", levelOk);
+    Logger.recordOutput("SOTM/Passing", params.passing());
+    Logger.recordOutput("SOTM/YawToleranceDeg", yawTolerance);
+    Logger.recordOutput("SOTM/HeadingErrorDegGate", errorDeg);
+
+    // ---- Heading state transition logging (event-based, not periodic) ----
+    boolean currentHeadingOk = headingOk && levelOk;
+    if (currentHeadingOk != lastHeadingOk) {
+      ChassisSpeeds spd = getState().Speeds;
+      double speed = Math.hypot(spd.vxMetersPerSecond, spd.vyMetersPerSecond);
+      Logger.recordOutput("SOTM/HeadingTransition", currentHeadingOk ? "OK" : "LOST");
+      Logger.recordOutput("SOTM/HeadingTransitionErrorDeg", errorDeg);
+      Logger.recordOutput("SOTM/HeadingTransitionOmega", spd.omegaRadiansPerSecond);
+      Logger.recordOutput("SOTM/HeadingTransitionSpeed", speed);
+    }
+    lastHeadingOk = currentHeadingOk;
+
+    return headingOk && levelOk;
+  }
+
+  /**
+   * Check if the robot is level enough to shoot on the move.
+   *
+   * <p>Reads pitch and roll from the Pigeon2 IMU. If either exceeds the tolerance (default 5deg,
+   * matching MA), the robot is considered too tilted for an accurate shot.
+   *
+   * @return true if pitch and roll are within tolerance
+   */
+  public boolean isLevelForLaunch() {
+    double pitchDeg = Math.abs(getPigeon2().getPitch().getValueAsDouble());
+    double rollDeg = Math.abs(getPigeon2().getRoll().getValueAsDouble());
+    // Normalize for inverted Pigeon2 mounting: roll reads ~180° when level
+    if (rollDeg > 90) {
+      rollDeg = 180 - rollDeg;
+    }
+    return pitchDeg <= sotmPitchToleranceDeg.get() && rollDeg <= sotmRollToleranceDeg.get();
   }
 
   // ==================== PATHFINDING COMMANDS ====================

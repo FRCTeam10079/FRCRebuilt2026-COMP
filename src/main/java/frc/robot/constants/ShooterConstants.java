@@ -29,7 +29,7 @@ public class ShooterConstants {
   public static final AngularVelocity SHOOTER_SPEED_TOLERANCE = RPM.of(150);
   public static final int STABILITY_CYCLES_REQUIRED = 5;
   /** Percentage tolerance for on-target check (inspired by 254's 4% tolerance). */
-  public static final double ON_TARGET_RPM_PERCENT = 0.04;
+  public static final double ON_TARGET_RPM_PERCENT = 0.08;
 
   // ==================== PID GAINS (Slot 0) ====================
   public static final double SHOOTER_KS = 0.15;
@@ -48,14 +48,25 @@ public class ShooterConstants {
 
   // ==================== HEADING ALIGNMENT ====================
   /** Heading tolerance for "aligned to hub" in degrees. */
-  public static final Angle HEADING_TOLERANCE = Degrees.of(15.0);
+  public static final Angle HEADING_TOLERANCE = Degrees.of(10.0);
 
   /**
-   * Heading tolerance for shoot-on-the-move in degrees. Wider than static because the heading
-   * continuously tracks a moving target.
+   * Heading tolerance for shoot-on-the-move in degrees (yaw). MA (6328) uses 10.0deg for launch,
+   * 15.0deg for passing.
    */
-  // TODO: TUNE ON THE ROBOT - start at 10 deg, tighten as confidence grows
-  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 10.0;
+  public static final double LAUNCH_HEADING_TOLERANCE_DEGREES = 8.0;
+
+  /**
+   * Pitch tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted (e.g.,
+   * driving over field elements). MA (6328) uses 5.0deg.
+   */
+  public static final double LAUNCH_PITCH_TOLERANCE_DEGREES = 5.0;
+
+  /**
+   * Roll tolerance for shoot-on-the-move in degrees. Rejects shots when the robot is tilted
+   * laterally. MA (6328) uses 5.0deg.
+   */
+  public static final double LAUNCH_ROLL_TOLERANCE_DEGREES = 5.0;
 
   protected ShooterConstants() {}
 }

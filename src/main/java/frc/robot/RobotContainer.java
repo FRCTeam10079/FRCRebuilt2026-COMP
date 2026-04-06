@@ -19,6 +19,7 @@ import frc.robot.controllers.TestingBindings;
 import frc.robot.generated.TunerConstants;
 import frc.robot.lib.DashboardPublisher;
 import frc.robot.lib.HubShiftTracker;
+import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.lib.SmartShootController;
@@ -188,7 +189,9 @@ public class RobotContainer {
               Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
           return error.lt(Constants.ShooterConstants.HEADING_TOLERANCE);
         },
-        smartShootController);
+        smartShootController,
+        () -> LaunchCalculator.getInstance().getParameters(),
+        () -> drivetrain.isAtLaunchHeadingGoal());
 
     // Initialize the pathfinding system
     initializePathfinding();

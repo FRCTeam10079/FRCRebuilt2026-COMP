@@ -63,8 +63,8 @@ public class ShooterPivotConstants {
 
   // ==================== TOLERANCES ====================
 
-  /** Wider tolerance for "ready to shoot" in degrees. */
-  public static final Angle SHOOTING_TOLERANCE = Degrees.of(2.0);
+  /** Wider tolerance for "ready to shoot" in degrees. MA (6328) uses 1.5deg. */
+  public static final Angle SHOOTING_TOLERANCE = Degrees.of(1.5);
 
   // ==================== CURRENT LIMITS ====================
   public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(30);
@@ -77,29 +77,42 @@ public class ShooterPivotConstants {
   public static final double MANUAL_DEADBAND = 0.1;
 
   // ==================== TRENCH AUTO-LOWER ====================
-  // Derived from 2026 REBUILT AprilTag field layout (2026-rebuilt-welded.json).
-  // Trench posts at y~0.644m from each side wall, beam spans between hub X
-  // positions.
+  // Derived from 2026 REBUILT field drawings + AprilTag layout
+  // (2026-rebuilt-welded.json).
+  // Trench uprights are centered near each hub X, close to each side wall. For
+  // pivot safety we model trench "danger" as two hub-centered wall-side windows
+  // (not one continuous strip between hubs).
   // Clearance under trench arm: 22.25in (56.5cm). Tune thresholds on the real
   // field!
 
   /** Field width in meters (from WPILib AprilTag JSON). */
   public static final Distance FIELD_WIDTH_METERS = Meters.of(8.069);
 
-  /** Trench beam start X — blue-hub-side posts (~4.59m from AprilTag data). */
-  public static final Distance TRENCH_X_MIN = Meters.of(4.5);
+  /** Blue trench X center from hub/trench tags (meters). */
+  public static final Distance TRENCH_BLUE_X_CENTER =
+      Meters.of(GameConstants.BLUE_HUB_CENTER.getX());
 
-  /** Trench beam end X — red-hub-side posts (~11.95m from AprilTag data). */
-  public static final Distance TRENCH_X_MAX = Meters.of(12.0);
+  /** Red trench X center from hub/trench tags (meters). */
+  public static final Distance TRENCH_RED_X_CENTER = Meters.of(GameConstants.RED_HUB_CENTER.getX());
+
+  /**
+   * Half-width of each trench X window around a hub center.
+   *
+   * <p>35.95 in from FE-2026 reference drawing ~ 0.913 m.
+   */
+  public static final Distance TRENCH_X_HALF_WIDTH = Meters.of(0.91);
 
   /**
    * Y-distance from the side wall within which the robot is considered "under the trench". Trench
    * posts at ~0.644m from each wall; add half robot width + safety margin.
    */
-  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(1.2);
+  public static final Distance TRENCH_Y_WALL_THRESHOLD = Meters.of(0.70);
 
   /** Extra distance to start lowering BEFORE entering the trench zone (meters). */
-  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.5);
+  public static final Distance TRENCH_APPROACH_MARGIN = Meters.of(0.20);
+
+  /** Smaller Y-only approach margin to avoid over-triggering while ferrying/shooting. */
+  public static final Distance TRENCH_Y_APPROACH_MARGIN = Meters.of(0.15);
 
   /** Angle to command when the robot is in or approaching the trench zone. */
   public static final Angle TRENCH_LOWER_ANGLE = Degrees.of(60.0); // == MIN_ANGLE

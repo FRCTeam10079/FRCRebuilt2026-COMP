@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Meters;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -41,6 +42,12 @@ public class Robot extends LoggedRobot {
   private int m_robotEventSequence = 0;
 
   public Robot() {
+    // In sim/replay, missing extra controllers are expected and warning spam can
+    // stall the loop enough to trigger stale CAN status signals.
+    if (Constants.currentMode != Constants.Mode.REAL) {
+      DriverStation.silenceJoystickConnectionWarning(true);
+    }
+
     // ==================== ADVANTAGEKIT LOGGING ====================
     Logger.recordMetadata("ProjectName", "FRCRebuilt2026-COMP");
 
@@ -91,14 +98,17 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void robotPeriodic() {
-    // Clear shoot-on-the-move parameters at the start of each cycle.
-    // They will be re-populated by the shootOnTheMoveDriveCommand if active.
-    LaunchCalculator.getInstance().clearParameters();
+    // Clear and immediately update LaunchCalculator with fresh drivetrain state.
+    // Parameters must be computed BEFORE triggers evaluate, so shootOnTheMove can
+    // work.
+    var driveState = m_robotContainer.drivetrain.getState();
+    var currentPose = driveState.Pose;
+    LaunchCalculator calc = LaunchCalculator.getInstance();
+    calc.clearParameters();
+    calc.update(currentPose, driveState.Speeds, currentPose.getRotation());
 
     Logger.recordOutput(
-        "Shooter/DistanceToHub",
-        ShooterMath.getDistanceToHub(m_robotContainer.drivetrain.getState().Pose)
-            .in(Meters));
+        "Shooter/DistanceToHub", ShooterMath.getDistanceToHub(currentPose).in(Meters));
 
     // Update HubShiftTracker (FMS game data + shift phase detection)
     HubShiftTracker.getInstance().periodic();

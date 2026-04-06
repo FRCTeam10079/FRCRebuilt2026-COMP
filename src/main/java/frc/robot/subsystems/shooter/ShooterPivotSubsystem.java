@@ -63,6 +63,7 @@ public class ShooterPivotSubsystem extends SubsystemBase {
   // Trench auto-lower
   private final Supplier<Pose2d> poseSupplier;
   private boolean trenchMode = false;
+  private boolean trenchAutoLowerEnabled = true;
 
   // Angle supplier for TRACK_ANGLE mode
   private Supplier<Angle> angleSupplier = () -> ShooterPivotConstants.MIN_ANGLE;
@@ -219,29 +220,54 @@ public class ShooterPivotSubsystem extends SubsystemBase {
     return isHomed;
   }
 
+  public void setTrenchAutoLowerEnabled(boolean enabled) {
+    this.trenchAutoLowerEnabled = enabled;
+    if (!enabled) {
+      trenchMode = false;
+    }
+  }
+
   // ==================== TRENCH ZONE DETECTION ====================
 
+  private static boolean isWithinXBand(Distance x, Distance centerX, Distance halfWidth) {
+    return x.gte(centerX.minus(halfWidth)) && x.lte(centerX.plus(halfWidth));
+  }
+
+  private static boolean isInTrenchXWindow(Distance x, Distance halfWidth) {
+    return isWithinXBand(x, ShooterPivotConstants.TRENCH_BLUE_X_CENTER, halfWidth)
+        || isWithinXBand(x, ShooterPivotConstants.TRENCH_RED_X_CENTER, halfWidth);
+  }
+
   public boolean isInTrenchZone() {
-    if (poseSupplier == null) return false;
+    if (!trenchAutoLowerEnabled) {
+      trenchMode = false;
+      return false;
+    }
+    if (poseSupplier == null) {
+      return false;
+    }
     Pose2d pose = poseSupplier.get();
-    if (pose == null) return false;
+    if (pose == null) {
+      return false;
+    }
 
     Distance x = Meters.of(pose.getX());
     Distance y = Meters.of(pose.getY());
     Distance fieldW = ShooterPivotConstants.FIELD_WIDTH_METERS;
-    Distance margin = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance approachMarginX = ShooterPivotConstants.TRENCH_APPROACH_MARGIN;
+    Distance approachMarginY = ShooterPivotConstants.TRENCH_Y_APPROACH_MARGIN;
+    Distance strictHalfWidthX = ShooterPivotConstants.TRENCH_X_HALF_WIDTH;
 
     if (trenchMode) {
-      boolean inX =
-          x.gte(ShooterPivotConstants.TRENCH_X_MIN) && x.lte(ShooterPivotConstants.TRENCH_X_MAX);
+      boolean inX = isInTrenchXWindow(x, strictHalfWidthX);
       boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD)
           || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD));
       return inX && inY;
     } else {
-      boolean inX = x.gte(ShooterPivotConstants.TRENCH_X_MIN.minus(margin))
-          && x.lte(ShooterPivotConstants.TRENCH_X_MAX.plus(margin));
-      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(margin))
-          || y.gte(fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(margin));
+      boolean inX = isInTrenchXWindow(x, strictHalfWidthX.plus(approachMarginX));
+      boolean inY = y.lte(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD.plus(approachMarginY))
+          || y.gte(
+              fieldW.minus(ShooterPivotConstants.TRENCH_Y_WALL_THRESHOLD).minus(approachMarginY));
       return inX && inY;
     }
   }

@@ -13,12 +13,16 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Constants.AlignPosition;
 import frc.robot.commands.AlignToAprilTag;
+import frc.robot.commands.ShootOnTheMoveDrive;
 import frc.robot.commands.ShooterFactory;
+import frc.robot.lib.LaunchCalculator;
+import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.CurrentSuperState;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.vision.VisionSubsystem;
@@ -68,14 +72,13 @@ public final class DriverControls {
         Constants.DrivetrainConstants.MAX_SPEED_MPS,
         Constants.DrivetrainConstants.MAX_ANGULAR_RATE_RAD_PER_SEC));
 
-    // ==================== INTAKE (through Superstructure) ====================
-    // Left Trigger - Hold to collect (deploy pivot + run intake wheels + index)
-    // On release, control falls back to any other still-held mechanism action.
+    // ==================== INTAKE (independent of main state) ====================
+    // Left Trigger - Hold to collect (deploy pivot + run intake wheels).
+    // Runs alongside any main state (AIM, SHOOT, SOTM, etc.).
     controller
         .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(
-            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.COLLECT)))
-        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
+        .onTrue(Commands.runOnce(() -> superstructure.setIntakeActive(true)))
+        .onFalse(Commands.runOnce(() -> superstructure.setIntakeActive(false)));
 
     // ==================== SHOOTING (through Superstructure) ====================
     // Right Bumper - Hold to aim at hub (heading lock) + pre-spin via
@@ -93,11 +96,12 @@ public final class DriverControls {
         .rightBumper()
         .whileTrue(createAimAtHubCommand(drivetrain, translationY, translationX));
 
-    // Right Trigger - Hold to shoot (smart shoot gated - waits for hub if needed)
-    // On release, control falls back to any other still-held mechanism action.
+    // Right Trigger - Hold to force-shoot (aim + feed when flywheel ready).
+    // On release, rebuild intent from any still-held driver controls.
     controller
         .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SHOOT)))
+        .onTrue(Commands.runOnce(
+            () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 
     // Rumble while actively shooting
@@ -111,18 +115,85 @@ public final class DriverControls {
         .onFalse(
             Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
 
+    // ==================== SHOOT ON THE MOVE ====================
+    // Left Bumper - Hold to activate SOTM. Use a single trigger lifecycle so
+    // onTrue/onFalse always pair correctly, even if the robot crosses a zone
+    // boundary while held.
+    final boolean[] useScoringZoneSotm = {true};
+    Trigger sotmTrigger = controller
+        .leftBumper()
+        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB);
+
+    sotmTrigger
+        .onTrue(Commands.sequence(
+            // Latch which SOTM drive implementation to use for this hold to avoid
+            // jittery command swapping near the split boundary.
+            Commands.runOnce(() -> {
+              var params = LaunchCalculator.getInstance().getParameters();
+              // Passing=true means far-side ferrying mode; scoring-zone mode is
+              // the inverse.
+              useScoringZoneSotm[0] = params == null || !params.passing();
+            }),
+            Commands.runOnce(
+                () -> superstructure.getShooterPivot().setTrenchAutoLowerEnabled(false)),
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.SOTM))))
+        .onFalse(Commands.sequence(
+            Commands.runOnce(
+                () -> superstructure.getShooterPivot().setTrenchAutoLowerEnabled(true)),
+            updateWantedStateFromDriverInputs(controller, superstructure)));
+
+    // Scoring-zone SOTM (non-passing): use Oliver's ShootOnTheMoveDrive.
+    sotmTrigger
+        .and(() -> useScoringZoneSotm[0])
+        .whileTrue(
+            new ShootOnTheMoveDrive(drivetrain, vision, translationY::get, translationX::get));
+
+    // Passing/ferrying SOTM: use branch drivetrain SOTM implementation.
+    // Uses translationY/translationX so invertTranslation toggle is honored.
+    sotmTrigger
+        .and(() -> !useScoringZoneSotm[0])
+        .whileTrue(drivetrain.shootOnTheMoveDriveCommand(
+            () -> translationY.get(), () -> translationX.get()));
+
+    // Rumble when SOTM is actively feeding (left bumper held + SOTM_SHOOTING)
+    new Trigger(() -> superstructure.getCurrentSuperState() == CurrentSuperState.SOTM_SHOOTING)
+        .and(controller.leftBumper())
+        .onTrue(Commands.runOnce(() -> controller
+            .getHID()
+            .setRumble(RumbleType.kBothRumble, Constants.StateMachineConstants.RUMBLE_STRONG)))
+        .onFalse(
+            Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0)));
+
     // ==================== VISION ALIGNMENT ====================
     // A - Align to AprilTag (CENTER)
     controller.a().whileTrue(new AlignToAprilTag(drivetrain, vision, AlignPosition.CENTER));
 
     controller.b().onTrue(Commands.runOnce(() -> invertTranslation[0] = !invertTranslation[0]));
 
+    // ==================== TOF TUNING (D-PAD LEFT/RIGHT) ====================
+    // D-pad Left - Increase TOF at nearest distance key
+    // D-pad Right - Decrease TOF at nearest distance key
+    // Prints current distance bucket and TOF value on each press.
+    controller.povLeft().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.adjustTof(dist, true);
+    }));
+    controller.povRight().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.adjustTof(dist, false);
+    }));
+    // D-pad Up - Print current TOF at nearest key (read-only check)
+    controller.povUp().onTrue(Commands.runOnce(() -> {
+      double dist = ShooterMath.getDistanceToHub(drivetrain.getState().Pose)
+          .in(edu.wpi.first.units.Units.Meters);
+      ShooterInterpolationTable.printCurrentTof(dist);
+    }));
+
     // ==================== STOW (through Superstructure) ====================
-    // D-pad Down - Stow intake pivot
-    controller
-        .povDown()
-        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.STOW)))
-        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
+    // D-pad Down - Stow intake pivot + stop intake wheels
+    controller.povDown().onTrue(Commands.runOnce(() -> superstructure.stowIntake()));
 
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
@@ -130,8 +201,11 @@ public final class DriverControls {
     controller.x().whileTrue(drivetrain.applyRequest(() -> brakeRequest));
 
     // ==================== DRIVER FEEDBACK ====================
-    // Pulse rumble while loaded so driver knows they can leave loading zone
+    // Pulse rumble while loaded so driver knows they can leave loading zone.
+    // Suppressed while SOTM is active (left bumper held) so the steady SOTM
+    // readiness rumble isn't overwritten by the pulse's silence phase.
     new Trigger(() -> stateMachine.getFuelState() == FuelState.LOADED)
+        .and(controller.leftBumper().negate())
         .whileTrue(Commands.repeatingSequence(
             Commands.runOnce(() -> controller
                 .getHID()
@@ -157,23 +231,18 @@ public final class DriverControls {
   private static Command updateWantedStateFromDriverInputs(
       CommandXboxController controller, Superstructure superstructure) {
     return Commands.runOnce(() -> {
-      WantedSuperState desiredState = WantedSuperState.IDLE;
-
+      // Rebuild intent from live button states because trigger onTrue is edge-only.
       if (controller
           .rightTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
           .getAsBoolean()) {
-        desiredState = WantedSuperState.SHOOT;
+        superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT);
       } else if (controller.rightBumper().getAsBoolean()) {
-        desiredState = WantedSuperState.AIM;
-      } else if (controller
-          .leftTrigger(Constants.ControllerConstants.TRIGGER_THRESHOLD)
-          .getAsBoolean()) {
-        desiredState = WantedSuperState.COLLECT;
-      } else if (controller.povDown().getAsBoolean()) {
-        desiredState = WantedSuperState.STOW;
+        superstructure.setWantedSuperState(WantedSuperState.AIM);
+      } else if (controller.leftBumper().getAsBoolean()) {
+        superstructure.setWantedSuperState(WantedSuperState.SOTM);
+      } else {
+        superstructure.setWantedSuperState(WantedSuperState.IDLE);
       }
-
-      superstructure.setWantedSuperState(desiredState);
     });
   }
 }

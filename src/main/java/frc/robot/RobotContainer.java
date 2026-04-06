@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoCommands;
 import frc.robot.auto.Autos;
@@ -240,24 +239,23 @@ public class RobotContainer {
    * classes for clean separation.
    */
   private void configureBindings() {
-    // Build climb pathfind command: two-phase approach to avoid routing through
+    // Build climb pathfind commands: two-phase approach to avoid routing through
     // the climb structure.
     // Phase 1: Pathfind to an approach waypoint in the open field (AD* avoids
     // obstacles).
     // Phase 2: Drive straight from the approach point into the climb structure to
     // the final
     // pose.
-    Command climbPathfindCommand = Commands.sequence(
-        drivetrain.pathfindToPose(() -> {
-          ClimbLane lane = resolveClimbLane();
-          boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-          return ClimbConstants.getClimbApproachPose(lane, isRed);
-        }),
-        drivetrain.pathfindToPose(() -> {
-          ClimbLane lane = resolveClimbLane();
-          boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-          return ClimbConstants.getClimbPose(lane, isRed);
-        }));
+    Supplier<Command> climbApproachCommandFactory = () -> drivetrain.pathfindToPose(() -> {
+      ClimbLane lane = resolveClimbLane();
+      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+      return ClimbConstants.getClimbApproachPose(lane, isRed);
+    });
+    Supplier<Command> climbEntryCommandFactory = () -> drivetrain.pathfindToPose(() -> {
+      ClimbLane lane = resolveClimbLane();
+      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+      return ClimbConstants.getClimbPose(lane, isRed);
+    });
 
     DriverControls.configure(
         m_driverController, drivetrain, vision, superstructure, m_stateMachine, m_setpointSupplier);
@@ -269,7 +267,8 @@ public class RobotContainer {
         m_stateMachine,
         m_setpointSupplier,
         () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose),
-        climbPathfindCommand,
+        climbApproachCommandFactory,
+        climbEntryCommandFactory,
         drivetrain);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);

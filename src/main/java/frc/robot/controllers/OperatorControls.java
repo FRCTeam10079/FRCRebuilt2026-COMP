@@ -48,7 +48,10 @@ public final class OperatorControls {
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
-   * @param climbPathfindCommand command that pathfinds to the selected climb lane
+   * @param climbApproachCommandFactory factory that creates a fresh command to pathfind to the
+   *     climb approach point
+   * @param climbEntryCommandFactory factory that creates a fresh command to pathfind from the
+   *     approach point into the climb entry point
    * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
@@ -59,7 +62,8 @@ public final class OperatorControls {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
       Supplier<Distance> hubDistanceSupplier,
-      Command climbPathfindCommand,
+      Supplier<Command> climbApproachCommandFactory,
+      Supplier<Command> climbEntryCommandFactory,
       CommandSwerveDrivetrain drivetrain) {
 
     // ==================== INVENTORY ====================
@@ -72,11 +76,16 @@ public final class OperatorControls {
     // ==================== CLIMB PATHFIND ====================
     // D-Pad Up - Pathfind to selected climb lane (hold to pathfind, release to
     // stop)
-    operator.povUp().whileTrue(climbPathfindCommand);
+    operator
+        .povUp()
+        .whileTrue(Commands.defer(
+            () -> Commands.sequence(
+                climbApproachCommandFactory.get(), climbEntryCommandFactory.get()),
+            Set.of(drivetrain)));
 
     // D-Pad Down - Full auto-climb sequence:
-    // 1. Pathfind to climb spot
-    // 2. Set superstructure to CLIMB mode and extend climber
+    // 1. Pathfind to the approach point in front of climb target
+    // 2. While driving final entry path, switch to CLIMB mode and raise climber
     // 3. Retract climber to pull robot up
     // 4. Final small forward nudge (live tunable, default 1 inch)
     operator
@@ -95,12 +104,15 @@ public final class OperatorControls {
               double finalForwardTimeSec = finalForwardDistanceMeters / finalForwardSpeedMps;
 
               return Commands.sequence(
-                      // Phase 1: Pathfind to climb position
-                      climbPathfindCommand,
-                      // Phase 2: Enter climb mode and extend climber hook up
-                      Commands.runOnce(
-                          () -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
-                      climber.extendCommand(),
+                      // Phase 1: Pathfind to climb approach point
+                      climbApproachCommandFactory.get(),
+                      // Phase 2: Final entry drive + start climb in parallel
+                      Commands.parallel(
+                          climbEntryCommandFactory.get(),
+                          Commands.sequence(
+                              Commands.runOnce(
+                                  () -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+                              climber.extendCommand())),
                       // Phase 3: Retract climber to pull robot up
                       climber.retractCommand(),
                       // Phase 4: Final small forward nudge

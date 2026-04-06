@@ -36,7 +36,7 @@ public class ClimbConstants {
 
   // --- Blue Left ---
   private static final LoggedNetworkNumber BLUE_LEFT_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Blue/Left/X", 1.041);
+      new LoggedNetworkNumber("/Tuning/Climb/Blue/Left/X", 0.991);
   private static final LoggedNetworkNumber BLUE_LEFT_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Blue/Left/Y", 2.869);
   private static final LoggedNetworkNumber BLUE_LEFT_HEADING_DEG =
@@ -44,7 +44,7 @@ public class ClimbConstants {
 
   // --- Blue Center ---
   private static final LoggedNetworkNumber BLUE_CENTER_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Blue/Center/X", 1.341);
+      new LoggedNetworkNumber("/Tuning/Climb/Blue/Center/X", 0.991);
   private static final LoggedNetworkNumber BLUE_CENTER_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Blue/Center/Y", 3.749);
   private static final LoggedNetworkNumber BLUE_CENTER_HEADING_DEG =
@@ -52,7 +52,7 @@ public class ClimbConstants {
 
   // --- Blue Right ---
   private static final LoggedNetworkNumber BLUE_RIGHT_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Blue/Right/X", 1.041);
+      new LoggedNetworkNumber("/Tuning/Climb/Blue/Right/X", 0.991);
   private static final LoggedNetworkNumber BLUE_RIGHT_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Blue/Right/Y", 4.719);
   private static final LoggedNetworkNumber BLUE_RIGHT_HEADING_DEG =
@@ -62,7 +62,7 @@ public class ClimbConstants {
 
   // --- Red Left ---
   private static final LoggedNetworkNumber RED_LEFT_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Red/Left/X", 15.5);
+      new LoggedNetworkNumber("/Tuning/Climb/Red/Left/X", 15.550);
   private static final LoggedNetworkNumber RED_LEFT_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Red/Left/Y", 5.2);
   private static final LoggedNetworkNumber RED_LEFT_HEADING_DEG =
@@ -70,7 +70,7 @@ public class ClimbConstants {
 
   // --- Red Center ---
   private static final LoggedNetworkNumber RED_CENTER_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Red/Center/X", 15.2);
+      new LoggedNetworkNumber("/Tuning/Climb/Red/Center/X", 15.550);
   private static final LoggedNetworkNumber RED_CENTER_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Red/Center/Y", 4.320);
   private static final LoggedNetworkNumber RED_CENTER_HEADING_DEG =
@@ -78,7 +78,7 @@ public class ClimbConstants {
 
   // --- Red Right ---
   private static final LoggedNetworkNumber RED_RIGHT_X =
-      new LoggedNetworkNumber("/Tuning/Climb/Red/Right/X", 15.5);
+      new LoggedNetworkNumber("/Tuning/Climb/Red/Right/X", 15.550);
   private static final LoggedNetworkNumber RED_RIGHT_Y =
       new LoggedNetworkNumber("/Tuning/Climb/Red/Right/Y", 3.35);
   private static final LoggedNetworkNumber RED_RIGHT_HEADING_DEG =

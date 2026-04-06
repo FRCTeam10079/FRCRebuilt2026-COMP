@@ -56,7 +56,10 @@ public final class OperatorControls {
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
-   * @param climbPathfindCommand command that pathfinds to the selected climb lane
+   * @param climbApproachCommandFactory factory that creates a fresh command to pathfind to the
+   *     climb approach point
+   * @param climbEntryCommandFactory factory that creates a fresh command to pathfind from the
+   *     approach point into the climb entry point
    * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
@@ -68,7 +71,8 @@ public final class OperatorControls {
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
       Supplier<Distance> hubDistanceSupplier,
-      Command climbPathfindCommand,
+      Supplier<Command> climbApproachCommandFactory,
+      Supplier<Command> climbEntryCommandFactory,
       CommandSwerveDrivetrain drivetrain) {
 
     final AtomicInteger tuningEventCounter = new AtomicInteger(0);

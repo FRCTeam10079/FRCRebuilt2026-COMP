@@ -17,25 +17,33 @@ import java.util.TreeSet;
 /**
  * Distance-based lookup tables for shooter RPM and pivot angle.
  *
- * <p>Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
+ * <p>
+ * Uses WPILib's InterpolatingTreeMap for smooth linear interpolation between
  * empirically-measured data points.
  *
- * <p>Tuning guide: Drive to each distance, manually adjust RPM and angle until fuel consistently
- * scores, then record the values here. The interpolation handles all intermediate distances
+ * <p>
+ * Tuning guide: Drive to each distance, manually adjust RPM and angle until
+ * fuel consistently
+ * scores, then record the values here. The interpolation handles all
+ * intermediate distances
  * automatically.
  *
- * <p>Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release height is 19.5in
- * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot range: 60deg to
+ * <p>
+ * Hub opening front edge is 72in (1.8288m) off the carpet. Shooter release
+ * height is 19.5in
+ * (0.4953m) off the carpet. The differential height is ~52.5in (1.3335m). Pivot
+ * range: 60deg to
  * 80deg from horizontal.
  */
 public final class ShooterInterpolationTable {
 
-  private ShooterInterpolationTable() {} // Static utility class
+  private ShooterInterpolationTable() {
+  } // Static utility class
 
   // ==================== RPM TABLE ====================
   // Maps distance (meters) -> flywheel RPM
-  private static InterpolatingTreeMap<Double, Double> rpmTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> rpmTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
   private static final NavigableSet<Double> rpmKeys = new TreeSet<>();
 
   static {
@@ -61,8 +69,8 @@ public final class ShooterInterpolationTable {
 
   // ==================== ANGLE TABLE ====================
   // Maps distance (meters) -> pivot angle (degrees from horizontal)
-  private static InterpolatingTreeMap<Double, Double> angleTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> angleTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
   private static final NavigableSet<Double> angleKeys = new TreeSet<>();
 
   static {
@@ -75,6 +83,7 @@ public final class ShooterInterpolationTable {
     putAngle(1.0, 60.0);
     putAngle(2.0, 60.0);
     putAngle(2.8, 62.0);
+
     // angleTable.put(2.5, 60.0);
     putAngle(3.2, 64.0);
     // angleTable.put(3.5, 64.0);
@@ -102,8 +111,8 @@ public final class ShooterInterpolationTable {
   // Maps distance (meters) -> time of flight (seconds)
   // Time from ball leaving the shooter to arriving at the hub.
   // CRITICAL for shoot-on-the-move - determines lookahead offset.
-  private static InterpolatingTreeMap<Double, Double> tofTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> tofTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
 
   static {
     // -------------------------------------------------------
@@ -141,8 +150,11 @@ public final class ShooterInterpolationTable {
   /**
    * Get the interpolated time-of-flight for a given distance.
    *
-   * <p>This is used by the LaunchCalculator for velocity-compensated lookahead. The ball's flight
-   * time determines how much the robot's velocity offsets the effective aim point.
+   * <p>
+   * This is used by the LaunchCalculator for velocity-compensated lookahead. The
+   * ball's flight
+   * time determines how much the robot's velocity offsets the effective aim
+   * point.
    *
    * @param distanceMeters horizontal distance to hub in meters
    * @return estimated time of flight in seconds
@@ -157,17 +169,17 @@ public final class ShooterInterpolationTable {
   // Passing uses a flatter pivot angle, higher RPM, and longer TOF.
   // Adapted from MA (6328) passing infrastructure.
 
-  private static InterpolatingTreeMap<Double, Double> passingRpmTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> passingRpmTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
 
-  private static InterpolatingTreeMap<Double, Double> passingAngleTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> passingAngleTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
 
-  private static InterpolatingTreeMap<Double, Double> passingTofTable =
-      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Interpolator.forDouble());
+  private static InterpolatingTreeMap<Double, Double> passingTofTable = new InterpolatingTreeMap<>(
+      InverseInterpolator.forDouble(), Interpolator.forDouble());
 
   /** Minimum valid distance for passing shots (meters). */
-  public static final double PASSING_MIN_DISTANCE = 5.4;
+  public static final double PASSING_MIN_DISTANCE = 6.27;
 
   /** Maximum valid distance for passing shots (meters). */
   public static final double PASSING_MAX_DISTANCE = 17.0;
@@ -179,10 +191,10 @@ public final class ShooterInterpolationTable {
     // These placeholders are adapted from MA's data as starting points.
     // Distance (m) -> RPM (higher than normal for long range)
     // -------------------------------------------------------
-    passingRpmTable.put(5.5, 2400.0);
-    passingRpmTable.put(7.0, 2800.0);
-    passingRpmTable.put(8.0, 3200.0);
-    passingRpmTable.put(17.0, 4400.0);
+    passingRpmTable.put(5.5, 2300.0);
+    passingRpmTable.put(7.0, 2700.0);
+    passingRpmTable.put(8.0, 3100.0);
+    passingRpmTable.put(17.0, 4300.0);
   }
 
   static {
@@ -257,8 +269,10 @@ public final class ShooterInterpolationTable {
     Double lower = keys.floor(queryMeters);
     Double upper = keys.ceiling(queryMeters);
 
-    if (lower == null) return upper;
-    if (upper == null) return lower;
+    if (lower == null)
+      return upper;
+    if (upper == null)
+      return lower;
     return (queryMeters - lower) <= (upper - queryMeters) ? lower : upper;
   }
 
@@ -273,7 +287,7 @@ public final class ShooterInterpolationTable {
   }
 
   /** TOF table keys in ascending order for nearest-key lookup. */
-  private static final double[] TOF_KEYS = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
+  private static final double[] TOF_KEYS = { 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 };
 
   /** Step size for each D-pad press when tuning TOF. */
   private static final double TOF_STEP = 0.01;
@@ -301,7 +315,7 @@ public final class ShooterInterpolationTable {
    * Adjust the TOF value at the nearest key by the given direction.
    *
    * @param distanceMeters current distance to hub
-   * @param up true to increase TOF, false to decrease
+   * @param up             true to increase TOF, false to decrease
    */
   public static void adjustTof(double distanceMeters, boolean up) {
     double key = nearestTofKey(distanceMeters);

@@ -441,21 +441,22 @@ public class Superstructure extends SubsystemBase {
    * OperatorControls.
    */
   private void syncGameState() {
-    GameState desired = switch (currentSuperState) {
-      case COLLECTING -> GameState.COLLECTING;
-      case AIMING, SHOOTING, FORCE_SHOOTING, SOTM_AIMING, SOTM_SHOOTING -> GameState.SCORING;
-      case WAITING_FOR_TARGET -> {
-        // If SmartShoot is queued (hub inactive), don't override to SCORING
-        // let the RobotStateMachine's HUB_INACTIVE state stand.
-        if (smartShootController.getState() == SmartShootController.SmartShootState.QUEUED) {
-          yield null;
-        }
-        yield GameState.SCORING;
-      }
-      case CLIMBING -> GameState.CLIMBING;
-      case UNJAMMING -> GameState.MANUAL_OVERRIDE;
-      default -> intakeActive ? GameState.COLLECTING : null;
-    };
+    GameState desired =
+        switch (currentSuperState) {
+          case COLLECTING -> GameState.COLLECTING;
+          case AIMING, SHOOTING, FORCE_SHOOTING, SOTM_AIMING, SOTM_SHOOTING -> GameState.SCORING;
+          case WAITING_FOR_TARGET -> {
+            // If SmartShoot is queued (hub inactive), don't override to SCORING
+            // let the RobotStateMachine's HUB_INACTIVE state stand.
+            if (smartShootController.getState() == SmartShootController.SmartShootState.QUEUED) {
+              yield null;
+            }
+            yield GameState.SCORING;
+          }
+          case CLIMBING -> GameState.CLIMBING;
+          case UNJAMMING -> GameState.MANUAL_OVERRIDE;
+          default -> intakeActive ? GameState.COLLECTING : null;
+        };
 
     if (desired != null && stateMachine.getGameState() != desired) {
       stateMachine.setGameState(desired);

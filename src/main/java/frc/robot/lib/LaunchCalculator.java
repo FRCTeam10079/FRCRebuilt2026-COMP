@@ -67,7 +67,7 @@ public class LaunchCalculator {
    * values are imprecise or the robot is moving very fast. At 5 m/s with 0.5s TOF the natural
    * offset is 2.5m, so 3.0m is a safe cap.
    */
-  private static final double MAX_LOOKAHEAD_OFFSET_METERS = 3.0;
+  private static final double MAX_LOOKAHEAD_OFFSET_METERS = 2.5;
 
   /** Robot loop period in seconds (50Hz = 0.02s). */
   private static final double LOOP_PERIOD_SECONDS = 0.02;
@@ -95,7 +95,7 @@ public class LaunchCalculator {
    *
    * <p>TODO: TUNE ON THE ROBOT - should match the closest distance in the interp tables.
    */
-  private static final double MIN_VALID_DISTANCE = 0.8;
+  private static final double MIN_VALID_DISTANCE = 0.4;
 
   /**
    * Maximum distance (meters) at which shoot-on-the-move is valid.

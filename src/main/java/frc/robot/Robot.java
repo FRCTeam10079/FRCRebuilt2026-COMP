@@ -108,8 +108,7 @@ public class Robot extends LoggedRobot {
     calc.update(currentPose, driveState.Speeds, currentPose.getRotation());
 
     Logger.recordOutput(
-        "Shooter/DistanceToHub",
-        ShooterMath.getDistanceToHub(currentPose).in(Meters));
+        "Shooter/DistanceToHub", ShooterMath.getDistanceToHub(currentPose).in(Meters));
 
     // Update HubShiftTracker (FMS game data + shift phase detection)
     HubShiftTracker.getInstance().periodic();

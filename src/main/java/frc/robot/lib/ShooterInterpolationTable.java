@@ -47,15 +47,16 @@ public final class ShooterInterpolationTable {
     putRpm(1.0, 2000.0);
     putRpm(2.2, 2100.0);
     // rpmTable.put(2.5, 2100.0);
-    rpmTable.put(3.0, 2350.0);
+    rpmTable.put(3.0, 2450.0);
     // rpmTable.put(3.5, 2500.0);
-    rpmTable.put(4.5, 2500.0);
+    rpmTable.put(3.7, 2475.0);
+    // rpmTable.put(4.0, 2680.0);
     // rpmTable.put(4.5, 3300.0);
-    rpmTable.put(5.0, 2750.0);
+    rpmTable.put(4.1, 2670.0);
     // rpmTable.put(5.5, 3900.0);
-    rpmTable.put(6.0, 3000.0);
+    rpmTable.put(6.0, 3200.0);
 
-    rpmTable.put(7.0, 3500.0);
+    rpmTable.put(7.0, 3200.0);
   }
 
   // ==================== ANGLE TABLE ====================
@@ -73,14 +74,18 @@ public final class ShooterInterpolationTable {
     // -------------------------------------------------------
     putAngle(1.0, 60.0);
     putAngle(2.0, 60.0);
+    putAngle(2.8, 62.0);
     // angleTable.put(2.5, 60.0);
     putAngle(3.2, 64.0);
     // angleTable.put(3.5, 64.0);
-    putAngle(4.5, 72.5);
-    // Don't need 5, max is 4.5
-    putAngle(5.2, 77.5);
 
-    putAngle(6.0, 77.5);
+    putAngle(4.5, 72.5);
+
+    putAngle(5.2, 74.5);
+
+    putAngle(6.0, 75.5);
+
+    putAngle(7.0, 76.5);
   }
 
   /**
@@ -110,17 +115,17 @@ public final class ShooterInterpolationTable {
     // TUNE NEEDED!
     // -------------------------------------------------------
 
-    tofTable.put(1.0, 1.15); // very close - short flight
+    tofTable.put(1.0, 1.45); // very close - short flight
     // tofTable.put(1.5, 1.1); // TODO: TUNE - placeholder estimate
-    tofTable.put(2.0, 1.25); // TODO: TUNE - placeholder estimate
+    tofTable.put(2.7, 1.7); // TODO: TUNE - placeholder estimate
     // tofTable.put(2.5, 1.55); // TODO: TUNE - placeholder estimate
-    tofTable.put(3.0, 1.7); // TODO: TUNE - placeholder estimate
+    tofTable.put(3.2, 1.9); // TODO: TUNE - placeholder estimate
     // tofTable.put(3.5, 0.50); // TODO: TUNE - placeholder estimate
-    tofTable.put(4.0, 2.2); // TODO: TUNE - placeholder estimate
+    tofTable.put(4.56, 2.5); // TODO: TUNE - placeholder estimate
     // tofTable.put(4.5, 0.60); // TODO: TUNE - placeholder estimate
-    tofTable.put(5.0, 2.55); // TODO: TUNE - placeholder estimate
+    tofTable.put(5.0, 2.7); // TODO: TUNE - placeholder estimate
 
-    tofTable.put(7.0, 3.0);
+    tofTable.put(7.0, 2.9);
   }
 
   /**

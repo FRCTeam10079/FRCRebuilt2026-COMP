@@ -370,8 +370,7 @@ public class ShootOnTheMoveDrive extends Command {
 
     double xVelRobotCentric = drivetrain.getState().Speeds.vxMetersPerSecond;
 
-    double movingBackwardsFactor = (Math.min(0, xVelRobotCentric) * 0.75 + 1);
-
+    double movingBackwardsFactor = (Math.min(0, xVelRobotCentric) * .5);
     SmartDashboard.putNumber("Moving Backwards Factor", movingBackwardsFactor);
 
     distanceToHub =

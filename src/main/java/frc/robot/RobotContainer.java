@@ -56,8 +56,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
- * RobotContainer for FRC 2026 REBUILT season This class is where the robot's
- * subsystems, commands,
+ * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
  * and button bindings are defined.
  */
 public class RobotContainer {
@@ -84,7 +83,8 @@ public class RobotContainer {
   private final PivotSubsystem pivot;
   private final ClimberSubsystem climber;
 
-  private final Telemetry m_telemetry = new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
+  private final Telemetry m_telemetry =
+      new Telemetry(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
   // ==================== SUPERSTRUCTURE ====================
   private final Superstructure superstructure;
@@ -103,7 +103,8 @@ public class RobotContainer {
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
   // ==================== CLIMB LANE CHOOSER ====================
-  private final LoggedDashboardChooser<String> m_climbLaneChooser = new LoggedDashboardChooser<>("Climb Lane");
+  private final LoggedDashboardChooser<String> m_climbLaneChooser =
+      new LoggedDashboardChooser<>("Climb Lane");
 
   public RobotContainer() {
     // ==================== IO MODE SWITCHING ====================
@@ -133,7 +134,8 @@ public class RobotContainer {
         // Replay - same as SIM (Logger will inject real data from the log file)
         indexer = new IndexerSubsystem(new NoOpIndexerIO());
         shooter = new ShooterSubsystem(new NoOpShooterIO());
-        shooterPivot = new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        shooterPivot =
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
         intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
         pivot = new PivotSubsystem(new NoOpPivotIO());
         climber = new ClimberSubsystem(new NoOpClimberIO());
@@ -142,7 +144,8 @@ public class RobotContainer {
       default:
         indexer = new IndexerSubsystem(new NoOpIndexerIO());
         shooter = new ShooterSubsystem(new NoOpShooterIO());
-        shooterPivot = new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
+        shooterPivot =
+            new ShooterPivotSubsystem(new NoOpShooterPivotIO(), () -> drivetrain.getState().Pose);
         intake = new IntakeWheelsSubsystem(new NoOpIntakeWheelsIO());
         pivot = new PivotSubsystem(new NoOpPivotIO());
         climber = new ClimberSubsystem(new NoOpClimberIO());
@@ -171,7 +174,8 @@ public class RobotContainer {
     // Wire subsystem state into the state machine so isReadyToFire() works
     m_stateMachine.registerShooterSuppliers(shooter::isReady, () -> {
       // Heading is "aligned" when robot faces the hub within tolerance
-      double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+      double targetHeading =
+          ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
       double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
       Angle error = Radians.of(
           Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
@@ -189,7 +193,8 @@ public class RobotContainer {
         m_stateMachine,
         m_setpointSupplier,
         () -> {
-          double targetHeading = ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
+          double targetHeading =
+              ShooterMath.getHeadingToHub(drivetrain.getState().Pose).in(Radians);
           double currentHeading = drivetrain.getState().Pose.getRotation().getRadians();
           Angle error = Radians.of(
               Math.abs(MathUtil.inputModulus(currentHeading - targetHeading, -Math.PI, Math.PI)));
@@ -239,8 +244,7 @@ public class RobotContainer {
   }
 
   /**
-   * Initialize the pathfinding system. This loads the navgrid and starts the
-   * background AD*
+   * Initialize the pathfinding system. This loads the navgrid and starts the background AD*
    * planning thread.
    */
   private void initializePathfinding() {
@@ -250,8 +254,7 @@ public class RobotContainer {
   }
 
   /**
-   * Configure button bindings for driver and operator controllers. Delegates to
-   * dedicated binding
+   * Configure button bindings for driver and operator controllers. Delegates to dedicated binding
    * classes for clean separation.
    */
   private void configureBindings() {

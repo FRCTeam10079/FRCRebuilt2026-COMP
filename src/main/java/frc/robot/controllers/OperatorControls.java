@@ -90,13 +90,15 @@ public final class OperatorControls {
     // 1. Pathfind to the approach point in front of climb target
     // 2. While driving final entry path, switch to CLIMB mode and raise climber
     // 3. RIGHT lane only: strafe left then move forward (both live tunable)
-    // 4. Retract climber to pull robot up
-    // 5. Final small forward nudge (live tunable, default 1 inch)
+    // 4. Final small forward nudge (live tunable, default 1 inch)
+    // 5. Retract climber to pull robot up
     operator
         .povDown()
         .onTrue(Commands.defer(
             () -> {
               SwerveRequest.ApplyRobotSpeeds finalForwardRequest =
+                  new SwerveRequest.ApplyRobotSpeeds();
+              SwerveRequest.ApplyRobotSpeeds holdStillRequest =
                   new SwerveRequest.ApplyRobotSpeeds();
               SwerveRequest.ApplyRobotSpeeds rightPreEntryLeftRequest =
                   new SwerveRequest.ApplyRobotSpeeds();
@@ -158,13 +160,17 @@ public final class OperatorControls {
                           Commands.none(),
                           () -> selectedLane == ClimbLane.RIGHT
                               && rightPostEntryForwardDistanceMeters > 1e-4),
-                      // Phase 4: Retract climber to pull robot up
-                      climber.retractCommand(),
-                      // Phase 5: Final small forward nudge
+                      // Phase 4: Final small forward nudge
                       drivetrain
                           .applyRequest(() -> finalForwardRequest.withSpeeds(
                               new ChassisSpeeds(finalForwardSpeedMps, 0, 0)))
                           .withTimeout(finalForwardTimeSec),
+                      // Phase 5: Retract climber to pull robot up while holding
+                      // drivetrain still.
+                      Commands.deadline(
+                          climber.retractCommand(),
+                          drivetrain.applyRequest(
+                              () -> holdStillRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)))),
                       Commands.waitSeconds(postMoveSettleSeconds))
                   .withName("Auto Climb Sequence");
             },

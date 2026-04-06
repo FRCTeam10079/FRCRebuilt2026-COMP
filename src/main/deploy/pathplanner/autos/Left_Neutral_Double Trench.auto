@@ -170,7 +170,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "DepotTolScore"
+            "pathName": "DepotToMScore"
           }
         },
         {

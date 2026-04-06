@@ -24,12 +24,6 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "DepotTolScore"
-          }
-        },
-        {
           "type": "race",
           "data": {
             "commands": [
@@ -99,53 +93,9 @@
           }
         },
         {
-          "type": "race",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "stowPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.75
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "deployPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 1.0
-                }
-              }
-            ]
+            "pathName": "DepotToLClimb"
           }
         }
       ]

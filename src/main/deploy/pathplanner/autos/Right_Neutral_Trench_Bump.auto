@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "rNeutralToRscore"
+            "pathName": "lNeutralToRscore_Bump"
           }
         },
         {
@@ -42,7 +42,58 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 6.5
+                  "waitTime": 4.0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "race",
+                      "data": {
+                        "commands": [
+                          {
+                            "type": "named",
+                            "data": {
+                              "name": "stowPivot"
+                            }
+                          },
+                          {
+                            "type": "wait",
+                            "data": {
+                              "waitTime": 0.5
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "intakeFuel"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 2.0
                 }
               }
             ]
@@ -55,119 +106,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "intakeFuel"
                 }
               },
               {
-                "type": "named",
+                "type": "path",
                 "data": {
-                  "name": "stowPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.6
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "deployPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 1.3
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "stowPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.7
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "deployPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 1.3
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "stowPivot"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.8
+                  "pathName": "Rscore_TrenchToRNeutral"
                 }
               }
             ]
@@ -186,7 +131,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 10.0
+                  "waitTime": 4.0
                 }
               }
             ]

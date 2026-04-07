@@ -4,7 +4,7 @@ public class IndexerConstants {
   public static final int kFeederMotorID = 15;
   public static final int kSpindexerMotorID = 21;
 
-  public static final int kCurrentLimit = 40;
+  public static final int kCurrentLimit = 50;
 
   public static final double kFeederKP = 0.7;
   public static final double kFeederKI = 0.0;

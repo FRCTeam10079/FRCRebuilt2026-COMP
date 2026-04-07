@@ -26,24 +26,31 @@ public class IntakeConstants {
     public static final int STATOR_CURRENT_LIMIT = 90;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
-    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(20);
-    /** How long (seconds) current must exceed the threshold before declaring a stall. */
-    public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.5);
+    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(60);
+    /**
+     * How long (seconds) current must exceed the threshold before declaring a
+     * stall.
+     */
+    public static final Time STALL_TIME_THRESHOLD = Seconds.of(2.0);
 
-    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.25);
+    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.15);
 
     /**
-     * How long (seconds) the pivot must be at setpoint before switching to idle (NeutralOut). Brake
+     * How long (seconds) the pivot must be at setpoint before switching to idle
+     * (NeutralOut). Brake
      * mode holds position mechanically once the motor is off.
      */
-    public static final Time IDLE_DEBOUNCE_TIME = Seconds.of(0.5);
+    public static final Time IDLE_DEBOUNCE_TIME = Seconds.of(0.1);
 
     public static final double KA = 0;
     public static final double KS = 0.4;
     /**
-     * Gravity compensation feedforward. Tune this by commanding the pivot to 90deg and measuring
-     * the duty cycle needed to hold it still - that's approximately kG. With Arm_Cosine gravity
-     * type, the controller applies kG * cos(angle) automatically. TODO: Tune this value on the
+     * Gravity compensation feedforward. Tune this by commanding the pivot to 90deg
+     * and measuring
+     * the duty cycle needed to hold it still - that's approximately kG. With
+     * Arm_Cosine gravity
+     * type, the controller applies kG * cos(angle) automatically. TODO: Tune this
+     * value on the
      * robot. Start at ~0.15 and adjust.
      */
     public static final double KG = 0.15;
@@ -69,11 +76,13 @@ public class IntakeConstants {
     /** Acceleration for MotionMagic (rotations per second^2). */
     public static final AngularAcceleration MM_ACCELERATION = RotationsPerSecondPerSecond.of(30.0);
 
-    /** Jerk for MotionMagic (rotations per second^3). Limits snap in acceleration. */
-    public static final Velocity<AngularAccelerationUnit> MM_JERK =
-        RotationsPerSecondPerSecond.per(Second).of(800.0);
+    /**
+     * Jerk for MotionMagic (rotations per second^3). Limits snap in acceleration.
+     */
+    public static final Velocity<AngularAccelerationUnit> MM_JERK = RotationsPerSecondPerSecond.per(Second).of(800.0);
 
-    protected Pivot() {}
+    protected Pivot() {
+    }
   }
 
   public static class Wheels {
@@ -83,7 +92,7 @@ public class IntakeConstants {
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(90);
 
-    public static final double INTAKE_IN_RPM = 3000;
+    public static final double INTAKE_IN_RPM = 3500;
     public static final double INTAKE_OUT_RPM = -3000;
 
     public static final double KA = 0;
@@ -93,8 +102,10 @@ public class IntakeConstants {
     public static final double KD = 0.1;
     public static final double KV = 1;
 
-    protected Wheels() {}
+    protected Wheels() {
+    }
   }
 
-  protected IntakeConstants() {}
+  protected IntakeConstants() {
+  }
 }

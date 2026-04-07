@@ -53,7 +53,7 @@ public class IntakeWheelsIOTalonFX implements IntakeWheelsIO {
 
     // Slave only needs neutral mode - PID/current limits follow from the Follower
     // control
-    TalonFXConfiguration slaveConfig = new TalonFXConfiguration();
+    TalonFXConfiguration slaveConfig = masterConfig;
     slaveConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     slaveMotor.getConfigurator().apply(slaveConfig);
 

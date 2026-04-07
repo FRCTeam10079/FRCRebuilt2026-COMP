@@ -157,20 +157,8 @@
                 "data": {
                   "name": "intakeFuel"
                 }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "lScoreTodepot"
-                }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "DepotToMScore"
           }
         },
         {
@@ -215,6 +203,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LScoreToNeutral"
           }
         }
       ]

@@ -195,6 +195,13 @@ public final class DriverControls {
     // D-pad Down - Stow intake pivot + stop intake wheels
     controller.povDown().onTrue(Commands.runOnce(() -> superstructure.stowIntake()));
 
+    // ======== UNJAM / EJECT (through Superstructure) ========
+    // B - Hold reverse intake + indexer
+    controller
+        .a()
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))
+        .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
+
     // ==================== X-STANCE ====================
     // X - Hold defensive wheel lock
     SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();

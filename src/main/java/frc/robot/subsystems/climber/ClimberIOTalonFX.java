@@ -86,6 +86,8 @@ public class ClimberIOTalonFX implements ClimberIO {
     config.CurrentLimits = new CurrentLimitsConfigs()
         .withSupplyCurrentLimitEnable(true)
         .withSupplyCurrentLimit(ClimberConstants.SUPPLY_CURRENT_LIMIT)
+        .withSupplyCurrentLowerLimit(ClimberConstants.STALL_PROTECTION_LOWER_SUPPLY_CURRENT_LIMIT)
+        .withSupplyCurrentLowerTime(ClimberConstants.STALL_PROTECTION_TIMEOUT_SECONDS)
         .withStatorCurrentLimitEnable(true)
         .withStatorCurrentLimit(ClimberConstants.STATOR_CURRENT_LIMIT);
 

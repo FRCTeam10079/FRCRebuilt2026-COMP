@@ -24,6 +24,19 @@ public class ClimberConstants {
   public static final int SUPPLY_CURRENT_LIMIT = 30;
   public static final int STATOR_CURRENT_LIMIT = 60;
 
+  /**
+   * Supply current limit applied after the stall protection timeout window elapses.
+   *
+   * <p>Set to 0 A to effectively cut motor power if sustained high-load current persists.
+   */
+  public static final double STALL_PROTECTION_LOWER_SUPPLY_CURRENT_LIMIT = 0.0;
+
+  /**
+   * Time in seconds before reducing supply current to
+   * {@link #STALL_PROTECTION_LOWER_SUPPLY_CURRENT_LIMIT}.
+   */
+  public static final double STALL_PROTECTION_TIMEOUT_SECONDS = 3.0;
+
   // ==================== VOLTAGE CONTROL ====================
   /** Voltage applied when extending the climber (positive = extend direction). */
   public static final double EXTEND_VOLTAGE = 12.0;

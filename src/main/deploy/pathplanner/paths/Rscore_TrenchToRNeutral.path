@@ -64,16 +64,16 @@
     },
     {
       "anchor": {
-        "x": 2.9077228682170544,
+        "x": 2.8,
         "y": 2.5
       },
       "prevControl": {
-        "x": 4.021773638434386,
+        "x": 3.9140507702173313,
         "y": 2.3217302250290146
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "RscoreBump"
+      "linkedName": null
     }
   ],
   "rotationTargets": [
@@ -114,7 +114,7 @@
     },
     {
       "name": "Constraints Zone",
-      "minWaypointRelativePos": 3.8482758620689665,
+      "minWaypointRelativePos": 3.8,
       "maxWaypointRelativePos": 4.0,
       "constraints": {
         "maxVelocity": 0.5,

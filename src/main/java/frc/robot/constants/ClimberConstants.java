@@ -13,10 +13,13 @@ public class ClimberConstants {
   /** Enable TalonFX FOC for smoother control under heavy climb load. */
   public static final boolean ENABLE_FOC = true;
 
-  /** Peak command voltages allowed by TalonFX voltage requests. */
-  public static final double PEAK_FORWARD_VOLTAGE = 12.0;
+  /**
+   * Peak command voltages allowed by TalonFX voltage requests. Reduced to 2V to prevent the
+   * string/belay from breaking under excessive commanded voltage.
+   */
+  public static final double PEAK_FORWARD_VOLTAGE = 2.0;
 
-  public static final double PEAK_REVERSE_VOLTAGE = -12.0;
+  public static final double PEAK_REVERSE_VOLTAGE = -2.0;
 
   public static final int SUPPLY_CURRENT_LIMIT = 30;
   public static final int STATOR_CURRENT_LIMIT = 60;

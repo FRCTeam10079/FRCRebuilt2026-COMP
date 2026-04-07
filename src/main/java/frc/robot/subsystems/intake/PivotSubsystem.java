@@ -164,7 +164,7 @@ public class PivotSubsystem extends SubsystemBase {
       // sag/flop out during acceleration; NeutralOut is only safe when deployed; I
       // think...
       case DEPLOYED: // INTENTIONAL KEEP FORCE DOWNWARDS WHEN DEPLOYED (its okay)
-      case STOWED:    
+      case STOWED:
         io.setMotionMagicPosition(pivotSetpoint);
         break;
       case IDLE:

@@ -196,9 +196,9 @@ public final class DriverControls {
     controller.povDown().onTrue(Commands.runOnce(() -> superstructure.stowIntake()));
 
     // ======== UNJAM / EJECT (through Superstructure) ========
-    // B - Hold reverse intake + indexer
+    // X - Hold reverse intake + indexer
     controller
-        .a()
+        .x()
         .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.UNJAM)))
         .onFalse(updateWantedStateFromDriverInputs(controller, superstructure));
 

@@ -160,6 +160,17 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
+    // Reject if vision pose is too far from odometry (bogus measurement)
+    if (visionOdoDeltaDistM > VisionConstants.MAX_POSE_JUMP_METERS) {
+      Logger.recordOutput(logPrefix + "Status", "REJECTED_POSE_JUMP");
+      Logger.recordOutput(
+          logPrefix + "Debug/RejectionDetail",
+          "visionVsOdoDist=" + String.format("%.3f", visionOdoDeltaDistM) + "m > threshold="
+              + VisionConstants.MAX_POSE_JUMP_METERS + "m");
+      totalRejected++;
+      return;
+    }
+
     // Single-tag: reject high-ambiguity
     if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
       double ambiguity = mt1.rawFiducials[0].ambiguity;
@@ -201,10 +212,27 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     // ---- Standard deviation model ----
-    // dist^1.2 scaling, inversely proportional to tagCount^2.
+    // Base: dist^1.2 scaling, inversely proportional to tagCount^2.
     double xyStdev = VisionConstants.XY_STDDEV_COEFFICIENT
         * Math.pow(avgTagDist, VisionConstants.XY_STDDEV_EXPONENT)
         / (mt1.tagCount * mt1.tagCount);
+
+    // Single-tag penalty: MT1 single-tag is inherently noisy due to
+    // the coplanar ambiguity problem. Trust it much less.
+    if (mt1.tagCount == 1) {
+      xyStdev *= VisionConstants.SINGLE_TAG_STDDEV_MULTIPLIER;
+    }
+
+    // Ambiguity-scaled trust: instead of binary accept/reject at 0.4,
+    // continuously degrade trust as ambiguity rises.
+    // At ambiguity=0: multiplier=1.0, at ambiguity=0.35: multiplier=2.05
+    double maxAmbiguity = 0.0;
+    for (var fid : mt1.rawFiducials) {
+      maxAmbiguity = Math.max(maxAmbiguity, fid.ambiguity);
+    }
+    xyStdev *= (1.0 + maxAmbiguity * VisionConstants.AMBIGUITY_STDDEV_SCALE);
+    Logger.recordOutput(logPrefix + "Debug/MaxAmbiguity", maxAmbiguity);
+    Logger.recordOutput(logPrefix + "Debug/FinalXYStdDev", xyStdev);
 
     // Never trust MT1 heading - coplanar tag ambiguity can flip it 180 degrees.
     // Gyro (Pigeon2) is the sole heading authority.

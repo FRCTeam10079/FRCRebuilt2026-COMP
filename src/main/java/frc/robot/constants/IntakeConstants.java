@@ -26,11 +26,11 @@ public class IntakeConstants {
     public static final int STATOR_CURRENT_LIMIT = 90;
 
     /** Stator current (amps) above which the pivot is considered stalling. */
-    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(20);
+    public static final Current STALL_CURRENT_THRESHOLD = Amps.of(75);
     /** How long (seconds) current must exceed the threshold before declaring a stall. */
-    public static final Time STALL_TIME_THRESHOLD = Seconds.of(0.5);
+    public static final Time STALL_TIME_THRESHOLD = Seconds.of(2.0);
 
-    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.25);
+    public static final Angle DEPLOY_TOLERANCE = Rotations.of(0.05);
 
     /**
      * How long (seconds) the pivot must be at setpoint before switching to idle (NeutralOut). Brake
@@ -48,7 +48,7 @@ public class IntakeConstants {
      */
     public static final double KG = 0.15;
 
-    public static final double KP = 1.0;
+    public static final double KP = 2.0;
     public static final double KI = 0;
     public static final double KD = 0.2;
     public static final double KV = 0.12;
@@ -83,12 +83,13 @@ public class IntakeConstants {
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(90);
 
-    public static final double INTAKE_IN_RPM = 3000;
+    public static final double INTAKE_IN_RPM = 5500;
     public static final double INTAKE_OUT_RPM = -3000;
 
     public static final double KA = 0;
     public static final double KS = 0.2;
     public static final double KP = 1.5;
+
     public static final double KI = 0;
     public static final double KD = 0.1;
     public static final double KV = 1;

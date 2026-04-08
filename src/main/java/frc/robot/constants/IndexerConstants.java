@@ -4,13 +4,13 @@ public class IndexerConstants {
   public static final int kFeederMotorID = 15;
   public static final int kSpindexerMotorID = 21;
 
-  public static final int kCurrentLimit = 40;
+  public static final int kCurrentLimit = 60;
 
-  public static final double kFeederKP = 0.7;
+  public static final double kFeederKP = 2.0;
   public static final double kFeederKI = 0.0;
   public static final double kFeederKD = 0.0;
   public static final double kFeederKS = 0.5;
-  public static final double kFeederKV = 0.3;
+  public static final double kFeederKV = 0.4;
   public static final double kFeederKA = 0.01;
   public static final double kFeederKG = 0.0;
 

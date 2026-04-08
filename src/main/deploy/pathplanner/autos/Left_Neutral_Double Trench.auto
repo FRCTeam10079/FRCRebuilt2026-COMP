@@ -42,7 +42,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 3.5
+                  "waitTime": 4.0
                 }
               }
             ]
@@ -67,7 +67,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.75
+                  "waitTime": 0.6
                 }
               }
             ]
@@ -117,7 +117,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.875
+                  "waitTime": 0.7
                 }
               }
             ]
@@ -157,20 +157,8 @@
                 "data": {
                   "name": "intakeFuel"
                 }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "lScoreTodepot"
-                }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "DepotTolScore"
           }
         },
         {
@@ -211,7 +199,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.9
+                  "waitTime": 0.8
                 }
               }
             ]

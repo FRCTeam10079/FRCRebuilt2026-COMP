@@ -24,9 +24,22 @@
           }
         },
         {
-          "type": "path",
+          "type": "race",
           "data": {
-            "pathName": "rNeutralToRscore"
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "intakeFuel"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "rNeutralToRscore"
+                }
+              }
+            ]
           }
         },
         {
@@ -42,7 +55,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 6.0
+                  "waitTime": 6.5
                 }
               }
             ]

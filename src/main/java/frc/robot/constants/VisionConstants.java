@@ -55,19 +55,25 @@ public class VisionConstants {
   // ambiguity. This multiplier inflates the XY stddev for single-tag results
   // so the Kalman filter trusts them less. Log data showed single-tag
   // observations causing 5-13cm oscillations per frame.
-  public static final double SINGLE_TAG_STDDEV_MULTIPLIER = 3.0;
+  // Tuned down from 3.0 -> 1.5: 3.0 combined with ambiguity scaling made
+  // vision nearly useless (92% of fusion corrections <1mm).
+  public static final double SINGLE_TAG_STDDEV_MULTIPLIER = 1.5;
 
   // Ambiguity-scaled stddev: instead of a binary accept/reject at 0.4,
   // we also scale the stddev by (1 + ambiguity * this factor).
-  // An observation with ambiguity=0.35 gets stddev multiplied by ~2.05x.
+  // An observation with ambiguity=0.35 gets stddev multiplied by ~1.53x.
   // This makes borderline-ambiguity observations less trusted rather than
   // fully trusted or fully rejected.
-  public static final double AMBIGUITY_STDDEV_SCALE = 3.0;
+  // Tuned down from 3.0 -> 1.5: combined over-correction made stddev ~0.10+.
+  public static final double AMBIGUITY_STDDEV_SCALE = 1.5;
 
   // Pose jump rejection: if a vision pose is more than this distance (meters)
   // from the current odometry pose, reject it outright. Log data showed a
   // 4.76m jump from a bogus single-tag observation that still passed all checks.
-  public static final double MAX_POSE_JUMP_METERS = 0.75;
+  // Tuned up from 0.75 -> 2.0: 0.75m caused a death spiral. Once odometry
+  // drifted past the threshold, ALL subsequent vision was rejected (224
+  // POSE_JUMP rejections in log). 2.0m still catches wild outliers.
+  public static final double MAX_POSE_JUMP_METERS = 2.0;
 
   protected VisionConstants() {}
 }

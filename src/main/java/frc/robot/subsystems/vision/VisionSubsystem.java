@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.LimelightHelpers;
@@ -33,8 +32,6 @@ public class VisionSubsystem extends SubsystemBase {
   private int headingCorrections = 0;
   private boolean hasBootstrappedHeading = false;
 
-  private boolean m_ignoreVision = false; // new code: flag to ignore vision
-
   public VisionSubsystem(CommandSwerveDrivetrain drivetrain) {
     this.drivetrain = drivetrain;
 
@@ -49,13 +46,11 @@ public class VisionSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    boolean isDisabled = edu.wpi.first.wpilibj.DriverStation.isDisabled();
-    Logger.recordOutput("Vision/DisabledSkipped", isDisabled);
-    // Vision fusion must stay enabled in auto so PathPlanner pose correction can
-    // run.
-    if (isDisabled || m_ignoreVision) {
-      return;
-    }
+    // boolean isAuto = RobotStateMachine.getInstance().getMatchState().autonomous;
+    // Logger.recordOutput("Vision/AutoSkipped", isAuto);
+    // if (isAuto) {
+    // return;
+    // }
 
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;
@@ -64,10 +59,6 @@ public class VisionSubsystem extends SubsystemBase {
     for (String name : names) {
       processCamera(name, odoPose, speeds);
     }
-
-    // Avoid System.out in fast loops; it adds roboRIO CPU overhead and AdvantageKit
-    // already logs
-    // this data.
 
     Logger.recordOutput("Vision/TotalAccepted", totalAccepted);
     Logger.recordOutput("Vision/TotalRejected", totalRejected);
@@ -109,41 +100,20 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
+    // Single-tag: reject high-ambiguity
+    if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
+      if (mt1.rawFiducials[0].ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
+        totalRejected++;
+        return;
+      }
+    }
+
     // Hard distance gate on single tags
     if (mt1.tagCount == 1 && avgTagDist > 2.5) {
       Logger.recordOutput(logPrefix + "Status", "REJECTED_DISTANCE");
       totalRejected++;
       return;
-    }
-
-    // Innovation gate: reject if vision pose is too far from current odometry pose
-    double innovationMeters = pose.getTranslation().getDistance(odoPose.getTranslation());
-    double innovationThreshold = mt1.tagCount >= 2 ? 1.0 : 0.75;
-    innovationThreshold += avgTagDist * 0.15; // widen gate proportionally with distance
-    
-    if (innovationMeters > innovationThreshold) {
-      Logger.recordOutput(logPrefix + "Status", "REJECTED_INNOVATION");
-      totalRejected++;
-      return;
-    }
-
-    if (mt1.tagCount == 1) {
-      // Bounds safety for raw fiducials and measurement rejection are separate
-      // concerns: malformed
-      // single-tag frames must still be rejected, not allowed to bypass single-tag
-      // gates.
-      if (mt1.rawFiducials == null
-          || mt1.rawFiducials.length < 1
-          || mt1.rawFiducials[0].ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
-        Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
-        totalRejected++;
-        return;
-      }
-      if (avgTagDist > VisionConstants.MAX_MT1_DISTANCE_METERS) {
-        Logger.recordOutput(logPrefix + "Status", "REJECTED_DISTANCE");
-        totalRejected++;
-        return;
-      }
     }
 
     // ---- One-shot heading bootstrap ----
@@ -156,14 +126,38 @@ public class VisionSubsystem extends SubsystemBase {
         Pose2d correctedPose = new Pose2d(odoPose.getTranslation(), pose.getRotation());
         drivetrain.resetPose(correctedPose);
         headingCorrections++;
-        DataLogManager.log("[Vision] One-shot heading bootstrap: "
-            + String.format("%.1f", odoPose.getRotation().getDegrees())
-            + "° -> "
-            + String.format("%.1f", pose.getRotation().getDegrees())
-            + "°");
+        /*
+         * System.out.println("[VISION] ONE-SHOT HEADING BOOTSTRAP: "
+         * + String.format("%.1f", odoPose.getRotation().getDegrees())
+         * + "deg -> "
+         * + String.format("%.1f", pose.getRotation().getDegrees())
+         * + "deg (divergence="
+         * + String.format("%.1f", divergenceDeg)
+         * + "deg, camera="
+         * + cameraName
+         * + ")");
+         */
+        Logger.recordOutput(
+            "Events/Vision/Last",
+            "[Vision] One-shot heading bootstrap: "
+                + String.format("%.1f", odoPose.getRotation().getDegrees())
+                + "° -> "
+                + String.format("%.1f", pose.getRotation().getDegrees())
+                + "°");
+        Logger.recordOutput("Events/Vision/Sequence", headingCorrections);
         Logger.recordOutput(logPrefix + "HeadingBootstrap", true);
       }
       hasBootstrappedHeading = true;
+    }
+
+    double innovationMeters = odoPose.getTranslation().getDistance(pose.getTranslation());
+    double innovationThreshold = mt1.tagCount >= 2 ? 1.0 : 0.75;
+    innovationThreshold += avgTagDist * 0.15; // widen gate proportionally with distance
+
+    if (innovationMeters > innovationThreshold) {
+      Logger.recordOutput(logPrefix + "Status", "REJECTED_INNOVATION");
+      totalRejected++;
+      return;
     }
 
     // ---- Standard deviation model ----
@@ -195,6 +189,16 @@ public class VisionSubsystem extends SubsystemBase {
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d currentPose = drivetrain.getState().Pose;
     double currentHeadingDeg = currentPose.getRotation().getDegrees();
+    /*
+     * System.out.println("[VISION-DEBUG] updateWhileDisabled() | gyroHeading="
+     * + String.format("%.1f", currentHeadingDeg)
+     * + "deg | pose=("
+     * + String.format("%.2f", currentPose.getX())
+     * + ", "
+     * + String.format("%.2f", currentPose.getY())
+     * + ") | MT1_HEADING_CORRECTION_ENABLED="
+     * + VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED);
+     */
 
     for (String name : names) {
       LimelightHelpers.SetRobotOrientation(name, currentHeadingDeg, 0, 0, 0, 0, 0);
@@ -205,26 +209,22 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
 
         if (!hasBootstrappedHeading && mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
-          double mt1HeadingDeg = mt1.pose.getRotation().getDegrees();
-
-          Logger.recordOutput("Vision/" + name + "/Disabled/MT1HeadingDeg", mt1HeadingDeg);
-
           // This path bypasses processCamera(), so gate protections must be applied
           // manually; use
           // distance as the primary protection because odometry is static while disabled.
-          if (mt1.avgTagDist > VisionConstants.MAX_MT1_DISTANCE_METERS) {
+          if (mt1.avgTagDist > 4.0) {
             Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", false);
             Logger.recordOutput("Vision/" + name + "/Disabled/Status", "REJECTED_DISTANCE");
             totalRejected++;
             continue;
           }
-          
+
           drivetrain.resetPose(mt1.pose);
 
           hasBootstrappedHeading = true;
           headingCorrections++;
-          DataLogManager.log("[Vision] Auto-seeded full pose from MT1 multi-tag: X=" 
-              + String.format("%.2f", mt1.pose.getX()) + " Y=" + String.format("%.2f", mt1.pose.getY()) 
+          edu.wpi.first.wpilibj.DataLogManager.log("[Vision] Auto-seeded full pose from MT1 multi-tag: X="
+              + String.format("%.2f", mt1.pose.getX()) + " Y=" + String.format("%.2f", mt1.pose.getY())
               + " Theta=" + String.format("%.1f", mt1.pose.getRotation().getDegrees())
               + "° (camera: " + name + ")");
           Logger.recordOutput("Vision/" + name + "/Disabled/HeadingCorrected", true);
@@ -233,10 +233,5 @@ public class VisionSubsystem extends SubsystemBase {
         }
       }
     }
-  }
-
-  // new code: Allow pausing vision integration during manual overrides
-  public void setIgnoreVision(boolean ignore) {
-    m_ignoreVision = ignore;
   }
 }

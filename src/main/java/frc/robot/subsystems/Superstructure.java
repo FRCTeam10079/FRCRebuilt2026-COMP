@@ -441,6 +441,8 @@ public class Superstructure extends SubsystemBase {
    * OperatorControls.
    */
   private void syncGameState() {
+    if (!stateMachine.isEnabled()) return;
+
     GameState desired =
         switch (currentSuperState) {
           case COLLECTING -> GameState.COLLECTING;

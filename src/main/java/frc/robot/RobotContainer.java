@@ -227,6 +227,7 @@ public class RobotContainer {
         shooterPivot,
         drivetrain,
         vision,
+        climber,
         m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
@@ -289,7 +290,6 @@ public class RobotContainer {
         () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose),
         climbApproachCommandFactory,
         climbEntryCommandFactory,
-        this::resolveClimbLane,
         drivetrain);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);

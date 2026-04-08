@@ -8,10 +8,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
-import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
@@ -174,19 +170,7 @@ public class PathfindToTagCommand extends Command {
     // If no path yet, wait (but NEVER drive directly - that would ignore
     // obstacles!)
     if (!hasPath) {
-      Logger.recordOutput("Pathfinding/Status", "Waiting for path...");
-      Logger.recordOutput("Pathfinding/WaitTime", pathWaitTimer.get());
-
-      // Keep publishing current pose even while waiting - VERY IMPORTANT for
-      // visibility!
-      currentPosePublisher.set(currentPose);
-      goalPosePublisher.set(targetPose);
-
-      // Also publish to Field2d while waiting
-      pathfindingField.setRobotPose(currentPose);
-      pathfindingField.getObject("Goal").setPose(targetPose);
-      pathfindingField.getObject("TargetWaypoint").setPose(targetPose); // No waypoint yet
-      pathfindingField.getObject("Path").setPoses(); // Empty path
+      recordWaitingOutputs(currentPose);
 
       // If waiting too long, log one warning but DON'T drive directly
       // (that ignores obstacles).
@@ -226,52 +210,7 @@ public class PathfindToTagCommand extends Command {
     ChassisSpeeds robotSpeeds =
         ChassisSpeeds.fromFieldRelativeSpeeds(fieldSpeeds, currentPose.getRotation());
 
-    // === NETWORKTABLES LOGGING FOR ADVANTAGESCOPE ===
-    // Publish poses for 2D field visualization
-    currentPosePublisher.set(currentPose);
-    goalPosePublisher.set(targetPose);
-    targetWaypointPublisher.set(new Pose2d(targetWaypoint, targetPose.getRotation()));
-
-    // === FIELD2D VISUALIZATION (works with AdvantageScope/Shuffleboard) ===
-    // Update robot pose on field
-    pathfindingField.setRobotPose(currentPose);
-    // Goal pose shown as a separate object
-    pathfindingField.getObject("Goal").setPose(targetPose);
-    // Target waypoint shown as another object
-    pathfindingField
-        .getObject("TargetWaypoint")
-        .setPose(new Pose2d(targetWaypoint, targetPose.getRotation()));
-    // Full path trajectory
-    if (currentPath != null && !currentPath.isEmpty()) {
-      Pose2d[] pathPoses = new Pose2d[currentPath.size()];
-      for (int i = 0; i < currentPath.size(); i++) {
-        pathPoses[i] = new Pose2d(currentPath.get(i), targetPose.getRotation());
-      }
-      pathfindingField.getObject("Path").setPoses(pathPoses);
-    } else {
-      pathfindingField.getObject("Path").setPoses();
-    }
-
-    // Publish velocity data via Logger
-    Logger.recordOutput("Pathfinding/VelX", xVelocity);
-    Logger.recordOutput("Pathfinding/VelY", yVelocity);
-    Logger.recordOutput("Pathfinding/VelOmega", rotationVelocity);
-    Logger.recordOutput("Pathfinding/ErrorX", targetWaypoint.getX() - currentPose.getX());
-    Logger.recordOutput("Pathfinding/ErrorY", targetWaypoint.getY() - currentPose.getY());
-    Logger.recordOutput("Pathfinding/CurrentWaypointIdx", currentWaypointIndex);
-    Logger.recordOutput("Pathfinding/PathLength", currentPath != null ? currentPath.size() : 0);
-
-    // Publish path for raw struct visualization too
-    if (currentPath != null && !currentPath.isEmpty()) {
-      Pose2d[] pathPoses = new Pose2d[currentPath.size()];
-      for (int i = 0; i < currentPath.size(); i++) {
-        pathPoses[i] = new Pose2d(currentPath.get(i), targetPose.getRotation());
-      }
-      pathPublisher.set(pathPoses);
-    } else {
-      // Publish empty array when no path to clear stale data
-      pathPublisher.set(new Pose2d[0]);
-    }
+    recordFollowingOutputs(currentPose, targetWaypoint, xVelocity, yVelocity, rotationVelocity);
 
     drivetrain.setControl(
         new com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds().withSpeeds(robotSpeeds));

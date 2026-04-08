@@ -44,30 +44,10 @@ public class ClimberConstants {
   /** Voltage applied when retracting the climber (negative = retract direction). */
   public static final double RETRACT_VOLTAGE = -12.0;
 
-  // ==================== STALL DETECTION ====================
-  /**
-   * Stator current (amps) above this threshold indicates the motor is under heavy load or stalled.
-   * Normal running current is ~5-9A; stalled against a hard stop will hit the 60A stator limit.
-   */
-  public static final double STALL_CURRENT_THRESHOLD_AMPS = 30.0;
-
-  /**
-   * Velocity (RPS) below this threshold indicates the motor is barely moving. Normal running
-   * velocity is 30-80 RPS; at a stall it drops to ~0 RPS.
-   */
-  public static final double STALL_VELOCITY_THRESHOLD_RPS = 5.0;
-
-  /**
-   * Stall condition must persist this many seconds before declaring done. Prevents false triggers
-   * from brief current spikes.
-   */
-  public static final double STALL_DEBOUNCE_SECONDS = 0.25;
-
-  /**
-   * Ignore stall detection for this many seconds after starting to move. The motor draws high
-   * current during initial acceleration which would look like a stall.
-   */
-  public static final double RAMP_UP_SECONDS = 0.5;
+  // ==================== TIMER DURATIONS ====================
+  public static final double EXTEND_DURATION_SECONDS = 3.0;
+  public static final double HOLD_DURATION_SECONDS = 5.0;
+  public static final double RETRACT_DURATION_SECONDS = 3.0;
 
   // ==================== STATUS SIGNALS ====================
   /** Frequency (Hz) for climber Talon status signals. */

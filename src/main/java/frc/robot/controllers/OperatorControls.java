@@ -7,15 +7,12 @@ package frc.robot.controllers;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 
-import com.ctre.phoenix6.swerve.SwerveRequest;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.constants.ClimbConstants;
 import frc.robot.constants.ClimbConstants.ClimbLane;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
@@ -26,7 +23,6 @@ import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
-import java.util.Set;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -76,105 +72,12 @@ public final class OperatorControls {
         .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
             stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
-    // ==================== CLIMB PATHFIND ====================
-    // D-Pad Up - Pathfind to selected climb lane (hold to pathfind, release to
-    // stop)
-    operator
-        .povUp()
-        .whileTrue(Commands.defer(
-            () -> Commands.sequence(
-                climbApproachCommandFactory.get(), climbEntryCommandFactory.get()),
-            Set.of(drivetrain)));
-
-    // D-Pad Down - Full auto-climb sequence:
-    // 1. Pathfind to the approach point in front of climb target
-    // 2. While driving final entry path, switch to CLIMB mode and raise climber
-    // 3. RIGHT lane only: strafe left then move forward (both live tunable)
-    // 4. Final small forward nudge (live tunable, default 1 inch)
-    // 5. Retract climber to pull robot up
-    operator
-        .povDown()
-        .onTrue(Commands.defer(
-            () -> {
-              SwerveRequest.ApplyRobotSpeeds finalForwardRequest =
-                  new SwerveRequest.ApplyRobotSpeeds();
-              SwerveRequest.ApplyRobotSpeeds holdStillRequest =
-                  new SwerveRequest.ApplyRobotSpeeds();
-              SwerveRequest.ApplyRobotSpeeds rightPreEntryLeftRequest =
-                  new SwerveRequest.ApplyRobotSpeeds();
-              SwerveRequest.ApplyRobotSpeeds rightPostEntryForwardRequest =
-                  new SwerveRequest.ApplyRobotSpeeds();
-
-              ClimbLane selectedLane = climbLaneSupplier.get();
-
-              double finalForwardSpeedMps =
-                  Math.max(0.05, Math.abs(ClimbConstants.getAutoClimbFinalForwardSpeedMps()));
-              double finalForwardDistanceMeters =
-                  Math.max(0.0, Math.abs(ClimbConstants.getAutoClimbFinalForwardDistanceMeters()));
-              double postMoveSettleSeconds =
-                  Math.max(0.0, ClimbConstants.getAutoClimbPostMoveSettleSeconds());
-              double finalForwardTimeSec = finalForwardDistanceMeters / finalForwardSpeedMps;
-
-              double rightPreEntryLeftSpeedMps =
-                  Math.max(0.05, Math.abs(ClimbConstants.getAutoClimbRightPreEntryLeftSpeedMps()));
-              double rightPreEntryLeftDistanceMeters = Math.max(
-                  0.0, Math.abs(ClimbConstants.getAutoClimbRightPreEntryLeftDistanceMeters()));
-              double rightPreEntryLeftTimeSec =
-                  rightPreEntryLeftDistanceMeters / rightPreEntryLeftSpeedMps;
-
-              double rightPostEntryForwardSpeedMps = Math.max(
-                  0.05, Math.abs(ClimbConstants.getAutoClimbRightPostEntryForwardSpeedMps()));
-              double rightPostEntryForwardDistanceMeters = Math.max(
-                  0.0, Math.abs(ClimbConstants.getAutoClimbRightPostEntryForwardDistanceMeters()));
-              double rightPostEntryForwardTimeSec =
-                  rightPostEntryForwardDistanceMeters / rightPostEntryForwardSpeedMps;
-
-              return Commands.sequence(
-                      // Phase 1: Pathfind to climb approach point
-                      climbApproachCommandFactory.get(),
-                      // Phase 2: Final entry drive + start climb in
-                      // parallel
-                      Commands.parallel(
-                          climbEntryCommandFactory.get(),
-                          Commands.sequence(
-                              Commands.runOnce(
-                                  () -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
-                              climber.extendCommand())),
-                      // Phase 3: RIGHT lane only, nudge left after
-                      // normal entry.
-                      Commands.either(
-                          drivetrain
-                              .applyRequest(() -> rightPreEntryLeftRequest.withSpeeds(
-                                  new ChassisSpeeds(0.0, -rightPreEntryLeftSpeedMps, 0.0)))
-                              .withTimeout(rightPreEntryLeftTimeSec),
-                          Commands.none(),
-                          () -> selectedLane == ClimbLane.RIGHT
-                              && rightPreEntryLeftDistanceMeters > 1e-4),
-                      // Phase 3.5: RIGHT lane only, nudge forward
-                      // after left adjustment.
-                      Commands.either(
-                          drivetrain
-                              .applyRequest(() -> rightPostEntryForwardRequest.withSpeeds(
-                                  new ChassisSpeeds(rightPostEntryForwardSpeedMps, 0.0, 0.0)))
-                              .withTimeout(rightPostEntryForwardTimeSec),
-                          Commands.none(),
-                          () -> selectedLane == ClimbLane.RIGHT
-                              && rightPostEntryForwardDistanceMeters > 1e-4),
-                      // Phase 4: Final small forward nudge
-                      drivetrain
-                          .applyRequest(() -> finalForwardRequest.withSpeeds(
-                              new ChassisSpeeds(finalForwardSpeedMps, 0, 0)))
-                          .withTimeout(finalForwardTimeSec),
-                      // Phase 5: Retract climber to pull robot up while holding
-                      // drivetrain still.
-                      Commands.deadline(
-                          climber.retractCommand(),
-                          drivetrain.applyRequest(
-                              () -> holdStillRequest.withSpeeds(new ChassisSpeeds(0.0, 0.0, 0.0)))),
-                      Commands.waitSeconds(postMoveSettleSeconds))
-                  .withName("Auto Climb Sequence");
-            },
-            Set.of(drivetrain, climber, superstructure)));
+    // operator
+    // .povUp()
+    // .whileTrue(Commands.defer(
+    // () -> Commands.sequence(
+    // climbApproachCommandFactory.get(), climbEntryCommandFactory.get()),
+    // Set.of(drivetrain)));
 
     // ======== UNJAM / EJECT (through Superstructure) ========
     // B - Hold reverse intake + indexer
@@ -198,12 +101,15 @@ public final class OperatorControls {
         .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
         .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
-    // Right Bumper - Hold to control shooter pivot with left stick Y
     operator
         .rightBumper()
-        .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-        .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
-        .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
+        .onTrue(Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)))
+        .whileTrue(climber.manualControlCommand(negate(operator::getLeftY)))
+        .onFalse(Commands.runOnce(() -> {
+          if (superstructure.isClimbing()) {
+            superstructure.setWantedSuperState(WantedSuperState.IDLE);
+          }
+        }));
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator
@@ -258,26 +164,11 @@ public final class OperatorControls {
           }
         }));
 
-    // ======== CLIMB (through Superstructure + direct climber commands) ========
-    // Start + Back together -> Set Superstructure to CLIMB and extend climber to
-    // max position.
-    // Works from any state (idle or retracted) to allow re-extension.
     new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
         .onTrue(Commands.sequence(
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
-            climber.extendCommand()));
+            climber.timerClimbCommand()));
 
-    // A button (while in climb mode and extended) -> Retract to climb position
-    // Use onTrue on just A button, then conditionally run retract.
-    // This prevents auto-triggering when isExtended() becomes true while A is held.
-    operator
-        .a()
-        .onTrue(Commands.either(
-            climber.retractCommand(),
-            Commands.none(),
-            () -> superstructure.isClimbing() && climber.isExtended()));
-
-    // Back alone (not with Start) -> Abort climb from any state
     operator
         .back()
         .and(() -> !operator.start().getAsBoolean())

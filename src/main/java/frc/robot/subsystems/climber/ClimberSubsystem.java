@@ -4,14 +4,18 @@
 
 package frc.robot.subsystems.climber;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ClimberConstants;
+import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ClimberSubsystem extends SubsystemBase {
 
@@ -20,37 +24,40 @@ public class ClimberSubsystem extends SubsystemBase {
   private final Alert climberMotorDisconnectedAlert =
       new Alert("Climber motor disconnected, climb may fail", AlertType.kError);
 
+  // ==================== TUNABLE DURATIONS (NetworkTables) ====================
+  private static final LoggedNetworkNumber extendDuration = new LoggedNetworkNumber(
+      "/Tuning/Climb/ExtendDurationSeconds", ClimberConstants.EXTEND_DURATION_SECONDS);
+  private static final LoggedNetworkNumber holdDuration = new LoggedNetworkNumber(
+      "/Tuning/Climb/HoldDurationSeconds", ClimberConstants.HOLD_DURATION_SECONDS);
+  private static final LoggedNetworkNumber retractDuration = new LoggedNetworkNumber(
+      "/Tuning/Climb/RetractDurationSeconds", ClimberConstants.RETRACT_DURATION_SECONDS);
+
   // ==================== STATE MACHINE ====================
 
   public enum WantedState {
     IDLE,
-    EXTEND,
-    RETRACT,
+    CLIMB,
+    MANUAL,
     ABORT
   }
 
   public enum SystemState {
-    /** Motor off, brake holds position. */
     IDLE,
-    /** Applying extend voltage, waiting for stall. */
     EXTENDING,
-    /** Motor stalled at full extension, brake holds. */
-    EXTENDED,
-    /** Applying retract voltage, waiting for stall. */
+    HOLDING,
     RETRACTING,
-    /** Motor stalled at retract position, brake holds. */
-    RETRACTED
+    RETRACTED,
+    MANUAL
   }
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLE;
 
-  // ==================== STALL DETECTION ====================
-  private int stallCycleCount = 0;
-  private static final int STALL_CYCLES_REQUIRED =
-      (int) (ClimberConstants.STALL_DEBOUNCE_SECONDS / 0.02);
-  private static final int RAMP_UP_CYCLES = (int) (ClimberConstants.RAMP_UP_SECONDS / 0.02);
-  private int moveCycleCount = 0;
+  // ==================== TIMER ====================
+  private final Timer phaseTimer = new Timer();
+
+  // ==================== MANUAL CONTROL ====================
+  private double manualVoltage = 0.0;
 
   public ClimberSubsystem(ClimberIO io) {
     this.io = io;
@@ -81,63 +88,81 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/SupplyCurrentAmps", inputs.supplyCurrentAmps);
     Logger.recordOutput("Climber/TempCelsius", inputs.tempCelsius);
 
-    // Stall detection diagnostics
-    Logger.recordOutput("Climber/StallCycleCount", stallCycleCount);
-    Logger.recordOutput("Climber/MoveCycleCount", moveCycleCount);
-    Logger.recordOutput("Climber/StallConditionMet", isStallCondition());
+    Logger.recordOutput("Climber/PhaseTimerElapsed", phaseTimer.get());
+    Logger.recordOutput("Climber/ManualVoltage", manualVoltage);
   }
 
   // ==================== STATE TRANSITIONS ====================
 
   private SystemState handleStateTransitions(SystemState previous) {
-    // EXTENDED and RETRACTED are sticky - only the opposite direction exits them.
-    // This prevents accidental IDLE transitions (button release race,
-    // Superstructure cleanup)
-    // from dropping the climber.
-    if (previous == SystemState.EXTENDED) {
-      if (wantedState == WantedState.RETRACT) {
-        resetStallDetection();
-        return SystemState.RETRACTING;
-      }
-      return SystemState.EXTENDED;
+    if (wantedState == WantedState.ABORT) {
+      phaseTimer.stop();
+      phaseTimer.reset();
+      wantedState = WantedState.IDLE;
+      return SystemState.IDLE;
     }
+
+    if (wantedState == WantedState.IDLE
+        && previous != SystemState.EXTENDING
+        && previous != SystemState.HOLDING
+        && previous != SystemState.RETRACTING) {
+      return SystemState.IDLE;
+    }
+
+    if (wantedState == WantedState.MANUAL) {
+      if (previous != SystemState.MANUAL) {
+        phaseTimer.stop();
+        phaseTimer.reset();
+      }
+      return SystemState.MANUAL;
+    }
+
+    if (wantedState == WantedState.CLIMB) {
+      switch (previous) {
+        case IDLE:
+        case RETRACTED:
+          phaseTimer.restart();
+          return SystemState.EXTENDING;
+
+        case EXTENDING:
+          if (phaseTimer.hasElapsed(extendDuration.get())) {
+            phaseTimer.restart();
+            return SystemState.HOLDING;
+          }
+          return SystemState.EXTENDING;
+
+        case HOLDING:
+          if (phaseTimer.hasElapsed(holdDuration.get())) {
+            phaseTimer.restart();
+            return SystemState.RETRACTING;
+          }
+          return SystemState.HOLDING;
+
+        case RETRACTING:
+          if (phaseTimer.hasElapsed(retractDuration.get())) {
+            phaseTimer.stop();
+            phaseTimer.reset();
+            return SystemState.RETRACTED;
+          }
+          return SystemState.RETRACTING;
+
+        case MANUAL:
+          phaseTimer.restart();
+          return SystemState.EXTENDING;
+
+        default:
+          return previous;
+      }
+    }
+
     if (previous == SystemState.RETRACTED) {
-      if (wantedState == WantedState.EXTEND) {
-        resetStallDetection();
-        return SystemState.EXTENDING;
+      if (wantedState == WantedState.IDLE) {
+        return SystemState.IDLE;
       }
       return SystemState.RETRACTED;
     }
 
-    switch (wantedState) {
-      case IDLE:
-      case ABORT:
-        resetStallDetection();
-        return SystemState.IDLE;
-
-      case EXTEND:
-        if (previous != SystemState.EXTENDING) {
-          resetStallDetection();
-        }
-        moveCycleCount++;
-        if (checkStalled()) {
-          return SystemState.EXTENDED;
-        }
-        return SystemState.EXTENDING;
-
-      case RETRACT:
-        if (previous != SystemState.RETRACTING) {
-          resetStallDetection();
-        }
-        moveCycleCount++;
-        if (checkStalled()) {
-          return SystemState.RETRACTED;
-        }
-        return SystemState.RETRACTING;
-
-      default:
-        return SystemState.IDLE;
-    }
+    return previous;
   }
 
   private void applyStates() {
@@ -148,40 +173,16 @@ public class ClimberSubsystem extends SubsystemBase {
       case RETRACTING:
         io.setVoltage(ClimberConstants.RETRACT_VOLTAGE);
         break;
-      case EXTENDED:
+      case MANUAL:
+        io.setVoltage(manualVoltage);
+        break;
+      case HOLDING:
       case RETRACTED:
       case IDLE:
       default:
         io.stop();
         break;
     }
-  }
-
-  // ==================== STALL DETECTION ====================
-
-  private void resetStallDetection() {
-    moveCycleCount = 0;
-    stallCycleCount = 0;
-  }
-
-  private boolean isStallCondition() {
-    return inputs.statorCurrentAmps >= ClimberConstants.STALL_CURRENT_THRESHOLD_AMPS
-        && Math.abs(inputs.velocityRPS) < ClimberConstants.STALL_VELOCITY_THRESHOLD_RPS;
-  }
-
-  private boolean checkStalled() {
-    if (moveCycleCount < RAMP_UP_CYCLES) {
-      stallCycleCount = 0;
-      return false;
-    }
-
-    if (isStallCondition()) {
-      stallCycleCount++;
-    } else {
-      stallCycleCount = 0;
-    }
-
-    return stallCycleCount >= STALL_CYCLES_REQUIRED;
   }
 
   // ==================== PUBLIC API ====================
@@ -198,12 +199,17 @@ public class ClimberSubsystem extends SubsystemBase {
     return systemState;
   }
 
-  public boolean isExtended() {
-    return systemState == SystemState.EXTENDED;
+  public void setManualVoltage(double voltage) {
+    this.manualVoltage = MathUtil.clamp(
+        voltage, ClimberConstants.PEAK_REVERSE_VOLTAGE, ClimberConstants.PEAK_FORWARD_VOLTAGE);
   }
 
   public boolean isRetracted() {
     return systemState == SystemState.RETRACTED;
+  }
+
+  public boolean isIdle() {
+    return systemState == SystemState.IDLE;
   }
 
   public double getPositionRotations() {
@@ -212,30 +218,32 @@ public class ClimberSubsystem extends SubsystemBase {
 
   // ==================== COMMAND FACTORIES ====================
 
-  public Command extendCommand() {
-    return run(() -> setWantedState(WantedState.EXTEND))
-        .until(this::isExtended)
-        .finallyDo(interrupted -> {
-          if (interrupted) {
-            setWantedState(WantedState.IDLE);
-          }
-        })
-        .withName("Climber Extend");
-  }
-
-  public Command retractCommand() {
-    return run(() -> setWantedState(WantedState.RETRACT))
+  public Command timerClimbCommand() {
+    return run(() -> setWantedState(WantedState.CLIMB))
         .until(this::isRetracted)
         .finallyDo(interrupted -> {
           if (interrupted) {
             setWantedState(WantedState.IDLE);
           }
         })
-        .withName("Climber Retract");
+        .withName("Climber Timer Climb");
+  }
+
+  public Command manualControlCommand(DoubleSupplier stickInput) {
+    return run(() -> {
+          setWantedState(WantedState.MANUAL);
+          setManualVoltage(stickInput.getAsDouble() * ClimberConstants.EXTEND_VOLTAGE);
+        })
+        .finallyDo(interrupted -> {
+          setManualVoltage(0.0);
+          setWantedState(WantedState.IDLE);
+        })
+        .withName("Climber Manual Control");
   }
 
   public Command abortCommand() {
-    return Commands.runOnce(() -> setWantedState(WantedState.IDLE), this).withName("Climber Abort");
+    return Commands.runOnce(() -> setWantedState(WantedState.ABORT), this)
+        .withName("Climber Abort");
   }
 
   public Command stopCommand() {

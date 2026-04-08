@@ -36,6 +36,7 @@ public class ClimberSubsystem extends SubsystemBase {
   public enum WantedState {
     IDLE,
     CLIMB,
+    RETRACT,
     MANUAL,
     ABORT
   }
@@ -43,6 +44,7 @@ public class ClimberSubsystem extends SubsystemBase {
   public enum SystemState {
     IDLE,
     EXTENDING,
+    EXTENDED,
     RETRACTING,
     RETRACTED,
     MANUAL
@@ -98,6 +100,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
     if (wantedState == WantedState.IDLE
         && previous != SystemState.EXTENDING
+        && previous != SystemState.EXTENDED
         && previous != SystemState.RETRACTING) {
       return SystemState.IDLE;
     }
@@ -114,9 +117,12 @@ public class ClimberSubsystem extends SubsystemBase {
 
         case EXTENDING:
           if (inputs.positionRotations >= extendPosition.get() - positionTolerance.get()) {
-            return SystemState.RETRACTING;
+            return SystemState.EXTENDED;
           }
           return SystemState.EXTENDING;
+
+        case EXTENDED:
+          return SystemState.EXTENDED;
 
         case RETRACTING:
           if (inputs.positionRotations <= retractPosition.get() + positionTolerance.get()) {
@@ -130,6 +136,20 @@ public class ClimberSubsystem extends SubsystemBase {
         default:
           return previous;
       }
+    }
+
+    if (wantedState == WantedState.RETRACT) {
+      if (previous == SystemState.EXTENDED || previous == SystemState.EXTENDING) {
+        return SystemState.RETRACTING;
+      }
+      if (previous == SystemState.RETRACTING) {
+        if (inputs.positionRotations <= retractPosition.get() + positionTolerance.get()) {
+          wantedState = WantedState.IDLE;
+          return SystemState.RETRACTED;
+        }
+        return SystemState.RETRACTING;
+      }
+      return previous;
     }
 
     if (previous == SystemState.RETRACTED) {
@@ -153,6 +173,7 @@ public class ClimberSubsystem extends SubsystemBase {
       case MANUAL:
         io.setVoltage(manualVoltage);
         break;
+      case EXTENDED:
       case RETRACTED:
       case IDLE:
       default:
@@ -180,6 +201,10 @@ public class ClimberSubsystem extends SubsystemBase {
         voltage, ClimberConstants.PEAK_REVERSE_VOLTAGE, ClimberConstants.PEAK_FORWARD_VOLTAGE);
   }
 
+  public boolean isExtended() {
+    return systemState == SystemState.EXTENDED;
+  }
+
   public boolean isRetracted() {
     return systemState == SystemState.RETRACTED;
   }
@@ -194,15 +219,25 @@ public class ClimberSubsystem extends SubsystemBase {
 
   // ==================== COMMAND FACTORIES ====================
 
-  public Command climbCommand() {
+  public Command extendCommand() {
     return run(() -> setWantedState(WantedState.CLIMB))
+        .until(this::isExtended)
+        .withName("Climber Extend");
+  }
+
+  public Command retractCommand() {
+    return run(() -> setWantedState(WantedState.RETRACT))
         .until(this::isRetracted)
         .finallyDo(interrupted -> {
           if (interrupted) {
             setWantedState(WantedState.IDLE);
           }
         })
-        .withName("Climber Position Climb");
+        .withName("Climber Retract");
+  }
+
+  public Command climbCommand() {
+    return Commands.sequence(extendCommand(), retractCommand()).withName("Climber Full Climb");
   }
 
   public Command manualControlCommand(DoubleSupplier stickInput) {

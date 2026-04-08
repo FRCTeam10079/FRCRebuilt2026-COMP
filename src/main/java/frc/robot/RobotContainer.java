@@ -208,6 +208,7 @@ public class RobotContainer {
         shooterPivot,
         drivetrain,
         vision,
+        climber,
         m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);

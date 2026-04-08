@@ -83,7 +83,7 @@ public class IntakeConstants {
     public static final Current SUPPLY_CURRENT_LIMIT = Amps.of(60);
     public static final Current STATOR_CURRENT_LIMIT = Amps.of(90);
 
-    public static final double INTAKE_IN_RPM = 4000;
+    public static final double INTAKE_IN_RPM = 4500;
     public static final double INTAKE_OUT_RPM = -3000;
 
     public static final double KA = 0;

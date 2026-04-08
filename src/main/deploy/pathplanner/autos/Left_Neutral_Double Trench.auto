@@ -42,7 +42,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 3.5
+                  "waitTime": 4.0
                 }
               }
             ]
@@ -67,7 +67,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.75
+                  "waitTime": 0.6
                 }
               }
             ]
@@ -117,7 +117,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.875
+                  "waitTime": 0.7
                 }
               }
             ]
@@ -199,16 +199,10 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.9
+                  "waitTime": 0.8
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "LScoreToNeutral"
           }
         }
       ]

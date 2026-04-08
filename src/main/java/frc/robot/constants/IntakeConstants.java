@@ -48,7 +48,7 @@ public class IntakeConstants {
      */
     public static final double KG = 0.15;
 
-    public static final double KP = 1.0;
+    public static final double KP = 2.0;
     public static final double KI = 0;
     public static final double KD = 0.2;
     public static final double KV = 0.12;

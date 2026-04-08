@@ -193,8 +193,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         if (mt1.tagCount >= 2 && mt1.timestampSeconds != 0) {
           double mt1HeadingDeg = mt1.pose.getRotation().getDegrees();
-          double divergenceDeg =
-              Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));
+          double divergenceDeg = Math.abs(MathUtil.inputModulus(mt1HeadingDeg - currentHeadingDeg, -180, 180));
           /*
            * System.out.println("[VISION-DEBUG] [DISABLED] ["
            * + name

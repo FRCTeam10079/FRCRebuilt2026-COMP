@@ -11,6 +11,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
@@ -35,6 +37,16 @@ public class VisionSubsystem extends SubsystemBase {
   private int headingCorrections = 0;
   private boolean hasBootstrappedHeading = false;
 
+  // IMU mode transition: track last set mode to avoid spamming NT every loop.
+  // -1 = not yet set.
+  private int lastImuMode = -1;
+
+  // Dashboard toggle: Elastic dashboard can flip this to disable vision fusion
+  // in real-time. Published under /Robot/Vision/Enabled as a boolean entry
+  // (read+write). Default: true (vision ON).
+  private final BooleanEntry visionEnabledEntry =
+      NetworkTableInstance.getDefault().getBooleanTopic("/Robot/Vision/Enabled").getEntry(true);
+
   // ==================== JITTER DEBUGGING ====================
   // Track last accepted vision pose per camera to detect jumps between frames
   private final Map<String, Pose2d> lastAcceptedPose = new HashMap<>();
@@ -43,26 +55,48 @@ public class VisionSubsystem extends SubsystemBase {
   public VisionSubsystem(CommandSwerveDrivetrain drivetrain) {
     this.drivetrain = drivetrain;
 
+    // Publish default value so the topic appears on Elastic immediately
+    visionEnabledEntry.set(true);
+
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     for (String name : names) {
       LimelightHelpers.setPipelineIndex(name, PIPELINE_APRILTAG);
       LimelightHelpers.setLEDMode_PipelineControl(name);
       LimelightHelpers.setLEDMode_ForceOff(name);
-      LimelightHelpers.SetIMUMode(name, 0);
     }
   }
 
   @Override
   public void periodic() {
-    // boolean isAuto = RobotStateMachine.getInstance().getMatchState().autonomous;
-    // Logger.recordOutput("Vision/AutoSkipped", isAuto);
-    // if (isAuto) {
-    // return;
-    // }
+    boolean visionEnabled = visionEnabledEntry.get(true);
+    Logger.recordOutput("Vision/Enabled", visionEnabled);
 
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;
     ChassisSpeeds speeds = drivetrain.getState().Speeds;
+    double heading = odoPose.getRotation().getDegrees();
+
+    // Feed heading to Limelights every frame (required for MegaTag2).
+    // IMU mode 4 while enabled: LL4 internal IMU + external gyro assist.
+    // Only send the mode change when it actually changes (avoid NT spam).
+    for (String name : names) {
+      LimelightHelpers.SetRobotOrientation(name, heading, 0, 0, 0, 0, 0);
+      if (lastImuMode != 4) {
+        LimelightHelpers.SetIMUMode(name, 4);
+      }
+    }
+    lastImuMode = 4;
+
+    if (!visionEnabled) {
+      // Vision disabled from dashboard - log it and skip all processing.
+      for (String name : names) {
+        Logger.recordOutput("Vision/" + name + "/Status", "DISABLED_BY_DASHBOARD");
+      }
+      Logger.recordOutput("Vision/TotalAccepted", totalAccepted);
+      Logger.recordOutput("Vision/TotalRejected", totalRejected);
+      Logger.recordOutput("Vision/HeadingCorrections", headingCorrections);
+      return;
+    }
 
     for (String name : names) {
       processCamera(name, odoPose, speeds);
@@ -76,44 +110,46 @@ public class VisionSubsystem extends SubsystemBase {
   private void processCamera(String cameraName, Pose2d odoPose, ChassisSpeeds speeds) {
     String logPrefix = "Vision/" + cameraName + "/";
 
-    // MT1 does not use SetRobotOrientation cuz it computes heading from vision
-    // alone.
-    LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
+    // MegaTag2: uses robot heading (from SetRobotOrientation) to eliminate
+    // the coplanar pose ambiguity problem. Dramatically more stable than MT1
+    // for single-tag observations.
+    LimelightHelpers.PoseEstimate mt2 =
+        LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(cameraName);
 
-    if (mt1 == null || mt1.timestampSeconds == 0 || mt1.tagCount == 0) {
+    if (mt2 == null || mt2.timestampSeconds == 0 || mt2.tagCount == 0) {
       Logger.recordOutput(logPrefix + "Status", "NO_DATA");
       Logger.recordOutput(logPrefix + "Debug/HasData", false);
       return;
     }
 
-    Pose2d pose = mt1.pose;
-    double avgTagDist = mt1.avgTagDist;
+    Pose2d pose = mt2.pose;
+    double avgTagDist = mt2.avgTagDist;
 
-    // ---- Log ALL raw MT1 data before any filtering ----
+    // ---- Log ALL raw data before any filtering ----
     Logger.recordOutput(logPrefix + "Debug/HasData", true);
     Logger.recordOutput(logPrefix + "Debug/RawPose", pose);
-    Logger.recordOutput(logPrefix + "Debug/RawTimestamp", mt1.timestampSeconds);
-    Logger.recordOutput(logPrefix + "Debug/Latency", mt1.latency);
-    Logger.recordOutput(logPrefix + "Debug/TagCount", mt1.tagCount);
-    Logger.recordOutput(logPrefix + "Debug/TagSpan", mt1.tagSpan);
+    Logger.recordOutput(logPrefix + "Debug/RawTimestamp", mt2.timestampSeconds);
+    Logger.recordOutput(logPrefix + "Debug/Latency", mt2.latency);
+    Logger.recordOutput(logPrefix + "Debug/TagCount", mt2.tagCount);
+    Logger.recordOutput(logPrefix + "Debug/TagSpan", mt2.tagSpan);
     Logger.recordOutput(logPrefix + "Debug/AvgTagDist", avgTagDist);
-    Logger.recordOutput(logPrefix + "Debug/AvgTagArea", mt1.avgTagArea);
-    Logger.recordOutput(logPrefix + "Debug/IsMegaTag2", mt1.isMegaTag2);
+    Logger.recordOutput(logPrefix + "Debug/AvgTagArea", mt2.avgTagArea);
+    Logger.recordOutput(logPrefix + "Debug/IsMegaTag2", mt2.isMegaTag2);
 
     // Log age of vision measurement (how stale is this data?)
-    double measurementAge = Timer.getFPGATimestamp() - mt1.timestampSeconds;
+    double measurementAge = Timer.getFPGATimestamp() - mt2.timestampSeconds;
     Logger.recordOutput(logPrefix + "Debug/MeasurementAgeSec", measurementAge);
 
     // ---- Log per-tag raw fiducial data for jitter diagnosis ----
-    int[] tagIds = new int[mt1.rawFiducials.length];
-    double[] tagDistances = new double[mt1.rawFiducials.length];
-    double[] tagAmbiguities = new double[mt1.rawFiducials.length];
-    double[] tagAreas = new double[mt1.rawFiducials.length];
-    for (int i = 0; i < mt1.rawFiducials.length; i++) {
-      tagIds[i] = mt1.rawFiducials[i].id;
-      tagDistances[i] = mt1.rawFiducials[i].distToRobot;
-      tagAmbiguities[i] = mt1.rawFiducials[i].ambiguity;
-      tagAreas[i] = mt1.rawFiducials[i].ta;
+    int[] tagIds = new int[mt2.rawFiducials.length];
+    double[] tagDistances = new double[mt2.rawFiducials.length];
+    double[] tagAmbiguities = new double[mt2.rawFiducials.length];
+    double[] tagAreas = new double[mt2.rawFiducials.length];
+    for (int i = 0; i < mt2.rawFiducials.length; i++) {
+      tagIds[i] = mt2.rawFiducials[i].id;
+      tagDistances[i] = mt2.rawFiducials[i].distToRobot;
+      tagAmbiguities[i] = mt2.rawFiducials[i].ambiguity;
+      tagAreas[i] = mt2.rawFiducials[i].ta;
     }
     Logger.recordOutput(logPrefix + "Debug/TagIDs", tagIds);
     Logger.recordOutput(logPrefix + "Debug/TagDistances", tagDistances);
@@ -171,71 +207,98 @@ public class VisionSubsystem extends SubsystemBase {
       return;
     }
 
-    // Single-tag: reject high-ambiguity
-    if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
-      double ambiguity = mt1.rawFiducials[0].ambiguity;
-      Logger.recordOutput(logPrefix + "Debug/SingleTagAmbiguity", ambiguity);
-      if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
-        Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
+    // Single-tag quality gate: distance only.
+    // MT2 eliminates the coplanar ambiguity problem, so hard-rejecting on
+    // ambiguity is unnecessary and counterproductive. Ambiguity is still used
+    // as a soft stddev scaling factor below.
+    if (mt2.tagCount == 1 && mt2.rawFiducials.length == 1) {
+      // Log ambiguity for diagnostics even though we don't hard-reject on it
+      Logger.recordOutput(logPrefix + "Debug/SingleTagAmbiguity", mt2.rawFiducials[0].ambiguity);
+
+      // Reject far single-tag: noise increases dramatically beyond 4m
+      if (avgTagDist > VisionConstants.SINGLE_TAG_MAX_DISTANCE_METERS) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_SINGLE_TAG_DISTANCE");
         Logger.recordOutput(
             logPrefix + "Debug/RejectionDetail",
-            "ambiguity=" + String.format("%.3f", ambiguity)
-                + " > threshold=" + VisionConstants.MT1_AMBIGUITY_THRESHOLD
-                + " tagID=" + mt1.rawFiducials[0].id);
+            "singleTagDist=" + String.format("%.2f", avgTagDist)
+                + "m > threshold=" + VisionConstants.SINGLE_TAG_MAX_DISTANCE_METERS
+                + "m tagID=" + mt2.rawFiducials[0].id);
         totalRejected++;
         return;
       }
     }
 
-    // ---- One-shot heading bootstrap ----
-    // On first reliable multi-tag result, correct gyro if heading is way off.
-    // This handles the Pigeon2 booting to 0° when the actual heading is ~180°.
-    if (!hasBootstrappedHeading && mt1.tagCount >= 2) {
-      double divergenceDeg = Math.abs(MathUtil.inputModulus(
-          pose.getRotation().getDegrees() - odoPose.getRotation().getDegrees(), -180, 180));
-      Logger.recordOutput(logPrefix + "Debug/BootstrapDivergenceDeg", divergenceDeg);
-      if (divergenceDeg > VisionConstants.HEADING_BOOTSTRAP_THRESHOLD_DEG) {
-        Pose2d correctedPose = new Pose2d(odoPose.getTranslation(), pose.getRotation());
-        drivetrain.resetPose(correctedPose);
-        headingCorrections++;
-        Logger.recordOutput(
-            "Events/Vision/Last",
-            "[Vision] One-shot heading bootstrap: "
-                + String.format("%.1f", odoPose.getRotation().getDegrees())
-                + "° -> "
-                + String.format("%.1f", pose.getRotation().getDegrees())
-                + "°");
-        Logger.recordOutput("Events/Vision/Sequence", headingCorrections);
-        Logger.recordOutput(logPrefix + "HeadingBootstrap", true);
+    // ---- One-shot heading bootstrap (MT1-based) ----
+    // MT2 heading comes from the gyro, so it can't detect heading errors.
+    // Use an MT1 query to check if the Pigeon2 heading is grossly wrong.
+    // This fires once on the first multi-tag result, then never again.
+    if (!hasBootstrappedHeading && mt2.tagCount >= 2) {
+      LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(cameraName);
+      if (mt1 != null && mt1.tagCount >= 2) {
+        double divergenceDeg = Math.abs(MathUtil.inputModulus(
+            mt1.pose.getRotation().getDegrees() - odoPose.getRotation().getDegrees(), -180, 180));
+        Logger.recordOutput(logPrefix + "Debug/BootstrapDivergenceDeg", divergenceDeg);
+        if (divergenceDeg > VisionConstants.HEADING_BOOTSTRAP_THRESHOLD_DEG) {
+          Pose2d correctedPose = new Pose2d(odoPose.getTranslation(), mt1.pose.getRotation());
+          drivetrain.resetPose(correctedPose);
+          headingCorrections++;
+          Logger.recordOutput(
+              "Events/Vision/Last",
+              "[Vision] One-shot heading bootstrap: "
+                  + String.format("%.1f", odoPose.getRotation().getDegrees())
+                  + "° -> "
+                  + String.format("%.1f", mt1.pose.getRotation().getDegrees())
+                  + "°");
+          Logger.recordOutput("Events/Vision/Sequence", headingCorrections);
+          Logger.recordOutput(logPrefix + "HeadingBootstrap", true);
+        }
       }
       hasBootstrappedHeading = true;
     }
 
     // ---- Standard deviation model ----
-    // Base: dist^1.2 scaling, inversely proportional to tagCount^2.
+    // Base: dist^1.5 scaling, inversely proportional to tagCount^2.
     double xyStdev = VisionConstants.XY_STDDEV_COEFFICIENT
         * Math.pow(avgTagDist, VisionConstants.XY_STDDEV_EXPONENT)
-        / (mt1.tagCount * mt1.tagCount);
+        / (mt2.tagCount * mt2.tagCount);
 
-    // Single-tag penalty: MT1 single-tag is inherently noisy due to
-    // the coplanar ambiguity problem. Trust it much less.
-    if (mt1.tagCount == 1) {
+    // Single-tag penalty: even with MT2 (no ambiguity problem), single-tag
+    // observations have 2.5-3x more noise than multi-tag per log analysis.
+    if (mt2.tagCount == 1) {
       xyStdev *= VisionConstants.SINGLE_TAG_STDDEV_MULTIPLIER;
     }
 
-    // Ambiguity-scaled trust: instead of binary accept/reject at 0.4,
-    // continuously degrade trust as ambiguity rises.
-    // At ambiguity=0: multiplier=1.0, at ambiguity=0.35: multiplier=2.05
+    // Ambiguity-scaled trust: continuously degrade trust as ambiguity rises.
     double maxAmbiguity = 0.0;
-    for (var fid : mt1.rawFiducials) {
+    for (var fid : mt2.rawFiducials) {
       maxAmbiguity = Math.max(maxAmbiguity, fid.ambiguity);
     }
     xyStdev *= (1.0 + maxAmbiguity * VisionConstants.AMBIGUITY_STDDEV_SCALE);
+
+    // Divergence-based graduated trust: inflate stddev proportionally to
+    // vision-odometry distance. This replaces the old hard 2.0m pose-jump
+    // reject that caused death spirals. Large corrections are still possible
+    // but happen slowly; as the pose converges, trust automatically increases.
+    double divergenceInflation = 1.0
+        + VisionConstants.DIVERGENCE_STDDEV_SCALE
+            * Math.max(0, visionOdoDeltaDistM - VisionConstants.DIVERGENCE_RAMP_START_METERS);
+    xyStdev *= divergenceInflation;
+
+    // Safety clamp: ensure stddev is a valid finite positive number.
+    // Prevents NaN/Infinity from crashing the WPILib Kalman filter.
+    // Cap at 10.0 so anything above ~1.0 is already "barely trusted";
+    // 10.0 means the measurement is essentially ignored without hard-rejecting.
+    if (!Double.isFinite(xyStdev) || xyStdev <= 0) {
+      xyStdev = 10.0;
+    } else {
+      xyStdev = Math.min(xyStdev, 10.0);
+    }
+
     Logger.recordOutput(logPrefix + "Debug/MaxAmbiguity", maxAmbiguity);
+    Logger.recordOutput(logPrefix + "Debug/DivergenceInflation", divergenceInflation);
     Logger.recordOutput(logPrefix + "Debug/FinalXYStdDev", xyStdev);
 
-    // Never trust MT1 heading - coplanar tag ambiguity can flip it 180 degrees.
-    // Gyro (Pigeon2) is the sole heading authority.
+    // MT2 heading = gyro heading (redundant). Never trust vision heading.
     double thetaStdDev = Double.POSITIVE_INFINITY;
 
     Matrix<N3, N1> stdDevs = VecBuilder.fill(xyStdev, xyStdev, thetaStdDev);
@@ -244,7 +307,7 @@ public class VisionSubsystem extends SubsystemBase {
     Pose2d preFusionPose = drivetrain.getState().Pose;
     Logger.recordOutput(logPrefix + "Debug/PreFusionOdoPose", preFusionPose);
 
-    drivetrain.addVisionMeasurement(pose, mt1.timestampSeconds, stdDevs);
+    drivetrain.addVisionMeasurement(pose, mt2.timestampSeconds, stdDevs);
 
     // ---- Log post-fusion odometry pose (after Kalman filter update) ----
     Pose2d postFusionPose = drivetrain.getState().Pose;
@@ -267,7 +330,7 @@ public class VisionSubsystem extends SubsystemBase {
       double jumpDist = Math.hypot(jumpX, jumpY);
       double jumpHeadingDeg = Math.abs(MathUtil.inputModulus(
           pose.getRotation().getDegrees() - prevAccepted.getRotation().getDegrees(), -180, 180));
-      double timeBetween = mt1.timestampSeconds - prevTimestamp;
+      double timeBetween = mt2.timestampSeconds - prevTimestamp;
       Logger.recordOutput(logPrefix + "Debug/Jitter/JumpX", jumpX);
       Logger.recordOutput(logPrefix + "Debug/Jitter/JumpY", jumpY);
       Logger.recordOutput(logPrefix + "Debug/Jitter/JumpDistM", jumpDist);
@@ -279,12 +342,12 @@ public class VisionSubsystem extends SubsystemBase {
       }
     }
     lastAcceptedPose.put(cameraName, pose);
-    lastAcceptedTimestamp.put(cameraName, mt1.timestampSeconds);
+    lastAcceptedTimestamp.put(cameraName, mt2.timestampSeconds);
 
     totalAccepted++;
     Logger.recordOutput(logPrefix + "Status", "ACCEPTED");
     Logger.recordOutput(logPrefix + "Pose", pose);
-    Logger.recordOutput(logPrefix + "TagCount", mt1.tagCount);
+    Logger.recordOutput(logPrefix + "TagCount", mt2.tagCount);
     Logger.recordOutput(logPrefix + "AvgTagDist", avgTagDist);
     Logger.recordOutput(logPrefix + "XYStdDev", xyStdev);
     Logger.recordOutput(logPrefix + "ThetaStdDev", thetaStdDev);
@@ -309,7 +372,9 @@ public class VisionSubsystem extends SubsystemBase {
     for (String name : names) {
       LimelightHelpers.SetRobotOrientation(name, currentHeadingDeg, 0, 0, 0, 0, 0);
       // Mode 1 while disabled: seeds LL4's internal IMU with external gyro.
-      LimelightHelpers.SetIMUMode(name, 1);
+      if (lastImuMode != 1) {
+        LimelightHelpers.SetIMUMode(name, 1);
+      }
 
       if (VisionConstants.USE_MT1_HEADING_CORRECTION_WHILE_DISABLED) {
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(name);
@@ -368,5 +433,6 @@ public class VisionSubsystem extends SubsystemBase {
         }
       }
     }
+    lastImuMode = 1;
   }
 }

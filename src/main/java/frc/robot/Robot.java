@@ -153,8 +153,8 @@ public class Robot extends LoggedRobot {
     // State machine transition: Autonomous starting
     m_stateMachine.setMatchState(MatchState.AUTO_INIT);
 
-    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
+    // Vision switches to IMU Mode 4 (internal + external assist) in
+    // VisionSubsystem.periodic().
 
     // Get and schedule autonomous command
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -197,8 +197,8 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput("ShooterTuning/OffsetAngleDegAfterReset", 0.0);
     scheduleShooterTuningEventClear();
 
-    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
+    // Vision switches to IMU Mode 4 (internal + external assist) in
+    // VisionSubsystem.periodic().
 
     // Cancel autonomous command
     if (m_autonomousCommand != null) {

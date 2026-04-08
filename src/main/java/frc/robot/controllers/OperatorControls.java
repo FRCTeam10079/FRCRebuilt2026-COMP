@@ -167,7 +167,7 @@ public final class OperatorControls {
     new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
         .onTrue(Commands.sequence(
             Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
-            climber.timerClimbCommand()));
+            climber.climbCommand()));
 
     operator
         .back()

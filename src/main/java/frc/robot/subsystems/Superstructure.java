@@ -346,7 +346,7 @@ public class Superstructure extends SubsystemBase {
     // Sync ClimbState from the climber subsystem's internal state machine
     ClimbState climbDesired =
         switch (climber.getSystemState()) {
-          case EXTENDING, HOLDING, MANUAL -> ClimbState.APPROACHING;
+          case EXTENDING, MANUAL -> ClimbState.APPROACHING;
           case RETRACTING -> ClimbState.CLIMBING_L1;
           case RETRACTED -> ClimbState.ENGAGED;
           default -> ClimbState.NOT_CLIMBING;

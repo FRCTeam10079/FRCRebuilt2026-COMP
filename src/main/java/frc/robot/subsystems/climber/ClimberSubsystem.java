@@ -8,7 +8,6 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -24,13 +23,13 @@ public class ClimberSubsystem extends SubsystemBase {
   private final Alert climberMotorDisconnectedAlert =
       new Alert("Climber motor disconnected, climb may fail", AlertType.kError);
 
-  // ==================== TUNABLE DURATIONS (NetworkTables) ====================
-  private static final LoggedNetworkNumber extendDuration = new LoggedNetworkNumber(
-      "/Tuning/Climb/ExtendDurationSeconds", ClimberConstants.EXTEND_DURATION_SECONDS);
-  private static final LoggedNetworkNumber holdDuration = new LoggedNetworkNumber(
-      "/Tuning/Climb/HoldDurationSeconds", ClimberConstants.HOLD_DURATION_SECONDS);
-  private static final LoggedNetworkNumber retractDuration = new LoggedNetworkNumber(
-      "/Tuning/Climb/RetractDurationSeconds", ClimberConstants.RETRACT_DURATION_SECONDS);
+  // ==================== TUNABLE POSITIONS (NetworkTables) ====================
+  private static final LoggedNetworkNumber extendPosition = new LoggedNetworkNumber(
+      "/Tuning/Climb/ExtendPositionRotations", ClimberConstants.EXTEND_POSITION_ROTATIONS);
+  private static final LoggedNetworkNumber retractPosition = new LoggedNetworkNumber(
+      "/Tuning/Climb/RetractPositionRotations", ClimberConstants.RETRACT_POSITION_ROTATIONS);
+  private static final LoggedNetworkNumber positionTolerance = new LoggedNetworkNumber(
+      "/Tuning/Climb/PositionToleranceRotations", ClimberConstants.POSITION_TOLERANCE_ROTATIONS);
 
   // ==================== STATE MACHINE ====================
 
@@ -44,7 +43,6 @@ public class ClimberSubsystem extends SubsystemBase {
   public enum SystemState {
     IDLE,
     EXTENDING,
-    HOLDING,
     RETRACTING,
     RETRACTED,
     MANUAL
@@ -52,9 +50,6 @@ public class ClimberSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLE;
-
-  // ==================== TIMER ====================
-  private final Timer phaseTimer = new Timer();
 
   // ==================== MANUAL CONTROL ====================
   private double manualVoltage = 0.0;
@@ -88,7 +83,8 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/SupplyCurrentAmps", inputs.supplyCurrentAmps);
     Logger.recordOutput("Climber/TempCelsius", inputs.tempCelsius);
 
-    Logger.recordOutput("Climber/PhaseTimerElapsed", phaseTimer.get());
+    Logger.recordOutput("Climber/ExtendTargetRotations", extendPosition.get());
+    Logger.recordOutput("Climber/RetractTargetRotations", retractPosition.get());
     Logger.recordOutput("Climber/ManualVoltage", manualVoltage);
   }
 
@@ -96,24 +92,17 @@ public class ClimberSubsystem extends SubsystemBase {
 
   private SystemState handleStateTransitions(SystemState previous) {
     if (wantedState == WantedState.ABORT) {
-      phaseTimer.stop();
-      phaseTimer.reset();
       wantedState = WantedState.IDLE;
       return SystemState.IDLE;
     }
 
     if (wantedState == WantedState.IDLE
         && previous != SystemState.EXTENDING
-        && previous != SystemState.HOLDING
         && previous != SystemState.RETRACTING) {
       return SystemState.IDLE;
     }
 
     if (wantedState == WantedState.MANUAL) {
-      if (previous != SystemState.MANUAL) {
-        phaseTimer.stop();
-        phaseTimer.reset();
-      }
       return SystemState.MANUAL;
     }
 
@@ -121,33 +110,21 @@ public class ClimberSubsystem extends SubsystemBase {
       switch (previous) {
         case IDLE:
         case RETRACTED:
-          phaseTimer.restart();
           return SystemState.EXTENDING;
 
         case EXTENDING:
-          if (phaseTimer.hasElapsed(extendDuration.get())) {
-            phaseTimer.restart();
-            return SystemState.HOLDING;
+          if (inputs.positionRotations >= extendPosition.get() - positionTolerance.get()) {
+            return SystemState.RETRACTING;
           }
           return SystemState.EXTENDING;
 
-        case HOLDING:
-          if (phaseTimer.hasElapsed(holdDuration.get())) {
-            phaseTimer.restart();
-            return SystemState.RETRACTING;
-          }
-          return SystemState.HOLDING;
-
         case RETRACTING:
-          if (phaseTimer.hasElapsed(retractDuration.get())) {
-            phaseTimer.stop();
-            phaseTimer.reset();
+          if (inputs.positionRotations <= retractPosition.get() + positionTolerance.get()) {
             return SystemState.RETRACTED;
           }
           return SystemState.RETRACTING;
 
         case MANUAL:
-          phaseTimer.restart();
           return SystemState.EXTENDING;
 
         default:
@@ -176,7 +153,6 @@ public class ClimberSubsystem extends SubsystemBase {
       case MANUAL:
         io.setVoltage(manualVoltage);
         break;
-      case HOLDING:
       case RETRACTED:
       case IDLE:
       default:
@@ -218,7 +194,7 @@ public class ClimberSubsystem extends SubsystemBase {
 
   // ==================== COMMAND FACTORIES ====================
 
-  public Command timerClimbCommand() {
+  public Command climbCommand() {
     return run(() -> setWantedState(WantedState.CLIMB))
         .until(this::isRetracted)
         .finallyDo(interrupted -> {
@@ -226,7 +202,7 @@ public class ClimberSubsystem extends SubsystemBase {
             setWantedState(WantedState.IDLE);
           }
         })
-        .withName("Climber Timer Climb");
+        .withName("Climber Position Climb");
   }
 
   public Command manualControlCommand(DoubleSupplier stickInput) {

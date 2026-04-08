@@ -44,10 +44,15 @@ public class ClimberConstants {
   /** Voltage applied when retracting the climber (negative = retract direction). */
   public static final double RETRACT_VOLTAGE = -12.0;
 
-  // ==================== TIMER DURATIONS ====================
-  public static final double EXTEND_DURATION_SECONDS = 3.0;
-  public static final double HOLD_DURATION_SECONDS = 5.0;
-  public static final double RETRACT_DURATION_SECONDS = 3.0;
+  // ==================== POSITION TARGETS ====================
+  /** Motor-side position (rotations) for fully extended climber. */
+  public static final double EXTEND_POSITION_ROTATIONS = 50.0;
+
+  /** Motor-side position (rotations) for fully retracted climber. */
+  public static final double RETRACT_POSITION_ROTATIONS = 0.0;
+
+  /** Allowable error (rotations) when checking if target position is reached. */
+  public static final double POSITION_TOLERANCE_ROTATIONS = 1.0;
 
   // ==================== STATUS SIGNALS ====================
   /** Frequency (Hz) for climber Talon status signals. */

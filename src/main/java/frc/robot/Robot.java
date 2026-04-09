@@ -200,6 +200,12 @@ public class Robot extends LoggedRobot {
     // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
     // Heading is sent every frame in VisionSubsystem.periodic().
 
+    // Reset Superstructure before cancelling auto to prevent stale state from
+    // persisting
+    m_robotContainer
+        .getSuperstructure()
+        .setWantedSuperState(frc.robot.subsystems.Superstructure.WantedSuperState.IDLE);
+
     // Cancel autonomous command
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();

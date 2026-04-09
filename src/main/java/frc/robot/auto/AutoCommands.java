@@ -143,12 +143,13 @@ public class AutoCommands {
    */
   public Command shoot() {
     return Commands.sequence(
-        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)),
-        Commands.waitUntil(
-            () -> superstructure.getCurrentSuperState() == CurrentSuperState.FORCE_SHOOTING),
-        Commands.waitSeconds(
-            Constants.ShooterConstants.AUTO_SHOOT_TIMEOUT.in(edu.wpi.first.units.Units.Seconds)),
-        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE)));
+            Commands.runOnce(
+                () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)),
+            Commands.waitUntil(
+                () -> superstructure.getCurrentSuperState() == CurrentSuperState.FORCE_SHOOTING),
+            Commands.waitSeconds(Constants.ShooterConstants.AUTO_SHOOT_TIMEOUT.in(
+                edu.wpi.first.units.Units.Seconds)))
+        .finallyDo(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE));
   }
 
   /** Fixed fender shot via Superstructure. Uses force-shoot for close-range. */

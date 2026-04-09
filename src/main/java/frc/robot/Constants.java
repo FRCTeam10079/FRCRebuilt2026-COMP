@@ -51,6 +51,8 @@ public final class Constants {
 
   public static final class ClimberConstants extends frc.robot.constants.ClimberConstants {}
 
+  public static final class ClimbConstants extends frc.robot.constants.ClimbConstants {}
+
   public static final class HeadingControllerConstants
       extends frc.robot.constants.HeadingControllerConstants {}
 

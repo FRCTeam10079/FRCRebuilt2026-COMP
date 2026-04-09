@@ -54,19 +54,6 @@ public class ClimberConstants {
   /** Allowable error (rotations) when checking if target position is reached. */
   public static final double POSITION_TOLERANCE_ROTATIONS = 1.0;
 
-  // ==================== STALL / HOMING DETECTION ====================
-  /** Motor-side velocity (RPS) below which the climber is considered stalled. */
-  public static final double STALL_VELOCITY_THRESHOLD_RPS = 0.5;
-
-  /** Stator current (amps) above which the motor is considered to be pushing against a load. */
-  public static final double STALL_CURRENT_THRESHOLD_AMPS = 10.0;
-
-  /**
-   * Time in seconds the stall condition (low velocity + high current) must persist before
-   * confirming the climber has reached the hard stop.
-   */
-  public static final double STALL_CONFIRM_TIME_SECONDS = 0.25;
-
   // ==================== STATUS SIGNALS ====================
   /** Frequency (Hz) for climber Talon status signals. */
   public static final double STATUS_SIGNAL_UPDATE_HZ = 50.0;

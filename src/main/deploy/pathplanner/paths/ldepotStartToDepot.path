@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.551588065447546,
-        "y": 4.233358999037536
+        "x": 2.946275659824047,
+        "y": 4.099296187683285
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.1106839579708843,
-        "y": 4.233358999037536
+        "x": 2.067657818262245,
+        "y": 4.223692809757391
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "middleshoot"
     },
     {
       "anchor": {
@@ -20,12 +20,12 @@
         "y": 4.925505293551492
       },
       "prevControl": {
-        "x": 1.953035952614565,
-        "y": 4.024800057204885
+        "x": 2.0253537438836164,
+        "y": 4.264611457679396
       },
       "nextControl": {
-        "x": 1.7705774783445618,
-        "y": 7.491511068334937
+        "x": 1.368875855327468,
+        "y": 7.888484848484849
       },
       "isLocked": false,
       "linkedName": null
@@ -36,12 +36,12 @@
         "y": 7.2
       },
       "prevControl": {
-        "x": 0.43692974013474495,
-        "y": 7.525274302213667
+        "x": 0.4127415940642708,
+        "y": 7.449984966871984
       },
       "nextControl": {
-        "x": 0.33339247958842155,
-        "y": 6.274686290268156
+        "x": 0.3926203075465665,
+        "y": 5.615278943430175
       },
       "isLocked": false,
       "linkedName": null
@@ -52,8 +52,8 @@
         "y": 5.660949052311235
       },
       "prevControl": {
-        "x": 0.41000000000000003,
-        "y": 6.189983851641981
+        "x": 0.3595485635177321,
+        "y": 5.905805444012321
       },
       "nextControl": null,
       "isLocked": false,
@@ -61,10 +61,6 @@
     }
   ],
   "rotationTargets": [
-    {
-      "waypointRelativePos": 0.4102209944751384,
-      "rotationDegrees": 0.0
-    },
     {
       "waypointRelativePos": 1.8,
       "rotationDegrees": 90.0
@@ -86,32 +82,7 @@
     }
   ],
   "pointTowardsZones": [],
-  "eventMarkers": [
-    {
-      "name": "Shoot",
-      "waypointRelativePos": 0.40282685512367494,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "race",
-        "data": {
-          "commands": [
-            {
-              "type": "named",
-              "data": {
-                "name": "Shoot"
-              }
-            },
-            {
-              "type": "wait",
-              "data": {
-                "waitTime": 3.0
-              }
-            }
-          ]
-        }
-      }
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 2.0,

@@ -3,13 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.55,
-        "y": 5.85
+        "x": 3.551588065447546,
+        "y": 4.233358999037536
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.1090958925233383,
-        "y": 5.85
+        "x": 2.1106839579708843,
+        "y": 4.233358999037536
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 1.9056304138594804,
+        "y": 4.925505293551492
+      },
+      "prevControl": {
+        "x": 1.953035952614565,
+        "y": 4.024800057204885
+      },
+      "nextControl": {
+        "x": 1.7705774783445618,
+        "y": 7.491511068334937
       },
       "isLocked": false,
       "linkedName": null
@@ -20,12 +36,12 @@
         "y": 7.2
       },
       "prevControl": {
-        "x": 0.4029216249490867,
-        "y": 7.953362291263579
+        "x": 0.43692974013474495,
+        "y": 7.525274302213667
       },
       "nextControl": {
-        "x": 0.41872334081504836,
-        "y": 6.271561484574049
+        "x": 0.33339247958842155,
+        "y": 6.274686290268156
       },
       "isLocked": false,
       "linkedName": null
@@ -46,17 +62,21 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.910269474637681,
+      "waypointRelativePos": 0.4102209944751384,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 1.8,
       "rotationDegrees": 90.0
     }
   ],
   "constraintZones": [
     {
       "name": "Constraints Zone",
-      "minWaypointRelativePos": 0.9737711416490488,
-      "maxWaypointRelativePos": 2.0,
+      "minWaypointRelativePos": 1.95,
+      "maxWaypointRelativePos": 3.0,
       "constraints": {
-        "maxVelocity": 0.6,
+        "maxVelocity": 0.5,
         "maxAcceleration": 3.5,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
@@ -66,10 +86,35 @@
     }
   ],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "Shoot",
+      "waypointRelativePos": 0.40282685512367494,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "race",
+        "data": {
+          "commands": [
+            {
+              "type": "named",
+              "data": {
+                "name": "Shoot"
+              }
+            },
+            {
+              "type": "wait",
+              "data": {
+                "waitTime": 3.0
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
   "globalConstraints": {
-    "maxVelocity": 4.0,
-    "maxAcceleration": 5.0,
+    "maxVelocity": 3.0,
+    "maxAcceleration": 2.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

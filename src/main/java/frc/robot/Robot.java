@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.Elastic;
 import frc.robot.lib.HubShiftTracker;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.PowerDiagnosticsLogger;
@@ -77,6 +78,9 @@ public class Robot extends LoggedRobot {
 
     m_robotContainer = new RobotContainer();
     m_stateMachine = RobotStateMachine.getInstance();
+    Elastic.sendNotification(new Elastic.Notification(
+        Elastic.NotificationLevel.INFO, "Robot Code", "Code initialized", 2000));
+
     m_powerDiagnosticsLogger = new PowerDiagnosticsLogger(
         m_robotContainer.getIntake(),
         m_robotContainer.getPivot(),

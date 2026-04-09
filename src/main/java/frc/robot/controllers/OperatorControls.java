@@ -123,8 +123,7 @@ public final class OperatorControls {
     operator.povDown().onTrue(Commands.runOnce(() -> {
       ShooterSetpoint.adjustAngleOffset(Degrees.of(-angleStepDeg));
       logAdjustmentEvent(
-          tuningEventCounter, 
-          "AdjustAngle", hubDistanceSupplier.get(), 0.0, -angleStepDeg);
+          tuningEventCounter, "AdjustAngle", hubDistanceSupplier.get(), 0.0, -angleStepDeg);
     }));
 
     operator.povLeft().onTrue(Commands.runOnce(() -> {

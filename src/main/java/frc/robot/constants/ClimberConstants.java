@@ -39,10 +39,10 @@ public class ClimberConstants {
 
   // ==================== VOLTAGE CONTROL ====================
   /** Voltage applied when extending the climber (positive = extend direction). */
-  public static final double EXTEND_VOLTAGE = 12.0;
+  public static final double EXTEND_VOLTAGE = 2.0;
 
   /** Voltage applied when retracting the climber (negative = retract direction). */
-  public static final double RETRACT_VOLTAGE = -12.0;
+  public static final double RETRACT_VOLTAGE = -2.0;
 
   // ==================== POSITION TARGETS ====================
   /** Motor-side position (rotations) for fully extended climber. */

@@ -17,9 +17,9 @@ public class ClimberConstants {
    * Peak command voltages allowed by TalonFX voltage requests. Reduced to 2V to prevent the
    * string/belay from breaking under excessive commanded voltage.
    */
-  public static final double PEAK_FORWARD_VOLTAGE = 2.0;
+  public static final double PEAK_FORWARD_VOLTAGE = 4.0;
 
-  public static final double PEAK_REVERSE_VOLTAGE = -2.0;
+  public static final double PEAK_REVERSE_VOLTAGE = -4.0;
 
   public static final int SUPPLY_CURRENT_LIMIT = 30;
   public static final int STATOR_CURRENT_LIMIT = 60;
@@ -39,10 +39,10 @@ public class ClimberConstants {
 
   // ==================== VOLTAGE CONTROL ====================
   /** Voltage applied when extending the climber (positive = extend direction). */
-  public static final double EXTEND_VOLTAGE = 2.0;
+  public static final double EXTEND_VOLTAGE = 4.0;
 
   /** Voltage applied when retracting the climber (negative = retract direction). */
-  public static final double RETRACT_VOLTAGE = -2.0;
+  public static final double RETRACT_VOLTAGE = -4.0;
 
   // ==================== POSITION TARGETS ====================
   /** Motor-side position (rotations) for fully extended climber. */

@@ -8,6 +8,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -56,6 +57,10 @@ public class ClimberSubsystem extends SubsystemBase {
   // ==================== MANUAL CONTROL ====================
   private double manualVoltage = 0.0;
 
+  // ==================== STALL DETECTION ====================
+  /** Timestamp (FPGA seconds) when stall condition was first detected, or -1 if not stalling. */
+  private double stallStartTimestamp = -1.0;
+
   public ClimberSubsystem(ClimberIO io) {
     this.io = io;
   }
@@ -88,6 +93,7 @@ public class ClimberSubsystem extends SubsystemBase {
     Logger.recordOutput("Climber/ExtendTargetRotations", extendPosition.get());
     Logger.recordOutput("Climber/RetractTargetRotations", retractPosition.get());
     Logger.recordOutput("Climber/ManualVoltage", manualVoltage);
+    Logger.recordOutput("Climber/StallDetected", stallStartTimestamp >= 0);
   }
 
   // ==================== STATE TRANSITIONS ====================
@@ -217,6 +223,29 @@ public class ClimberSubsystem extends SubsystemBase {
     return inputs.positionRotations;
   }
 
+  /**
+   * Returns true when the motor has been stalled (low velocity + high current) for longer than
+   * {@link ClimberConstants#STALL_CONFIRM_TIME_SECONDS}. Used by retractToZeroCommand to detect the
+   * mechanical hard stop.
+   */
+  private boolean isStallDetected() {
+    boolean isStalling =
+        Math.abs(inputs.velocityRPS) < ClimberConstants.STALL_VELOCITY_THRESHOLD_RPS
+            && Math.abs(inputs.statorCurrentAmps) > ClimberConstants.STALL_CURRENT_THRESHOLD_AMPS;
+
+    if (!isStalling) {
+      stallStartTimestamp = -1.0;
+      return false;
+    }
+
+    double now = Timer.getFPGATimestamp();
+    if (stallStartTimestamp < 0) {
+      stallStartTimestamp = now;
+    }
+
+    return (now - stallStartTimestamp) >= ClimberConstants.STALL_CONFIRM_TIME_SECONDS;
+  }
+
   // ==================== COMMAND FACTORIES ====================
 
   public Command extendCommand() {
@@ -234,6 +263,29 @@ public class ClimberSubsystem extends SubsystemBase {
           }
         })
         .withName("Climber Retract");
+  }
+
+  public Command retractToZeroCommand() {
+    // Use stall detection to find true zero.
+    // We confirm this condition persists for STALL_CONFIRM_TIME before declaring
+    // zero.
+    return Commands.sequence(
+            // Reset the stall timer, then drive down until stall is confirmed
+            Commands.runOnce(() -> stallStartTimestamp = -1.0),
+            run(() -> {
+                  setWantedState(WantedState.MANUAL);
+                  setManualVoltage(ClimberConstants.RETRACT_VOLTAGE);
+                })
+                .until(this::isStallDetected)
+                .finallyDo(interrupted -> {
+                  setManualVoltage(0.0);
+                  setWantedState(WantedState.IDLE);
+                  if (!interrupted) {
+                    io.setEncoderPosition(0.0);
+                  }
+                  stallStartTimestamp = -1.0;
+                }))
+        .withName("Climber Retract To Zero");
   }
 
   public Command climbCommand() {

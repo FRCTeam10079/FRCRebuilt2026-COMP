@@ -196,9 +196,21 @@ public class AutoCommands {
     return climber.extendCommand();
   }
 
+  /** Enter CLIMB mode through Superstructure, then extend the climber. */
+  public Command startClimbExtend() {
+    return Commands.sequence(
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+        climber.extendCommand());
+  }
+
   /** Retract the climber from the extended position. */
   public Command retractClimber() {
     return climber.retractCommand();
+  }
+
+  /** Retract to the mechanical zero hard stop and re-zero the encoder. */
+  public Command retractClimberToZero() {
+    return climber.retractToZeroCommand();
   }
 
   /** Full climb sequence: extend, brake at top, then retract. */
@@ -209,6 +221,13 @@ public class AutoCommands {
   /** Abort/stop the climber. */
   public Command abortClimber() {
     return climber.abortCommand();
+  }
+
+  /** Abort the climber and return Superstructure to IDLE. */
+  public Command abortClimberAndIdle() {
+    return Commands.sequence(
+        climber.abortCommand(),
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE)));
   }
 
   // ==================== BULK REGISTRATION ====================
@@ -252,9 +271,12 @@ public class AutoCommands {
 
     // Climber
     NamedCommands.registerCommand("extendClimber", extendClimber());
+    NamedCommands.registerCommand("startClimbExtend", startClimbExtend());
     NamedCommands.registerCommand("retractClimber", retractClimber());
+    NamedCommands.registerCommand("retractClimberToZero", retractClimberToZero());
     NamedCommands.registerCommand("climb", climb());
     NamedCommands.registerCommand("abortClimber", abortClimber());
+    NamedCommands.registerCommand("abortClimberAndIdle", abortClimberAndIdle());
 
     // Aliases matching capitalized names used in PathPlanner auto files
     // (Right_OutPost.auto uses "Intake down", "Shoot", "Intake")

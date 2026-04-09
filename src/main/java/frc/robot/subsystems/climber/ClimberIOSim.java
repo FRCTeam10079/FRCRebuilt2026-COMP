@@ -1,6 +1,7 @@
 package frc.robot.subsystems.climber;
 
 import edu.wpi.first.math.MathUtil;
+import frc.robot.constants.ClimberConstants;
 
 /**
  * Simulated climber IO. Models a first-order winch driven by voltage with stall simulation at
@@ -79,7 +80,10 @@ public class ClimberIOSim implements ClimberIO {
   @Override
   public void setVoltage(double volts) {
     isVoltageMode = true;
-    appliedVolts = MathUtil.clamp(volts, -NOMINAL_VOLTAGE, NOMINAL_VOLTAGE);
+    // Clamp to TalonFX peak voltage config to match real hardware behavior
+    // otherwise testing in sim is gonna be hella annoying bruh
+    appliedVolts = MathUtil.clamp(
+        volts, ClimberConstants.PEAK_REVERSE_VOLTAGE, ClimberConstants.PEAK_FORWARD_VOLTAGE);
   }
 
   @Override

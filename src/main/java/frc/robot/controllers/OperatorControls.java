@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
-import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
@@ -74,10 +73,11 @@ public final class OperatorControls {
 
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
-    operator
-        .y()
-        .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
-            stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
+    // operator
+    // .y()
+    // .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
+    // stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY :
+    // FuelState.LOADED)));
 
     // ======== REVERSE (through Superstructure) ========
     // B - Hold feeder/indexer reverse only
@@ -203,25 +203,51 @@ public final class OperatorControls {
     // Start + Back together -> Set Superstructure to CLIMB and extend climber to
     // max position.
     // Works from any state (idle or retracted) to allow re-extension.
-    new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
-        .onTrue(Commands.sequence(
-            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
-            climber.extendCommand()));
+    //
+    // IMPORTANT!!!: The "Start alone" and "Back alone" triggers below must NOT fire
+    // when we are simply releasing one button from the Start+Back combo. This was
+    // happening making climber buggy and lwk pmo.
+    // We gate them with wasComboActive to suppress false triggers during release.
+    final boolean[] wasComboActive = {false};
+    Trigger comboBoth =
+        new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean());
 
-    // A button (while in climb mode and extended) -> Retract to climb position
-    // Use onTrue on just A button, then conditionally run retract.
-    // This prevents auto-triggering when isExtended() becomes true while A is held.
+    // Track whether the combo was active last cycle
+    // Only clear when BOTH buttons are fully released, so partial release doesn't
+    // allow the single-button triggers to fire.
+    comboBoth.onTrue(Commands.runOnce(() -> wasComboActive[0] = true));
+    new Trigger(() -> !operator.start().getAsBoolean() && !operator.back().getAsBoolean())
+        .onTrue(Commands.runOnce(() -> wasComboActive[0] = false));
+
+    comboBoth.onTrue(Commands.sequence(
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+        climber.extendCommand()));
+
+    // Y button (while in climb mode and extended) -> Retract to climb position
+    // Use onTrue on just Y button, then conditionally run retract.
+    // This prevents auto-triggering when isExtended() becomes true while Y is held.
     operator
-        .a()
+        .y()
         .onTrue(Commands.either(
             climber.retractCommand(),
             Commands.none(),
             () -> superstructure.isClimbing() && climber.isExtended()));
 
-    // Back alone (not with Start) -> Abort climb from any state
+    // Start alone (not with Back, and not just released from combo) ->
+    // Retract climber all the way to zero and re-zero encoder
+    operator
+        .start()
+        .and(() -> !operator.back().getAsBoolean())
+        .and(() -> !wasComboActive[0])
+        .and(() -> superstructure.isClimbing())
+        .onTrue(climber.retractToZeroCommand());
+
+    // Back alone (not with Start, and not just released from combo) ->
+    // Abort climb from any state
     operator
         .back()
         .and(() -> !operator.start().getAsBoolean())
+        .and(() -> !wasComboActive[0])
         .and(() -> superstructure.isClimbing())
         .onTrue(Commands.sequence(
             climber.abortCommand(),

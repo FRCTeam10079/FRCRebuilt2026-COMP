@@ -11,6 +11,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.VisionConstants;
@@ -25,10 +27,14 @@ public class VisionSubsystem extends SubsystemBase {
   private static final double FIELD_MARGIN = VisionConstants.FIELD_BORDER_MARGIN;
   private static final double FIELD_LENGTH = VisionConstants.FIELD_LENGTH_METERS;
   private static final double FIELD_WIDTH = VisionConstants.FIELD_WIDTH_METERS;
+  private static final String TRUST_VISION_OVERRIDE_TOPIC = "/Robot/Vision/TrustVisionOverride";
 
   private static final int PIPELINE_APRILTAG = 0;
 
   private final CommandSwerveDrivetrain drivetrain;
+  private final BooleanEntry trustVisionOverrideEntry = NetworkTableInstance.getDefault()
+      .getBooleanTopic(TRUST_VISION_OVERRIDE_TOPIC)
+      .getEntry(false);
 
   private int totalAccepted = 0;
   private int totalRejected = 0;
@@ -42,6 +48,7 @@ public class VisionSubsystem extends SubsystemBase {
 
   public VisionSubsystem(CommandSwerveDrivetrain drivetrain) {
     this.drivetrain = drivetrain;
+    trustVisionOverrideEntry.setDefault(false);
 
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     for (String name : names) {
@@ -63,17 +70,20 @@ public class VisionSubsystem extends SubsystemBase {
     String[] names = VisionConstants.LIMELIGHT_NAMES;
     Pose2d odoPose = drivetrain.getState().Pose;
     ChassisSpeeds speeds = drivetrain.getState().Speeds;
+    boolean trustVisionOverride = trustVisionOverrideEntry.get();
 
     for (String name : names) {
-      processCamera(name, odoPose, speeds);
+      processCamera(name, odoPose, speeds, trustVisionOverride);
     }
 
+    Logger.recordOutput("Vision/TrustVisionOverrideEnabled", trustVisionOverride);
     Logger.recordOutput("Vision/TotalAccepted", totalAccepted);
     Logger.recordOutput("Vision/TotalRejected", totalRejected);
     Logger.recordOutput("Vision/HeadingCorrections", headingCorrections);
   }
 
-  private void processCamera(String cameraName, Pose2d odoPose, ChassisSpeeds speeds) {
+  private void processCamera(
+      String cameraName, Pose2d odoPose, ChassisSpeeds speeds, boolean trustVisionOverride) {
     String logPrefix = "Vision/" + cameraName + "/";
 
     // MT1 does not use SetRobotOrientation cuz it computes heading from vision
@@ -130,60 +140,63 @@ public class VisionSubsystem extends SubsystemBase {
     Logger.recordOutput(logPrefix + "Debug/VisionVsOdo/DeltaY", visionOdoDeltaY);
     Logger.recordOutput(logPrefix + "Debug/VisionVsOdo/DeltaDistM", visionOdoDeltaDistM);
     Logger.recordOutput(logPrefix + "Debug/VisionVsOdo/DeltaHeadingDeg", visionOdoDeltaHeadingDeg);
+    Logger.recordOutput(logPrefix + "Debug/TrustVisionOverride", trustVisionOverride);
 
-    // ---- Rejection checks ----
+    // ---- Rejection checks (bypassed by dashboard override) ----
+    if (!trustVisionOverride) {
 
-    // Reject if robot is spinning too fast for reliable vision
-    double omegaDegPerSec = Math.toDegrees(Math.abs(speeds.omegaRadiansPerSecond));
-    Logger.recordOutput(logPrefix + "Debug/OmegaDegPerSec", omegaDegPerSec);
-    if (omegaDegPerSec > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
-      Logger.recordOutput(logPrefix + "Status", "REJECTED_ANGULAR_VELOCITY");
-      Logger.recordOutput(
-          logPrefix + "Debug/RejectionDetail",
-          "omega=" + String.format("%.1f", omegaDegPerSec) + " > threshold="
-              + VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC);
-      totalRejected++;
-      return;
-    }
-
-    // Pose outside field bounds (with margin) = clearly wrong
-    if (pose.getX() < -FIELD_MARGIN
-        || pose.getX() > FIELD_LENGTH + FIELD_MARGIN
-        || pose.getY() < -FIELD_MARGIN
-        || pose.getY() > FIELD_WIDTH + FIELD_MARGIN) {
-      Logger.recordOutput(logPrefix + "Status", "REJECTED_OUT_OF_FIELD");
-      Logger.recordOutput(
-          logPrefix + "Debug/RejectionDetail",
-          "pose=(" + String.format("%.2f", pose.getX()) + ", " + String.format("%.2f", pose.getY())
-              + ") outside field bounds");
-      totalRejected++;
-      return;
-    }
-
-    // Reject if vision pose is too far from odometry (bogus measurement)
-    if (visionOdoDeltaDistM > VisionConstants.MAX_POSE_JUMP_METERS) {
-      Logger.recordOutput(logPrefix + "Status", "REJECTED_POSE_JUMP");
-      Logger.recordOutput(
-          logPrefix + "Debug/RejectionDetail",
-          "visionVsOdoDist=" + String.format("%.3f", visionOdoDeltaDistM) + "m > threshold="
-              + VisionConstants.MAX_POSE_JUMP_METERS + "m");
-      totalRejected++;
-      return;
-    }
-
-    // Single-tag: reject high-ambiguity
-    if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
-      double ambiguity = mt1.rawFiducials[0].ambiguity;
-      Logger.recordOutput(logPrefix + "Debug/SingleTagAmbiguity", ambiguity);
-      if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
-        Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
+      // Reject if robot is spinning too fast for reliable vision
+      double omegaDegPerSec = Math.toDegrees(Math.abs(speeds.omegaRadiansPerSecond));
+      Logger.recordOutput(logPrefix + "Debug/OmegaDegPerSec", omegaDegPerSec);
+      if (omegaDegPerSec > VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_ANGULAR_VELOCITY");
         Logger.recordOutput(
             logPrefix + "Debug/RejectionDetail",
-            "ambiguity=" + String.format("%.3f", ambiguity)
-                + " > threshold=" + VisionConstants.MT1_AMBIGUITY_THRESHOLD
-                + " tagID=" + mt1.rawFiducials[0].id);
+            "omega=" + String.format("%.1f", omegaDegPerSec) + " > threshold="
+                + VisionConstants.MAX_ANGULAR_VELOCITY_DEG_PER_SEC);
         totalRejected++;
         return;
+      }
+
+      // Pose outside field bounds (with margin) = clearly wrong
+      if (pose.getX() < -FIELD_MARGIN
+          || pose.getX() > FIELD_LENGTH + FIELD_MARGIN
+          || pose.getY() < -FIELD_MARGIN
+          || pose.getY() > FIELD_WIDTH + FIELD_MARGIN) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_OUT_OF_FIELD");
+        Logger.recordOutput(
+            logPrefix + "Debug/RejectionDetail",
+            "pose=(" + String.format("%.2f", pose.getX()) + ", "
+                + String.format("%.2f", pose.getY()) + ") outside field bounds");
+        totalRejected++;
+        return;
+      }
+
+      // Reject if vision pose is too far from odometry (bogus measurement)
+      if (visionOdoDeltaDistM > VisionConstants.MAX_POSE_JUMP_METERS) {
+        Logger.recordOutput(logPrefix + "Status", "REJECTED_POSE_JUMP");
+        Logger.recordOutput(
+            logPrefix + "Debug/RejectionDetail",
+            "visionVsOdoDist=" + String.format("%.3f", visionOdoDeltaDistM) + "m > threshold="
+                + VisionConstants.MAX_POSE_JUMP_METERS + "m");
+        totalRejected++;
+        return;
+      }
+
+      // Single-tag: reject high-ambiguity
+      if (mt1.tagCount == 1 && mt1.rawFiducials.length == 1) {
+        double ambiguity = mt1.rawFiducials[0].ambiguity;
+        Logger.recordOutput(logPrefix + "Debug/SingleTagAmbiguity", ambiguity);
+        if (ambiguity > VisionConstants.MT1_AMBIGUITY_THRESHOLD) {
+          Logger.recordOutput(logPrefix + "Status", "REJECTED_AMBIGUITY");
+          Logger.recordOutput(
+              logPrefix + "Debug/RejectionDetail",
+              "ambiguity=" + String.format("%.3f", ambiguity)
+                  + " > threshold=" + VisionConstants.MT1_AMBIGUITY_THRESHOLD
+                  + " tagID=" + mt1.rawFiducials[0].id);
+          totalRejected++;
+          return;
+        }
       }
     }
 
@@ -288,7 +301,8 @@ public class VisionSubsystem extends SubsystemBase {
     Logger.recordOutput(logPrefix + "AvgTagDist", avgTagDist);
     Logger.recordOutput(logPrefix + "XYStdDev", xyStdev);
     Logger.recordOutput(logPrefix + "ThetaStdDev", thetaStdDev);
-    Logger.recordOutput(logPrefix + "Debug/RejectionDetail", "NONE");
+    Logger.recordOutput(
+        logPrefix + "Debug/RejectionDetail", trustVisionOverride ? "BYPASSED_BY_OVERRIDE" : "NONE");
   }
 
   public void updateWhileDisabled() {

@@ -5,7 +5,7 @@ public final class NoOpClimberIO implements ClimberIO {
 
   @Override
   public void updateInputs(ClimberIOInputs inputs) {
-    inputs.appliedVolts = appliedVolts;
+    inputs.appliedVoltage = appliedVolts;
   }
 
   @Override

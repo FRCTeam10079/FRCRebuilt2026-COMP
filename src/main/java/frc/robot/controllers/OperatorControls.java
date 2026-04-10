@@ -21,6 +21,7 @@ import frc.robot.statemachine.ClimbState;
 import frc.robot.statemachine.FuelState;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
@@ -52,6 +53,11 @@ public final class OperatorControls {
    * @param stateMachine global robot state machine
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
+   * @param climbApproachCommandFactory factory that creates a fresh command to pathfind to the
+   * climb approach point
+   * @param climbEntryCommandFactory factory that creates a fresh command to pathfind from the
+   *  approach point into the climb entry point
+   * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
       CommandXboxController operator,
@@ -61,16 +67,19 @@ public final class OperatorControls {
       ClimberSubsystem climber,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier,
-      Supplier<Distance> hubDistanceSupplier) {
+      Supplier<Distance> hubDistanceSupplier,
+      Supplier<Command> climbApproachCommandFactory,
+      Supplier<Command> climbEntryCommandFactory,
+      CommandSwerveDrivetrain drivetrain) {
 
     final AtomicInteger tuningEventCounter = new AtomicInteger(0);
 
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
-    operator
-        .y()
-        .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
-            stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
+    // operator
+    //     .y()
+    //     .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
+    //         stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
 
     // ======== REVERSE (through Superstructure) ========
     // B - Hold feeder/indexer reverse only
@@ -93,12 +102,12 @@ public final class OperatorControls {
         .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
         .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
-    // Right Bumper - Hold to control shooter pivot with left stick Y
-    operator
-        .rightBumper()
-        .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-        .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
-        .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
+    // // Right Bumper - Hold to control shooter pivot with left stick Y
+    // operator
+    //     .rightBumper()
+    //     .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
+    //     .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
+    //     .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator
@@ -192,15 +201,59 @@ public final class OperatorControls {
             () -> superstructure.setWantedSuperState(WantedSuperState.FORCE_SHOOT)))
         .onFalse(updateWantedStateFromOperatorInputs(operator, superstructure));
 
-    // ======== CLIMB SAFETY (through Superstructure) ========
-    // Start + Back together -> L1 climb sequence arm (safety interlock)
-    new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean())
+    // ======== CLIMB (through Superstructure + direct climber commands) ========
+    // Start + Back together -> Set Superstructure to CLIMB and extend climber to
+    // max position.
+    // Works from any state (idle or retracted) to allow re-extension.
+    //
+    // IMPORTANT!!!: The "Start alone" and "Back alone" triggers below must NOT fire
+    // when we are simply releasing one button from the Start+Back combo. This was
+    // happening making climber buggy and lwk pmo.
+    // We gate them with wasComboActive to suppress false triggers during release.
+    final boolean[] wasComboActive = {false};
+    Trigger comboBoth =
+        new Trigger(() -> operator.start().getAsBoolean() && operator.back().getAsBoolean());
+
+    // Track whether the combo was active last cycle
+    // Only clear when BOTH buttons are fully released, so partial release doesn't
+    // allow the single-button triggers to fire.
+    comboBoth.onTrue(Commands.runOnce(() -> wasComboActive[0] = true));
+    new Trigger(() -> !operator.start().getAsBoolean() && !operator.back().getAsBoolean())
+        .onTrue(Commands.runOnce(() -> wasComboActive[0] = false));
+
+    comboBoth.onTrue(Commands.sequence(
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+        climber.extendCommand()));
+
+    // Y button (while in climb mode and extended) -> Retract to climb position
+    // Use onTrue on just Y button, then conditionally run retract.
+    // This prevents auto-triggering when isExtended() becomes true while Y is held.
+    operator
+        .y()
+        .onTrue(Commands.either(
+            climber.retractCommand(),
+            Commands.none(),
+            () -> superstructure.isClimbing() && climber.isExtended()));
+
+    // Start alone (not with Back, and not just released from combo) ->
+    // Retract climber all the way to zero and re-zero encoder
+    operator
+        .rightBumper()
+        .and(() -> !operator.back().getAsBoolean())
+        .and(() -> !wasComboActive[0])
+        .and(() -> superstructure.isClimbing())
+        .onTrue(climber.retractToZeroCommand());
+
+    // Back alone (not with Start, and not just released from combo) ->
+    // Abort climb from any state
+    operator
+        .back()
+        .and(() -> !operator.start().getAsBoolean())
+        .and(() -> !wasComboActive[0])
+        .and(() -> superstructure.isClimbing())
         .onTrue(Commands.sequence(
-            Commands.runOnce(() -> {
-              stateMachine.setMatchState(MatchState.ENDGAME);
-              stateMachine.setClimbState(ClimbState.CLIMBING_L1);
-            }),
-            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB))));
+            climber.abortCommand(),
+            Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE))));
   }
 
   private static DoubleSupplier negate(DoubleSupplier supplier) {

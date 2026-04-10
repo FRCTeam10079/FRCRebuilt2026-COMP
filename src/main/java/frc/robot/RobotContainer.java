@@ -9,10 +9,14 @@ import static edu.wpi.first.units.Units.*;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.auto.AutoCommands;
 import frc.robot.auto.Autos;
+import frc.robot.constants.ClimbConstants;
+import frc.robot.constants.ClimbConstants.ClimbLane;
 import frc.robot.controllers.DriverControls;
 import frc.robot.controllers.OperatorControls;
 import frc.robot.controllers.TestingBindings;
@@ -26,6 +30,7 @@ import frc.robot.lib.SmartShootController;
 import frc.robot.pathfinding.Pathfinding;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.climber.ClimberIOTalonFX;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.climber.NoOpClimberIO;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
@@ -48,6 +53,7 @@ import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * RobotContainer for FRC 2026 REBUILT season This class is where the robot's subsystems, commands,
@@ -96,6 +102,10 @@ public class RobotContainer {
   /** Memoized setpoint supplier that caches by robot pose. */
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
+    // ==================== CLIMB LANE CHOOSER ====================
+  private final LoggedDashboardChooser<String> m_climbLaneChooser =
+      new LoggedDashboardChooser<>("Climb Lane");
+
   public RobotContainer() {
     // ==================== IO MODE SWITCHING ====================
     switch (Constants.currentMode) {
@@ -106,7 +116,7 @@ public class RobotContainer {
             new ShooterPivotIOTalonFX(), () -> drivetrain.getState().Pose);
         intake = new IntakeWheelsSubsystem(new IntakeWheelsIOTalonFX());
         pivot = new PivotSubsystem(new PivotIOTalonFX());
-        climber = new ClimberSubsystem(new NoOpClimberIO());
+        climber = new ClimberSubsystem(new ClimberIOTalonFX());
         break;
 
       case SIM:
@@ -223,12 +233,18 @@ public class RobotContainer {
         shooterPivot,
         drivetrain,
         vision,
+        climber,
         m_setpointSupplier);
     autoCommands.registerPathPlannerCommands();
     autoCommands.registerChoreoBindings(choreoAutoFactory);
 
     // ==================== BUILD AUTO CHOOSER ====================
     autos = new Autos(choreoAutoFactory, autoCommands);
+
+        // ==================== CLIMB LANE CHOOSER ====================
+    m_climbLaneChooser.addDefaultOption("Center", "CENTER");
+    m_climbLaneChooser.addOption("Left", "LEFT");
+    m_climbLaneChooser.addOption("Right", "RIGHT");
 
     // Configure button bindings
     configureBindings();
@@ -249,6 +265,25 @@ public class RobotContainer {
    * classes for clean separation.
    */
   private void configureBindings() {
+
+    // Build climb pathfind commands: two-phase approach to avoid routing through
+    // the climb structure.
+    // Phase 1: Pathfind to an approach waypoint in the open field (AD* avoids
+    // obstacles).
+    // Phase 2: Drive straight from the approach point into the climb structure to
+    // the final
+    // pose.
+    Supplier<Command> climbApproachCommandFactory = () -> drivetrain.pathfindToPose(() -> {
+      ClimbLane lane = resolveClimbLane();
+      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+      return ClimbConstants.getClimbApproachPose(lane, isRed);
+    });
+    Supplier<Command> climbEntryCommandFactory = () -> drivetrain.pathfindToPose(() -> {
+      ClimbLane lane = resolveClimbLane();
+      boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+      return ClimbConstants.getClimbPose(lane, isRed);
+    });
+
     DriverControls.configure(
         m_driverController, drivetrain, vision, superstructure, m_stateMachine, m_setpointSupplier);
     OperatorControls.configure(
@@ -259,7 +294,10 @@ public class RobotContainer {
         climber,
         m_stateMachine,
         m_setpointSupplier,
-        () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose));
+        () -> ShooterMath.getDistanceToHub(drivetrain.getState().Pose),
+        climbApproachCommandFactory,
+        climbEntryCommandFactory,
+        drivetrain);
     TestingBindings.configure(
         m_testController, drivetrain, intake, pivot, indexer, shooter, vision);
   }
@@ -310,5 +348,17 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autos.getSelected();
+  }
+  /** Resolve the currently selected climb lane from the dashboard chooser. */
+  private ClimbLane resolveClimbLane() {
+    String selected = m_climbLaneChooser.get();
+    if (selected != null) {
+      try {
+        return ClimbLane.valueOf(selected);
+      } catch (IllegalArgumentException ignored) {
+        // fall through
+      }
+    }
+    return ClimbLane.CENTER;
   }
 }

@@ -21,7 +21,7 @@ import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -42,7 +42,7 @@ public class AutoCommands {
   private final ShooterSubsystem shooter;
   private final ShooterPivotSubsystem shooterPivot;
   private final CommandSwerveDrivetrain drivetrain;
-  private final VisionSubsystem vision;
+  private final Vision vision;
   private final Supplier<ShooterSetpoint> setpointSupplier;
 
   public AutoCommands(
@@ -53,7 +53,7 @@ public class AutoCommands {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision,
+      Vision vision,
       Supplier<ShooterSetpoint> setpointSupplier) {
     this.superstructure = superstructure;
     this.intake = intake;

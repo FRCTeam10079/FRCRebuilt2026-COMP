@@ -79,6 +79,7 @@ public final class ShooterInterpolationTable {
     putAngle(2.0, 60.0);
     putAngle(2.8, 62.0);
     putAngle(2.878, 63.389);
+    putAngle(2.878, 63.389);
 
     // angleTable.put(2.5, 60.0);
     putAngle(3.2, 64.0);

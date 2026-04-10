@@ -44,7 +44,8 @@ import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.robot.subsystems.shooter.ShooterPivotIOTalonFX;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionIOLimelight;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -67,7 +68,7 @@ public class RobotContainer {
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
   // Vision
-  public final VisionSubsystem vision;
+  public final Vision vision;
   // Subsystems (initialized in constructor based on mode)
   private final IndexerSubsystem indexer;
   public final ShooterSubsystem shooter;
@@ -141,8 +142,14 @@ public class RobotContainer {
         break;
     }
 
-    // Create vision subsystem (needs drivetrain reference for pose injection)
-    vision = new VisionSubsystem(drivetrain);
+    // Create vision subsystem using Mercer Island architecture
+    // VisionConsumer = drivetrain::addVisionMeasurement, with per-camera
+    // VisionIOLimelight instances
+    vision = new Vision(
+        drivetrain::addVisionMeasurement,
+        new VisionIOLimelight("limelight-left", () -> drivetrain.getState().Pose.getRotation()),
+        new VisionIOLimelight(
+            "limelight-right", () -> drivetrain.getState().Pose.getRotation()));
 
     drivetrain.registerTelemetry(m_telemetry::telemeterize);
 

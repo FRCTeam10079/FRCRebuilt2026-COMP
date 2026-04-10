@@ -25,7 +25,7 @@ import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.CurrentSuperState;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.function.Supplier;
 
 /**
@@ -50,7 +50,7 @@ public final class DriverControls {
   public static void configure(
       CommandXboxController controller,
       CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision,
+      Vision vision,
       Superstructure superstructure,
       RobotStateMachine stateMachine,
       Supplier<ShooterSetpoint> setpointSupplier) {

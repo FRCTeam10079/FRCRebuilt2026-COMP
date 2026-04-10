@@ -20,7 +20,6 @@ import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
-import frc.robot.subsystems.vision.VisionSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -143,7 +142,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void disabledPeriodic() {
-    m_robotContainer.vision.updateWhileDisabled();
     m_robotContainer.shooterPivot.reZeroIfNeeded();
   }
 
@@ -159,9 +157,7 @@ public class Robot extends LoggedRobot {
     m_stateMachine.setMatchState(MatchState.AUTO_INIT);
 
     // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
-
-    // Get and schedule autonomous command
+    // Orientation is published every frame in VisionIOLimelight.updateInputs().
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     // Critical for post-match log review: confirms what auto actually executed vs
     // what the driver
@@ -192,7 +188,6 @@ public class Robot extends LoggedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
-    VisionSubsystem.setTrustVisionOverride(true);
     ShooterSetpoint.resetOffsets();
     Logger.recordOutput("ShooterTuning/EventType", "TeleopReset");
     Logger.recordOutput("ShooterTuning/OffsetsReset", true);
@@ -202,8 +197,8 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput("ShooterTuning/OffsetAngleDegAfterReset", 0.0);
     scheduleShooterTuningEventClear();
 
-    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
+    // Vision orientation is published every frame in
+    // VisionIOLimelight.updateInputs().
 
     // Reset Superstructure before cancelling auto to prevent stale state from
     // persisting

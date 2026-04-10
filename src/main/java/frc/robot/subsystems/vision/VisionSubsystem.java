@@ -32,10 +32,10 @@ public class VisionSubsystem extends SubsystemBase {
   private static final int PIPELINE_APRILTAG = 0;
 
   private final CommandSwerveDrivetrain drivetrain;
-  private final BooleanEntry trustVisionOverrideEntry = NetworkTableInstance.getDefault()
+  private static final BooleanEntry trustVisionOverrideEntry = NetworkTableInstance.getDefault()
       .getBooleanTopic(TRUST_VISION_OVERRIDE_TOPIC)
       .getEntry(false);
-
+      
   private int totalAccepted = 0;
   private int totalRejected = 0;
   private int headingCorrections = 0;
@@ -382,5 +382,8 @@ public class VisionSubsystem extends SubsystemBase {
         }
       }
     }
+  }
+  public static void setTrustVisionOverride(boolean value){
+    trustVisionOverrideEntry.set(value);
   }
 }

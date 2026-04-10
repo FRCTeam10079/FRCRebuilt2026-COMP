@@ -20,6 +20,8 @@ import frc.robot.lib.ShooterMath;
 import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
+import frc.robot.subsystems.vision.VisionSubsystem;
+
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -191,7 +193,7 @@ public class Robot extends LoggedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
-
+    VisionSubsystem.setTrustVisionOverride(true);
     ShooterSetpoint.resetOffsets();
     Logger.recordOutput("ShooterTuning/EventType", "TeleopReset");
     Logger.recordOutput("ShooterTuning/OffsetsReset", true);

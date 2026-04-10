@@ -544,7 +544,7 @@ public class Superstructure extends SubsystemBase {
       return false;
     }
 
-    boolean flywheelReady = shooter.isAt(RPM.of(params.flywheelRPM()));
+    boolean flywheelReady = params.flywheelRPM() > 0 && shooter.isReady();
     boolean pivotReady = shooterPivot.isAtAngle(Degrees.of(params.pivotAngleDegrees()));
     boolean headingReady = sotmHeadingAlignedSupplier.get();
 

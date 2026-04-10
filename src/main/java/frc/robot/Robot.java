@@ -21,7 +21,6 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.vision.VisionSubsystem;
-
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;

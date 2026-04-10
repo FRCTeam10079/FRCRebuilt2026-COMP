@@ -101,11 +101,11 @@ public final class OperatorControls {
         .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
     // Right Bumper - Hold to control shooter pivot with left stick Y
-    operator
-        .rightBumper()
-        .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-        .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
-        .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
+    // operator
+    //     .rightBumper()
+    //     .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
+    //     .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
+    //     .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator
@@ -245,7 +245,7 @@ public final class OperatorControls {
     // Back alone (not with Start, and not just released from combo) ->
     // Abort climb from any state
     operator
-        .back()
+        .rightBumper()
         .and(() -> !operator.start().getAsBoolean())
         .and(() -> !wasComboActive[0])
         .and(() -> superstructure.isClimbing())

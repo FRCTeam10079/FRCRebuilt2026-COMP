@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "CenterToMiddleShotoer"
+            "pathName": "MiddleToMiddleShoot"
           }
         },
         {
@@ -42,7 +42,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "ldepotStartToDepot"
+                  "pathName": "CenterToIntakeDepot"
                 }
               }
             ]
@@ -51,7 +51,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "DepotToLClimb"
+            "pathName": "DepotToShoot"
           }
         },
         {
@@ -92,7 +92,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.75
+                  "waitTime": 0.7
                 }
               }
             ]

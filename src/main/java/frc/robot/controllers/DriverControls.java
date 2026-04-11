@@ -120,9 +120,7 @@ public final class DriverControls {
     // onTrue/onFalse always pair correctly, even if the robot crosses a zone
     // boundary while held.
     final boolean[] useScoringZoneSotm = {true};
-    Trigger sotmTrigger = controller
-        .leftBumper()
-        .and(() -> superstructure.getWantedSuperState() != WantedSuperState.CLIMB);
+    Trigger sotmTrigger = controller.leftBumper();
 
     sotmTrigger
         .onTrue(Commands.sequence(

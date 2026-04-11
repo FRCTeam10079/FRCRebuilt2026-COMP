@@ -190,7 +190,7 @@ public class AutoCommands {
     return Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE));
   }
 
-   // ==================== CLIMBER ====================
+  // ==================== CLIMBER ====================
 
   /** Extend the climber and brake at the top. */
   public Command extendClimber() {

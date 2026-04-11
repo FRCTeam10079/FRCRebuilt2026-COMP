@@ -17,14 +17,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.lib.ShooterInterpolationTable;
 import frc.robot.lib.ShooterSetpoint;
-import frc.robot.statemachine.ClimbState;
-import frc.robot.statemachine.FuelState;
-import frc.robot.statemachine.MatchState;
 import frc.robot.statemachine.RobotStateMachine;
-import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
 import frc.robot.subsystems.climber.ClimberSubsystem;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,9 +51,9 @@ public final class OperatorControls {
    * @param setpointSupplier memoized distance-based setpoint supplier
    * @param hubDistanceSupplier distance to hub supplier (for tuning)
    * @param climbApproachCommandFactory factory that creates a fresh command to pathfind to the
-   * climb approach point
+   *     climb approach point
    * @param climbEntryCommandFactory factory that creates a fresh command to pathfind from the
-   *  approach point into the climb entry point
+   *     approach point into the climb entry point
    * @param drivetrain swerve drivetrain subsystem (for auto-climb final nudge)
    */
   public static void configure(
@@ -77,9 +74,10 @@ public final class OperatorControls {
     // ==================== INVENTORY ====================
     // Y - Human-in-the-loop toggle EMPTY <-> LOADED
     // operator
-    //     .y()
-    //     .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
-    //         stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY : FuelState.LOADED)));
+    // .y()
+    // .onTrue(Commands.runOnce(() -> stateMachine.setFuelState(
+    // stateMachine.getFuelState() == FuelState.LOADED ? FuelState.EMPTY :
+    // FuelState.LOADED)));
 
     // ======== REVERSE (through Superstructure) ========
     // B - Hold feeder/indexer reverse only
@@ -104,10 +102,11 @@ public final class OperatorControls {
 
     // // Right Bumper - Hold to control shooter pivot with left stick Y
     // operator
-    //     .rightBumper()
-    //     .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
-    //     .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
-    //     .onFalse(Commands.runOnce(() -> superstructure.setShooterPivotOverride(false)));
+    // .rightBumper()
+    // .onTrue(Commands.runOnce(() -> superstructure.setShooterPivotOverride(true)))
+    // .whileTrue(shooterPivot.manualControlCommand(negate(operator::getLeftY)))
+    // .onFalse(Commands.runOnce(() ->
+    // superstructure.setShooterPivotOverride(false)));
 
     // X - Run shooter pivot homing routine (drives into hard stop to zero encoder)
     operator

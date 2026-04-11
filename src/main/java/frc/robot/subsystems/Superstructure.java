@@ -225,7 +225,7 @@ public class Superstructure extends SubsystemBase {
     pivot.setWantedState(PivotSubsystem.WantedState.STOW);
   }
 
-    /** Returns true when the Superstructure is in CLIMBING mode (endgame active). */
+  /** Returns true when the Superstructure is in CLIMBING mode (endgame active). */
   public boolean isClimbing() {
     return currentSuperState == CurrentSuperState.CLIMBING;
   }
@@ -384,13 +384,8 @@ public class Superstructure extends SubsystemBase {
   }
 
   private void applyClimb() {
-    // Shut down all non-climb subsystems
-    shooter.setWantedState(ShooterSubsystem.WantedState.OFF);
-    indexer.setWantedState(IndexerSubsystem.WantedState.OFF);
-    intake.setWantedState(IntakeWheelsSubsystem.WantedState.OFF);
-    trackPivotContinuously();
     // Climber state is driven by OperatorControls commands, not the Superstructure.
-    // The Superstructure just ensures other subsystems are off during climb mode.
+    // CLIMB is intentionally non-blocking: do not force other mechanisms off here.
   }
 
   private void applyStopped() {
@@ -408,11 +403,10 @@ public class Superstructure extends SubsystemBase {
   /**
    * Independent intake overlay. When {@link #intakeActive} is true, intake wheels spin and the
    * intake pivot deploys regardless of the current super-state. Skipped for states that have their
-   * own intake behavior (unjam, climb, stopped, and the legacy COLLECT/STOW states used by auto).
+   * own intake behavior (unjam, stopped, and the legacy COLLECT/STOW states used by auto).
    */
   private void applyIntakeOverlay() {
     if (currentSuperState == CurrentSuperState.UNJAMMING
-        || currentSuperState == CurrentSuperState.CLIMBING
         || currentSuperState == CurrentSuperState.STOPPED
         || currentSuperState == CurrentSuperState.COLLECTING
         || currentSuperState == CurrentSuperState.STOWING) {

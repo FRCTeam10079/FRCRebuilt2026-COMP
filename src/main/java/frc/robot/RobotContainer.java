@@ -102,7 +102,7 @@ public class RobotContainer {
   /** Memoized setpoint supplier that caches by robot pose. */
   private final Supplier<ShooterSetpoint> m_setpointSupplier;
 
-    // ==================== CLIMB LANE CHOOSER ====================
+  // ==================== CLIMB LANE CHOOSER ====================
   private final LoggedDashboardChooser<String> m_climbLaneChooser =
       new LoggedDashboardChooser<>("Climb Lane");
 
@@ -241,7 +241,7 @@ public class RobotContainer {
     // ==================== BUILD AUTO CHOOSER ====================
     autos = new Autos(choreoAutoFactory, autoCommands);
 
-        // ==================== CLIMB LANE CHOOSER ====================
+    // ==================== CLIMB LANE CHOOSER ====================
     m_climbLaneChooser.addDefaultOption("Center", "CENTER");
     m_climbLaneChooser.addOption("Left", "LEFT");
     m_climbLaneChooser.addOption("Right", "RIGHT");

@@ -5,22 +5,9 @@
     "data": {
       "commands": [
         {
-          "type": "race",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "intakeFuel"
-                }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "ldepotStartToDepot"
-                }
-              }
-            ]
+            "pathName": "MiddleToMiddleShoot"
           }
         },
         {
@@ -36,7 +23,51 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 4.5
+                  "waitTime": 5.0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "intakeFuel"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "CenterToIntakeDepot"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "DepotToShoot"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Shoot"
+                }
+              },
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 5.0
                 }
               }
             ]
@@ -61,7 +92,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.75
+                  "waitTime": 0.7
                 }
               }
             ]
@@ -90,12 +121,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "DepotToLClimb"
           }
         }
       ]

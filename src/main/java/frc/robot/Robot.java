@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.lib.Elastic;
 import frc.robot.lib.HubShiftTracker;
 import frc.robot.lib.LaunchCalculator;
 import frc.robot.lib.PowerDiagnosticsLogger;
@@ -77,6 +78,9 @@ public class Robot extends LoggedRobot {
 
     m_robotContainer = new RobotContainer();
     m_stateMachine = RobotStateMachine.getInstance();
+    Elastic.sendNotification(new Elastic.Notification(
+        Elastic.NotificationLevel.INFO, "Robot Code", "Code initialized", 2000));
+
     m_powerDiagnosticsLogger = new PowerDiagnosticsLogger(
         m_robotContainer.getIntake(),
         m_robotContainer.getPivot(),
@@ -138,7 +142,6 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void disabledPeriodic() {
-    m_robotContainer.vision.updateWhileDisabled();
     m_robotContainer.shooterPivot.reZeroIfNeeded();
   }
 
@@ -154,9 +157,7 @@ public class Robot extends LoggedRobot {
     m_stateMachine.setMatchState(MatchState.AUTO_INIT);
 
     // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
-
-    // Get and schedule autonomous command
+    // Orientation is published every frame in VisionIOLimelight.updateInputs().
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     // Critical for post-match log review: confirms what auto actually executed vs
     // what the driver
@@ -187,7 +188,6 @@ public class Robot extends LoggedRobot {
   public void teleopInit() {
     // State machine transition: Teleop starting
     m_stateMachine.setMatchState(MatchState.TELEOP_INIT);
-
     ShooterSetpoint.resetOffsets();
     Logger.recordOutput("ShooterTuning/EventType", "TeleopReset");
     Logger.recordOutput("ShooterTuning/OffsetsReset", true);
@@ -197,8 +197,8 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput("ShooterTuning/OffsetAngleDegAfterReset", 0.0);
     scheduleShooterTuningEventClear();
 
-    // Vision uses Mode 0 (EXTERNAL_ONLY) - no IMU mode switch needed.
-    // Heading is sent every frame in VisionSubsystem.periodic().
+    // Vision orientation is published every frame in
+    // VisionIOLimelight.updateInputs().
 
     // Reset Superstructure before cancelling auto to prevent stale state from
     // persisting

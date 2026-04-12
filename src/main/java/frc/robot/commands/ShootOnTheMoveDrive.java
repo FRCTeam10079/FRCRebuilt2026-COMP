@@ -33,7 +33,7 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.statemachine.DrivetrainMode;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -52,7 +52,7 @@ public class ShootOnTheMoveDrive extends Command {
 
   // Subsystems
   private final CommandSwerveDrivetrain drivetrain;
-  private final VisionSubsystem vision;
+  private final Vision vision;
   private final RobotStateMachine stateMachine;
 
   // Timer for logging/timeout
@@ -106,7 +106,7 @@ public class ShootOnTheMoveDrive extends Command {
    */
   public ShootOnTheMoveDrive(
       CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision,
+      Vision vision,
       DoubleSupplier xInputSupplier,
       DoubleSupplier yInputSupplier) {
     this.drivetrain = drivetrain;

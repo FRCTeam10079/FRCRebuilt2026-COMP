@@ -15,13 +15,14 @@ import frc.robot.lib.ShooterSetpoint;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.CurrentSuperState;
 import frc.robot.subsystems.Superstructure.WantedSuperState;
+import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterPivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -42,7 +43,9 @@ public class AutoCommands {
   private final ShooterSubsystem shooter;
   private final ShooterPivotSubsystem shooterPivot;
   private final CommandSwerveDrivetrain drivetrain;
-  private final VisionSubsystem vision;
+  private final Vision vision;
+
+  private final ClimberSubsystem climber;
   private final Supplier<ShooterSetpoint> setpointSupplier;
 
   public AutoCommands(
@@ -53,7 +56,8 @@ public class AutoCommands {
       ShooterSubsystem shooter,
       ShooterPivotSubsystem shooterPivot,
       CommandSwerveDrivetrain drivetrain,
-      VisionSubsystem vision,
+      Vision vision,
+      ClimberSubsystem climber,
       Supplier<ShooterSetpoint> setpointSupplier) {
     this.superstructure = superstructure;
     this.intake = intake;
@@ -63,6 +67,7 @@ public class AutoCommands {
     this.shooterPivot = shooterPivot;
     this.drivetrain = drivetrain;
     this.vision = vision;
+    this.climber = climber;
     this.setpointSupplier = setpointSupplier;
   }
 
@@ -185,6 +190,47 @@ public class AutoCommands {
     return Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE));
   }
 
+  // ==================== CLIMBER ====================
+
+  /** Extend the climber and brake at the top. */
+  public Command extendClimber() {
+    return climber.extendCommand();
+  }
+
+  /** Enter CLIMB mode through Superstructure, then extend the climber. */
+  public Command startClimbExtend() {
+    return Commands.sequence(
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.CLIMB)),
+        climber.extendCommand());
+  }
+
+  /** Retract the climber from the extended position. */
+  public Command retractClimber() {
+    return climber.retractCommand();
+  }
+
+  /** Retract to the mechanical zero hard stop and re-zero the encoder. */
+  public Command retractClimberToZero() {
+    return climber.retractToZeroCommand();
+  }
+
+  /** Full climb sequence: extend, brake at top, then retract. */
+  public Command climb() {
+    return climber.climbCommand();
+  }
+
+  /** Abort/stop the climber. */
+  public Command abortClimber() {
+    return climber.abortCommand();
+  }
+
+  /** Abort the climber and return Superstructure to IDLE. */
+  public Command abortClimberAndIdle() {
+    return Commands.sequence(
+        climber.abortCommand(),
+        Commands.runOnce(() -> superstructure.setWantedSuperState(WantedSuperState.IDLE)));
+  }
+
   // ==================== BULK REGISTRATION ====================
 
   /**
@@ -223,6 +269,15 @@ public class AutoCommands {
 
     // Stop all
     NamedCommands.registerCommand("stopAll", stopAll());
+
+    // Climber
+    NamedCommands.registerCommand("extendClimber", extendClimber());
+    NamedCommands.registerCommand("startClimbExtend", startClimbExtend());
+    NamedCommands.registerCommand("retractClimber", retractClimber());
+    NamedCommands.registerCommand("retractClimberToZero", retractClimberToZero());
+    NamedCommands.registerCommand("climb", climb());
+    NamedCommands.registerCommand("abortClimber", abortClimber());
+    NamedCommands.registerCommand("abortClimberAndIdle", abortClimberAndIdle());
 
     // Aliases matching capitalized names used in PathPlanner auto files
     // (Right_OutPost.auto uses "Intake down", "Shoot", "Intake")

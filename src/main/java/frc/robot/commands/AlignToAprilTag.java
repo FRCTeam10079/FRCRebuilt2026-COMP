@@ -20,7 +20,7 @@ import frc.robot.LimelightHelpers;
 import frc.robot.statemachine.DrivetrainMode;
 import frc.robot.statemachine.RobotStateMachine;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -36,7 +36,7 @@ public class AlignToAprilTag extends Command {
 
   // Subsystems
   private final CommandSwerveDrivetrain drivetrain;
-  private final VisionSubsystem vision;
+  private final Vision vision;
   private final RobotStateMachine stateMachine;
 
   // Timer for logging/timeout
@@ -83,7 +83,7 @@ public class AlignToAprilTag extends Command {
    * @param alignPosition LEFT, RIGHT, or CENTER offset from the AprilTag
    */
   public AlignToAprilTag(
-      CommandSwerveDrivetrain drivetrain, VisionSubsystem vision, AlignPosition alignPosition) {
+      CommandSwerveDrivetrain drivetrain, Vision vision, AlignPosition alignPosition) {
     this.drivetrain = drivetrain;
     this.vision = vision;
     this.stateMachine = RobotStateMachine.getInstance();
@@ -119,7 +119,7 @@ public class AlignToAprilTag extends Command {
   }
 
   /** Convenience constructor for CENTER alignment */
-  public AlignToAprilTag(CommandSwerveDrivetrain drivetrain, VisionSubsystem vision) {
+  public AlignToAprilTag(CommandSwerveDrivetrain drivetrain, Vision vision) {
     this(drivetrain, vision, AlignPosition.CENTER);
   }
 

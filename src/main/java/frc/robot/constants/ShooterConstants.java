@@ -34,7 +34,7 @@ public class ShooterConstants {
   // ==================== PID GAINS (Slot 0) ====================
   public static final double SHOOTER_KS = 0.15;
   public static final double SHOOTER_KV = 0.12;
-  public static final double SHOOTER_KP = 0.5;
+  public static final double SHOOTER_KP = 0.6;
   public static final double SHOOTER_KI = 0.0;
   public static final double SHOOTER_KD = 0.0;
 

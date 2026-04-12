@@ -21,7 +21,7 @@ import frc.robot.subsystems.indexer.IndexerSubsystem;
 import frc.robot.subsystems.intake.IntakeWheelsSubsystem;
 import frc.robot.subsystems.intake.PivotSubsystem;
 import frc.robot.subsystems.shooter.ShooterSubsystem;
-import frc.robot.subsystems.vision.VisionSubsystem;
+import frc.robot.subsystems.vision.Vision;
 
 /**
  * Testing controller bindings (Port 2). Only active when NOT connected to the FMS — all bindings
@@ -50,7 +50,7 @@ public final class TestingBindings {
       PivotSubsystem pivot,
       IndexerSubsystem indexer,
       ShooterSubsystem shooter,
-      VisionSubsystem vision) {
+      Vision vision) {
 
     // Gate ALL test bindings behind FMS check — at competition these are inert
     if (DriverStation.isFMSAttached()) {
@@ -150,8 +150,7 @@ public final class TestingBindings {
    * Compute heading to face the currently visible AprilTag. Returns current heading if no tag is
    * visible (maintains position).
    */
-  private static double computeAprilTagHeading(
-      CommandSwerveDrivetrain drivetrain, VisionSubsystem vision) {
+  private static double computeAprilTagHeading(CommandSwerveDrivetrain drivetrain, Vision vision) {
     double currentHeading = drivetrain.getState().Pose.getRotation().getDegrees();
     for (String name : VisionConstants.LIMELIGHT_NAMES) {
       if (LimelightHelpers.getTV(name)) {

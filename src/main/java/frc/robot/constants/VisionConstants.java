@@ -1,79 +1,78 @@
 package frc.robot.constants;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import frc.robot.util.LoggedTunableNumber;
+
+/**
+ * Vision constants stolen from Mercer Island's approach. Uses LoggedTunableNumber for live tuning
+ * of filtering thresholds and standard deviation baselines.
+ */
 public class VisionConstants {
+
+  // ==================== FIELD LAYOUT ====================
+  public static AprilTagFieldLayout aprilTagLayout =
+      AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+
+  // ==================== CAMERA NAMES ====================
+  // Must match names configured on coprocessor
   public static final String LIMELIGHT_LEFT_NAME = "limelight-left";
   public static final String LIMELIGHT_RIGHT_NAME = "limelight-right";
   public static final String[] LIMELIGHT_NAMES = {LIMELIGHT_LEFT_NAME, LIMELIGHT_RIGHT_NAME};
 
-  public static final int PIPELINE_APRILTAG = 0;
+  // ==================== ROBOT-TO-CAMERA TRANSFORMS ====================
+  // Convention: forward (x), left (y), up (z) in meters, rotation in radians.
 
-  // Field boundary check margin (meters). 6328 uses 0.5m.
-  public static final double FIELD_BORDER_MARGIN = 0.5;
-  // Official 2026 REBUILT field dimensions from WPILib 2026-rebuilt-welded.json
-  public static final double FIELD_LENGTH_METERS = 16.541;
-  public static final double FIELD_WIDTH_METERS = 8.069;
+  // Limelight Left: Forward: 0.304, Right: -0.156 (Left: 0.156), Up: 0.214,
+  // Pitch: 28, Yaw: 0
+  public static Transform3d robotToCameraLeft = new Transform3d(
+      0.304, 0.156, 0.214, new Rotation3d(0.0, Math.toRadians(-28.0), Math.toRadians(0.0)));
 
-  // Heading divergence gate for vision acceptance.
-  // 5deg was too tight - gyro drift causes all vision to be rejected,
-  // creating a death spiral where pose diverges further.
-  public static final double HEADING_DIVERGENCE_THRESHOLD_DEG = 45.0;
+  // Limelight Right: Forward: 0.298, Right: 0.252 (Left: -0.252), Up: 0.218559,
+  // Pitch: 28, Yaw: -90
+  public static Transform3d robotToCameraRight = new Transform3d(
+      0.298, -0.252, 0.218559, new Rotation3d(0.0, Math.toRadians(-28.0), Math.toRadians(-90.0)));
 
-  // Angular velocity rejection threshold (deg/sec).
-  // Official Limelight example uses 360deg/s.
-  public static final double MAX_ANGULAR_VELOCITY_DEG_PER_SEC = 360.0;
+  // ==================== FILTERING THRESHOLDS ====================
+  // Tunable via NetworkTables at /Tuning/Vision/*
+  public static LoggedTunableNumber maxAmbiguity =
+      new LoggedTunableNumber("Vision/MaxAmbiguity", 0.3);
+  public static LoggedTunableNumber maxZError = new LoggedTunableNumber("Vision/MaxZError", 0.75);
 
-  // ==================== STANDARD DEVIATION MODEL
-  // ====================
-  // Formula: xyStdDev = XY_STDDEV_COEFFICIENT * avgDist^XY_STDDEV_EXPONENT /
-  // tagCount^2
-  // Formula: thetaStdDev = THETA_STDDEV_COEFFICIENT * avgDist^XY_STDDEV_EXPONENT
-  // / tagCount^2
-  // (multi-tag only; single-tag theta = POSITIVE_INFINITY)
+  // ==================== STANDARD DEVIATION MODEL ====================
+  /** Baseline linear standard deviation for 1 meter distance and 1 tag (meters). */
+  public static LoggedTunableNumber linearStdDevBaseline =
+      new LoggedTunableNumber("Vision/LinearStdDevBaseline", 0.7); // 0.35
+  // *
+  // 2
 
-  /** XY std dev coefficient (6328 uses 0.01). */
-  public static final double XY_STDDEV_COEFFICIENT = 0.01;
+  /** Baseline angular standard deviation for 1 meter distance and 1 tag (radians). */
+  public static LoggedTunableNumber angularStdDevBaseline =
+      new LoggedTunableNumber("Vision/AngularStdDevBaseline", 0.72); // 0.36 * 2
 
-  /** Distance exponent for std dev scaling */
-  public static final double XY_STDDEV_EXPONENT = 1.2;
+  // ==================== MEGATAG 2 MULTIPLIERS ====================
+  public static LoggedTunableNumber linearStdDevMegatag2Factor =
+      new LoggedTunableNumber("Vision/LinearStdDevMegatag2Factor", 0.25);
 
-  /** Theta std dev coefficient for multi-tag */
-  public static final double THETA_STDDEV_COEFFICIENT = 0.03;
+  public static double angularStdDevMegatag2Factor = Double.POSITIVE_INFINITY;
 
-  // MT1 pose ambiguity rejection threshold (per-fiducial).
-  // 6328 uses 0.4; higher = more ambiguous = less trustworthy.
-  public static final double MT1_AMBIGUITY_THRESHOLD = 0.4;
-
-  public static final double MT1_HEADING_CORRECTION_THRESHOLD_DEG = 10.0;
-  public static final boolean USE_MT1_HEADING_CORRECTION_WHILE_DISABLED = true;
-
-  // One-shot heading bootstrap: fires once on first multi-tag result if
-  // MT1 heading diverges from gyro by more than this threshold.
-  public static final double HEADING_BOOTSTRAP_THRESHOLD_DEG = 30.0;
-
-  // ==================== JITTER MITIGATION ====================
-  // Single-tag stddev multiplier: single-tag MT1 is inherently noisier due to
-  // ambiguity. This multiplier inflates the XY stddev for single-tag results
-  // so the Kalman filter trusts them less. Log data showed single-tag
-  // observations causing 5-13cm oscillations per frame.
-  // Tuned down from 3.0 -> 1.5: 3.0 combined with ambiguity scaling made
-  // vision nearly useless (92% of fusion corrections <1mm).
-  public static final double SINGLE_TAG_STDDEV_MULTIPLIER = 1.5;
-
-  // Ambiguity-scaled stddev: instead of a binary accept/reject at 0.4,
-  // we also scale the stddev by (1 + ambiguity * this factor).
-  // An observation with ambiguity=0.35 gets stddev multiplied by ~1.53x.
-  // This makes borderline-ambiguity observations less trusted rather than
-  // fully trusted or fully rejected.
-  // Tuned down from 3.0 -> 1.5: combined over-correction made stddev ~0.10+.
-  public static final double AMBIGUITY_STDDEV_SCALE = 1.5;
-
-  // Pose jump rejection: if a vision pose is more than this distance (meters)
-  // from the current odometry pose, reject it outright. Log data showed a
-  // 4.76m jump from a bogus single-tag observation that still passed all checks.
-  // Tuned up from 0.75 -> 2.0: 0.75m caused a death spiral. Once odometry
-  // drifted past the threshold, ALL subsequent vision was rejected (224
-  // POSE_JUMP rejections in log). 2.0m still catches wild outliers.
-  public static final double MAX_POSE_JUMP_METERS = 2.0;
+  // ==================== PER-TAG QUALITY MULTIPLIERS ====================
+  public static double getTagStdevMultiplier(int tag) {
+    switch (tag) {
+      case 9, 10, 11, 2, 8, 5, 4, 3, 19, 20, 21, 24, 18, 27, 26, 25: // HUB TAGS
+        return 1.0;
+      case 14, 13, 15, 16, 29, 30, 31, 32: // OUTPOST, TOWER TAGS
+        return 3.5;
+      case 1, 6, 22, 17: // TRENCH TAGS SEEN FROM NEUTRAL ZONE
+        return 1.0;
+      case 12, 7, 28, 23: // TRENCH TAGS SEEN FROM ALLIANCE ZONE
+        return 9.0;
+      default:
+        return Double.POSITIVE_INFINITY; // Unknown tag, reject
+    }
+  }
 
   protected VisionConstants() {}
 }
